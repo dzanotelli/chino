@@ -8,6 +8,10 @@ import (
 	"strings"
 )
 
+const NoAuth = "No Auth"
+const BasicAuth = "Basic"
+const OAuth = "Bearer"
+
 // Client holds the configuration (url, auth) and wraps http Requests
 type Client struct {
 	rootUrl *url.URL
@@ -24,10 +28,16 @@ type ClientAuth struct {
 }
 
 // NewClientAuth sets up the authentication details to pass to Client
-func NewClientAuth (authType, username, password, token, 
-					refreshToken string) *ClientAuth {
+func NewClientAuth(authType, username, password, token, 
+				   refreshToken string) *ClientAuth {
 	clientAuth := ClientAuth{}
 	clientAuth.SetAuthType(authType)
+	
+	// no auth
+	if authType == NoAuth {
+		return &clientAuth
+	}
+
 	clientAuth.SetUsername(username)
 	clientAuth.SetPassword(password)
 	clientAuth.SetToken(token)
@@ -55,8 +65,10 @@ func NewClient(serverUrl string, auth *ClientAuth) Client {
 
 func (a *ClientAuth) SetAuthType(authType string) {
 	authType = strings.Title(authType)
-	if authType != "Basic" && authType != "Bearer" {
-		panic("authType: bad value, expected 'Basic' or 'Bearer'")
+	if authType != NoAuth && authType != BasicAuth && authType != OAuth {
+		err := fmt.Sprintf("authType: bad value, expected %q, %q or %q", 
+			NoAuth, BasicAuth, OAuth)
+		panic(err)
 	}
 	a.authType = authType
 }
@@ -137,12 +149,15 @@ func (c *Client) call(method, path string, data ...string) *http.Response {
 	}
 
 	// handle auth
-	if c.auth.authType == "Basic" {
+	switch c.auth.authType {
+	case NoAuth:
+		// do nothing
+	case BasicAuth:
 		req.SetBasicAuth(c.auth.username, c.auth.password)
-	} else if c.auth.authType == "Bearer" {
+	case OAuth:
 		bearer := "Bearer: " + c.auth.token
 		req.Header.Add("Authorization", bearer)
-	} else {
+	default:
 		panic(fmt.Sprintf("Unsupported auth type %q", c.auth.authType))
 	}
 
