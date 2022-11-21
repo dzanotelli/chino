@@ -114,8 +114,6 @@ func (c *Client) call(method, path string, data ...string) *http.Response {
 	url := c.rootUrl.String() + path  //FIXME join strings
 	var req *http.Request
 	var err error
-	
-	// FIXME auth missing
 
 	switch method {
 	case "GET", "DELETE":
@@ -130,13 +128,22 @@ func (c *Client) call(method, path string, data ...string) *http.Response {
 		req, err = http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
 		req.Header.Set("Content-Type", "application/json")
 	default:
-		err := fmt.Errorf("unsupported HTTP method %q", method)
-		panic(err)
+		err = fmt.Errorf("unsupported HTTP method %q", method)
 	}
 
 	// FIXME: dunno what to do, just panic for the time being
 	if err != nil {
 		panic(err)
+	}
+
+	// handle auth
+	if c.auth.authType == "Basic" {
+		req.SetBasicAuth(c.auth.username, c.auth.password)
+	} else if c.auth.authType == "Bearer" {
+		bearer := "Bearer: " + c.auth.token
+		req.Header.Add("Authorization", bearer)
+	} else {
+		panic(fmt.Sprint("Unsupported auth type %q", c.auth.authType))
 	}
 
 	// perform the call
