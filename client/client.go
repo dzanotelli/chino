@@ -98,7 +98,7 @@ func (a *ClientAuth) GetToken() string {
 }
 
 func (a *ClientAuth) SetRefreshToken(token string) {
-	token = strings.Trim(token)
+	token = strings.Trim(token, " ")
 	if len(token) == 0 {
 		panic("refreshToken is empty")
 	}
