@@ -55,7 +55,7 @@ func NewClient(serverUrl string, auth *ClientAuth) Client {
 
 func (a *ClientAuth) SetAuthType(authType string) {
 	authType = strings.Title(authType)
-	if authType != "Basic" || authType != "Bearer" {
+	if authType != "Basic" && authType != "Bearer" {
 		panic("authType: bad value, expected 'Basic' or 'Bearer'")
 	}
 	a.authType = authType
@@ -66,7 +66,7 @@ func (a *ClientAuth) GetAuthType() string {
 }
 
 func (a *ClientAuth) SetUsername(username string) {
-	username = strings.Trim(username)
+	username = strings.Trim(username, " ")
 	if len(username) == 0 {
 		panic("username is empty")
 	}
@@ -78,7 +78,7 @@ func (a *ClientAuth) GetUsername() string {
 }
 
 func (a *ClientAuth) SetPassword(password string) {
-	password = strings.Trim(password)
+	password = strings.Trim(password, " ")
 	if len(password) == 0 {
 		panic("password is empty")
 	}
@@ -86,7 +86,7 @@ func (a *ClientAuth) SetPassword(password string) {
 }
 
 func (a *ClientAuth) SetToken(token string) {
-	token = strings.Trim(token)
+	token = strings.Trim(token, " ")
 	if len(token) == 0 {
 		panic("token is empty")
 	}
@@ -143,7 +143,7 @@ func (c *Client) call(method, path string, data ...string) *http.Response {
 		bearer := "Bearer: " + c.auth.token
 		req.Header.Add("Authorization", bearer)
 	} else {
-		panic(fmt.Sprint("Unsupported auth type %q", c.auth.authType))
+		panic(fmt.Sprintf("Unsupported auth type %q", c.auth.authType))
 	}
 
 	// perform the call
