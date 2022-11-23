@@ -28,20 +28,40 @@ type ClientAuth struct {
 }
 
 // NewClientAuth sets up the authentication details to pass to Client
-func NewClientAuth(authType, username, password, token, 
-				   refreshToken string) *ClientAuth {
+// Args:
+// - authType
+// - username
+// - password
+// - token (OAuth only)
+// - refreshToken (OAuth only)
+func NewClientAuth(conf ...string) *ClientAuth {
+	if len(conf) == 0 {
+		panic("first argument needed: authType")
+	}
+
+	authType := conf[0]
 	clientAuth := ClientAuth{}
 	clientAuth.SetAuthType(authType)
 	
-	// no auth
-	if authType == NoAuth {
-		return &clientAuth
+	switch authType {
+	case NoAuth:
+	case BasicAuth:
+		if len(conf) < 3 {
+			panic(fmt.Sprintf("too few arguments for auth %s", authType))
+		}
+		clientAuth.SetUsername(conf[1])
+		clientAuth.SetPassword(conf[2])
+	case OAuth:
+		if len(conf) < 5 {
+			panic(fmt.Sprintf("too few arguments for auth %s", authType))
+		}
+		clientAuth.SetUsername(conf[1])
+		clientAuth.SetPassword(conf[2])
+		clientAuth.SetToken(conf[3])
+		clientAuth.SetRefreshToken(conf[4])
+	default:
+		panic(fmt.Sprintf("unknown auth %s", authType))
 	}
-
-	clientAuth.SetUsername(username)
-	clientAuth.SetPassword(password)
-	clientAuth.SetToken(token)
-	clientAuth.SetRefreshToken(refreshToken)
 	return &clientAuth
 }
 
@@ -122,7 +142,8 @@ func (a *ClientAuth) GetRefreshToken() string {
 }
 
 // call performs a HTTP call using Client configuration
-func (c *Client) call(method, path string, data ...string) *http.Response {
+func (c *Client) call(method, path string, data ...string) (*http.Response, 
+	error) {
 	url := c.rootUrl.String() + path  //FIXME join strings
 	var req *http.Request
 	var err error
@@ -143,9 +164,8 @@ func (c *Client) call(method, path string, data ...string) *http.Response {
 		err = fmt.Errorf("unsupported HTTP method %q", method)
 	}
 
-	// FIXME: dunno what to do, just panic for the time being
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	// handle auth
@@ -164,35 +184,32 @@ func (c *Client) call(method, path string, data ...string) *http.Response {
 	// perform the call
 	client := &http.Client{}
     resp, err := client.Do(req)
-    if err != nil {
-        panic(err)
-    }
     defer resp.Body.Close()
 
-	return resp
+	return resp, err
 }
 
 // Get wraps call to perform a HTTP GET call
-func (c *Client) Get(path string) *http.Response {
+func (c *Client) Get(path string) (*http.Response, error) {
 	return c.call("GET", path)
 }
 
 // Post wraps call to perform a HTTP POST call
-func (c *Client) Post(path, payload string) *http.Response {
+func (c *Client) Post(path, payload string) (*http.Response, error) {
 	return c.call("POST", path, payload)
 }
 
 // Put wraps call to perform a HTTP PUT call
-func (c *Client) Put(path, payload string) *http.Response {
+func (c *Client) Put(path, payload string) (*http.Response, error) {
 	return c.call("PUT", path, payload)
 }
 
 // Patch wraps call to perform a HTTP PATCH call
-func (c *Client) Patch(path, payload string) *http.Response {
+func (c *Client) Patch(path, payload string) (*http.Response, error) {
 	return c.call("PATCH", path, payload)
 }
 
 // Delete wraps call to perform a HTTP DELETE call
-func (c *Client) Delete(path string) *http.Response {
+func (c *Client) Delete(path string) (*http.Response, error) {
 	return c.call("DELETE", path)
 }
