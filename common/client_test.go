@@ -1,9 +1,9 @@
-package client
+package common
 
 import "testing"
 
 func TestCallUrl(t *testing.T) {
-	chinoAuth := NewClientAuth(NoAuth)
+	chinoAuth := NewClientAuth()
 	chinoClient := NewClient("https://www.chino.io", chinoAuth)
 	resp, err := chinoClient.Get("/")
 	if err != nil {
