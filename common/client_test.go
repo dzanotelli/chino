@@ -12,6 +12,6 @@ func TestCallUrl(t *testing.T) {
 	}
 
 	if (resp.StatusCode != 200) {
-		t.Errorf("Bad status code, got: %v want: 200", resp.StatusCode)
+		t.Errorf("bad status code, got: %v want: 200", resp.StatusCode)
 	}
 }

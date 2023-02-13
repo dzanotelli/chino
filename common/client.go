@@ -1,4 +1,4 @@
-// Package client provides a basic HTTP client to perform HTTP calls.
+// Package common provides a basic HTTP client to perform HTTP calls.
 // It supports Basic and OAuth authentication methods.
 package common
 
@@ -14,6 +14,7 @@ import (
 const NoAuth = "No Auth"
 const BasicAuth = "Basic"
 const OAuth = "Bearer"
+const userAgent = "golang/chino-" + Version
 
 // ClientAuth keeps the authentication details - Basic vs Bearer (OAuth)
 type ClientAuth struct {
@@ -28,15 +29,17 @@ type ClientAuth struct {
 type Client struct {
 	rootUrl *url.URL
 	auth *ClientAuth
+	userAgent string
 }
 
-// NewClientAuth return a new ClientAuth with auth set to NoAuth
+// NewClientAuth returns a new ClientAuth with auth set to NoAuth
 func NewClientAuth() *ClientAuth {
 	ca := &ClientAuth{}
 	ca.SetNoAuth()
 	return ca
 }
 
+// Set ClientAuth authType to NoAuth removing other attributes
 func (ca *ClientAuth) SetNoAuth() {
 	ca.authType = NoAuth
 	ca.username = ""
@@ -45,6 +48,7 @@ func (ca *ClientAuth) SetNoAuth() {
 	ca.refreshToken = ""
 }
 
+// Set ClientAuth authType to BasicAuth removing tokens
 func (ca *ClientAuth) SetBasicAuth(username, password string) error {
 	if !IsValidUUID(username) {
 		return errors.New("username must be a valid UUID")
@@ -61,6 +65,7 @@ func (ca *ClientAuth) SetBasicAuth(username, password string) error {
 	return nil
 }
 
+// Set ClientAuth authType to OAuth
 func (ca *ClientAuth) SetOAuth(username, password, token, refreshToken string) error {
 	username = strings.Trim(username, " ")
 	password = strings.Trim(password, " ")
@@ -87,7 +92,7 @@ func (ca *ClientAuth) GetAuthType() string {
 func (ca *ClientAuth) SetUsername(username string) error {
 	switch ca.authType {
 	case NoAuth:
-		return errors.New("Cannot set username to NoAuth client")
+		return errors.New("cannot set username to NoAuth client")
 	case BasicAuth:
 		if !IsValidUUID(username) {
 			return errors.New("username must be a valid UUID")
@@ -110,7 +115,7 @@ func (ca *ClientAuth) GetUsername() string {
 func (ca *ClientAuth) SetPassword(password string) error {
 	switch ca.authType {
 	case NoAuth:
-		return errors.New("Cannot set password to NoAuth client")
+		return errors.New("cannot set password to NoAuth client")
 	case BasicAuth:
 		if !IsValidUUID(password) {
 			return errors.New("password must be a valid UUID")
@@ -161,7 +166,6 @@ func (ca *ClientAuth) GetRefreshToken() string {
 	return ca.refreshToken
 }
 
-
 // NewClient configures and returns a new Client
 func NewClient(serverUrl string, auth *ClientAuth) *Client {
 	parsedUrl, err := url.Parse(serverUrl)
@@ -206,6 +210,9 @@ func (c *Client) call(method, path string, data ...string) (*http.Response,
 	if err != nil {
 		return nil, err
 	}
+
+	// set the User-Agent	
+	req.Header.Set("User-Agent", userAgent)
 
 	// handle auth
 	switch c.auth.authType {
