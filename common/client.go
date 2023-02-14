@@ -211,8 +211,9 @@ func (c *Client) call(method, path string, data ...string) (*http.Response,
 		return nil, err
 	}
 
-	// set the User-Agent	
+	// set the headers
 	req.Header.Set("User-Agent", userAgent)
+	req.Header.Add("Accept", "application/json")
 
 	// handle auth
 	switch c.auth.authType {
