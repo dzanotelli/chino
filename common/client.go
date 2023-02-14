@@ -230,8 +230,14 @@ func (c *Client) call(method, path string, data ...string) (*http.Response,
 	// perform the call
 	client := &http.Client{}
     resp, err := client.Do(req)
+	if err != nil {
+		return resp, err
+	}
     defer resp.Body.Close()
 
+	if resp.StatusCode != http.StatusOK {
+		err = fmt.Errorf("server returned error. Details: %s", resp.Body)
+	}
 	return resp, err
 }
 
