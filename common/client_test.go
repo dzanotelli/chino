@@ -44,7 +44,7 @@ func TestCallUrl(t *testing.T) {
 	// test bad URL
 	resp, _ = chinoClient.Get("/my/bad/url")
 	if resp.StatusCode != http.StatusBadRequest {
-		t.Errorf("got wrong status, got %v , want %d", resp.StatusCode,
+		t.Errorf("got wrong status, got: %v , want: %d", resp.StatusCode,
 				 http.StatusBadRequest)
 	}
 }
