@@ -31,13 +31,23 @@ func TestRepositoryCRUD(t *testing.T) {
 							   dummyRepository.IsActive)
 			w.Write([]byte(out))
 		} else if r.URL.Path == fmt.Sprintf("/api/v1/repositories/%s", 
-			dummyRepository.RepositoryId) {
+			dummyRepository.RepositoryId) && r.Method == "GET" {
 			// test READ
 			dummyRepository.IsActive = true  // turn to true
 			w.WriteHeader(http.StatusOK)
 			out := fmt.Sprintf(`{"description": "%v", "is_active": %v}`, 
 							  dummyRepository.Description,
 							  dummyRepository.IsActive)
+			w.Write([]byte(out))
+		} else if r.URL.Path == fmt.Sprintf("/api/v1/repositories/%s", 
+			dummyRepository.RepositoryId) && r.Method == "PUT" {
+			// test UPDATE
+			w.WriteHeader(http.StatusOK)
+			out := fmt.Sprintf(`{"repository_id": "%s", "description": ` +
+							   `"%s", "is_active": %v}`, 
+							   dummyRepository.RepositoryId,
+							   dummyRepository.Description,
+							   dummyRepository.IsActive)
 			w.Write([]byte(out))
 		} else {
 			err := `{"result": "error", "result_code": 404, "data": null, `
@@ -97,4 +107,27 @@ func TestRepositoryCRUD(t *testing.T) {
 	} else {
 		t.Errorf("unexpected: both repository and error are nil!")
 	}
+
+	// test UPDATE
+	repo, err = custodia.UpdateRepository(&dummyRepository, "changed", false)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	} else if repo != nil {
+		if (*repo).RepositoryId != dummyRepository.RepositoryId {
+			t.Errorf("bad RepositoryId, got: %v want: %v", 
+					 repo.RepositoryId, dummyRepository.RepositoryId)
+		}
+		if (*repo).Description != dummyRepository.Description {
+			t.Errorf("bad Description, got: %v want: %s", 
+					 repo.Description,
+					dummyRepository.Description)
+		}
+
+		if (*repo).IsActive != true {
+			t.Errorf("bad isActive, got: %v want: true", (*repo).IsActive)
+		}
+	} else {
+		t.Errorf("unexpected: both repository and error are nil!")
+	}
+
 }

@@ -201,7 +201,7 @@ func (c *Client) call(method, path string, data ...string) (*http.Response,
 		} else {
 			jsonStr = []byte("")
 		}
-		req, err = http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
+		req, err = http.NewRequest(method, url, bytes.NewBuffer(jsonStr))
 		req.Header.Set("Content-Type", "application/json")
 	default:
 		err = fmt.Errorf("unsupported HTTP method %q", method)

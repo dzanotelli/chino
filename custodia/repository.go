@@ -60,8 +60,29 @@ func (ca *CustodiaAPIv1) GetRepository(id string) (*Repository, error) {
 
 // [U]pdate an existent repository
 func (ca *CustodiaAPIv1) UpdateRepository(repository *Repository, 
-	description string, isActive bool) (*Repository, error) {
-	// FIXME
+	description string, isActive bool) (*Repository, error) {	
+	url := fmt.Sprintf("/repositories/%s", (*repository).RepositoryId)
+
+	// get a copy and update the values, so we can easily marshal it
+	copy := *repository	
+	copy.RepositoryId = ""  // we must not send this
+	copy.Description = description
+	copy.IsActive = isActive
+	data, err := json.Marshal(copy)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := ca.Put(url, string(data))
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	// JSON: unmarshal resp content overwriting the old repository
+	if err := json.NewDecoder(resp.Body).Decode(repository); err != nil {
+		return nil, err
+	}
+
 	return repository, nil
 }
 
