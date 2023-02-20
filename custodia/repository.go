@@ -88,7 +88,12 @@ func (ca *CustodiaAPIv1) UpdateRepository(repository *Repository,
 
 // [D]elete an existent repository
 func (ca *CustodiaAPIv1) DeleteRepository(repository *Repository) (error) {
-	// FIXME
+	url := fmt.Sprintf("/repositories/%s", repository.RepositoryId)
+	resp, err := ca.Get(url)
+	if err != nil {
+		return err
+	}
+	resp.Body.Close()	
 	return nil
 }
 

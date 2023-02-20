@@ -49,6 +49,13 @@ func TestRepositoryCRUD(t *testing.T) {
 							   dummyRepository.Description,
 							   dummyRepository.IsActive)
 			w.Write([]byte(out))
+		} else if r.URL.Path == fmt.Sprintf("/api/v1/repositories/%s", 
+			dummyRepository.RepositoryId) && r.Method == "DELETE" {
+			// test UPDATE
+			w.WriteHeader(http.StatusOK)
+			out := `{"result": "success", "result_code": 200, "data": null,`
+			out += `"message": null}`
+			w.Write([]byte(out))
 		} else {
 			err := `{"result": "error", "result_code": 404, "data": null, `
 			err += `"message": "Resource not found (you may have a '/' at `
@@ -129,5 +136,10 @@ func TestRepositoryCRUD(t *testing.T) {
 	} else {
 		t.Errorf("unexpected: both repository and error are nil!")
 	}
-
+	
+	// test DELETE
+	err = custodia.DeleteRepository(&dummyRepository)
+	if err != nil {
+		t.Errorf("error while deleting repository. Details: %v", err)
+	}
 }
