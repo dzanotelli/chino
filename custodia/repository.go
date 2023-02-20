@@ -1,4 +1,4 @@
-package storage
+package custodia
 
 import (
 	"encoding/json"
@@ -16,13 +16,13 @@ type Repository struct {
 
 // API methods to handle Repository
 
-func (ca *StorageAPIv1) CreateRepository(description string) (Repository, 
+func (ca *CustodiaAPIv1) CreateRepository(description string) (Repository, 
 	error) {
 	// FIXME
 	return Repository{}, nil
 }
 
-func (ca *StorageAPIv1) GetRepository(id string) (*Repository, error) {
+func (ca *CustodiaAPIv1) GetRepository(id string) (*Repository, error) {
 	if !common.IsValidUUID(id) {
 		return nil, errors.New("id is not a valid UUID: " + id)
 	}
@@ -32,6 +32,7 @@ func (ca *StorageAPIv1) GetRepository(id string) (*Repository, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 	
 	// JSON: unmarshal resp content
 	repository := Repository{RepositoryId: id}

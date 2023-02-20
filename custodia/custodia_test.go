@@ -1,6 +1,7 @@
-package storage
+package custodia
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -11,9 +12,13 @@ import (
 
 
 func TestRepositoryCRUD(t *testing.T) {
+	// init stuff
+	repoId := uuid.New().String()
+
 	// mock calls
 	mockHandler := func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/api/v1/repositories/" {
+		if r.URL.Path == fmt.Sprintf("/api/v1/repositories/%s", repoId) {
+			// test READ
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte(`{"description": "unittest", "is_active": true}`)) 
 		} else {
@@ -29,20 +34,24 @@ func TestRepositoryCRUD(t *testing.T) {
 
 	auth := common.NewClientAuth()  // auth is tested elsewhere
 	client := common.NewClient(server.URL, auth)
-	storage := NewStorageAPIv1(client)
+	custodia := NewCustodiaAPIv1(client)
 
 	// test READ
-	repositoryId := uuid.New().String()
-	repository, err := storage.GetRepository(repositoryId)
+	repoPtr, err := custodia.GetRepository(repoId)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
-	} else if repository != nil {
-		if repository.RepositoryId != repositoryId {
-			t.Errorf("bad repositoryId, got: %v want: %v", 
-					 repository.RepositoryId, repositoryId)
+	} else if repoPtr != nil {
+		if (*repoPtr).RepositoryId != repoId {
+			t.Errorf("bad RepositoryId, got: %v want: %v", 
+					 repoPtr.RepositoryId, repoId)
 		}
-		if repository.IsActive != true {
-			t.Errorf("bad isActive, got: %v want: true", repository.IsActive)
+		if (*repoPtr).Description != "unittest" {
+			t.Errorf("bad Description, got: %v want: unittest", 
+					 repoPtr.Description)
+		}
+
+		if (*repoPtr).IsActive != true {
+			t.Errorf("bad isActive, got: %v want: true", (*repoPtr).IsActive)
 		}
 	} else {
 		t.Errorf("unexpected: both repository and error are nil!")
