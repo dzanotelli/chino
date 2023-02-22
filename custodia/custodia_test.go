@@ -17,55 +17,56 @@ func TestRepositoryCRUD(t *testing.T) {
 	dummyRepository := Repository{
 		RepositoryId: uuid.New().String(),
 		Description: "unittest",
+		InsertDate: "2015-02-24T21:48:16.332",
+		LastUpdate: "2015-02-24T21:48:16.332",
 		IsActive: false,
+	}
+
+	writeRepoResponse := func(w http.ResponseWriter) {
+		data := fmt.Sprintf(`{"repository": {"repository_id": "%s", ` +
+		`"description": "%s", "insert_date": "%s", `+ 
+		`"last_update": "%s", "is_active": %v}}`, 
+		dummyRepository.RepositoryId,
+		dummyRepository.Description,
+		dummyRepository.InsertDate,
+		dummyRepository.LastUpdate,
+		dummyRepository.IsActive)
+
+		envelope := CustodiaEnvelope{
+			Result: "success",
+			ResultCode: 200,
+			Message: nil,
+			Data: []byte(data),
+		}
+		out, _ := json.Marshal(envelope)
+
+		w.WriteHeader(http.StatusOK)
+		w.Write(out)
 	}
 
 	// mock calls
 	mockHandler := func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/api/v1/repositories" && r.Method == "POST" {
 			// test CREATE
-			data := fmt.Sprintf(`{"repository_id": "%s", "description": ` +
-					`"%s", "is_active": %v}`, 
-					dummyRepository.RepositoryId,
-					dummyRepository.Description,
-					dummyRepository.IsActive)
-
-			env := CustodiaEnvelope{
-				Result: "success",
-				ResultCode: 200,
-				Message: nil,
-				Data: []byte(data),
-			}
-
+			writeRepoResponse(w)
+		} else if r.URL.Path == fmt.Sprintf("/api/v1/repositories/%s", 
+			dummyRepository.RepositoryId) && r.Method == "GET" {
+			// test READ
+			writeRepoResponse(w)
+		} else if r.URL.Path == fmt.Sprintf("/api/v1/repositories/%s", 
+			dummyRepository.RepositoryId) && r.Method == "PUT" {
+			// test UPDATE
+			dummyRepository.Description = "changed"
+			dummyRepository.IsActive = false
+			writeRepoResponse(w)
+		} else if r.URL.Path == fmt.Sprintf("/api/v1/repositories/%s", 
+			dummyRepository.RepositoryId) && r.Method == "DELETE" {
+			// test DELETE
 			w.WriteHeader(http.StatusOK)
-			out, _ := json.Marshal(env)
+			envelope := CustodiaEnvelope{Result: "success", ResultCode: 200}
+			out, _ := json.Marshal(envelope)
+			w.WriteHeader(http.StatusOK)			
 			w.Write(out)
-		// } else if r.URL.Path == fmt.Sprintf("/api/v1/repositories/%s", 
-		// 	dummyRepository.RepositoryId) && r.Method == "GET" {
-		// 	// test READ
-		// 	dummyRepository.IsActive = true  // turn to true
-		// 	w.WriteHeader(http.StatusOK)
-		// 	out := fmt.Sprintf(`{"description": "%v", "is_active": %v}`, 
-		// 					  dummyRepository.Description,
-		// 					  dummyRepository.IsActive)
-		// 	w.Write([]byte(out))
-		// } else if r.URL.Path == fmt.Sprintf("/api/v1/repositories/%s", 
-		// 	dummyRepository.RepositoryId) && r.Method == "PUT" {
-		// 	// test UPDATE
-		// 	w.WriteHeader(http.StatusOK)
-		// 	out := fmt.Sprintf(`{"repository_id": "%s", "description": ` +
-		// 					   `"%s", "is_active": %v}`, 
-		// 					   dummyRepository.RepositoryId,
-		// 					   dummyRepository.Description,
-		// 					   dummyRepository.IsActive)
-		// 	w.Write([]byte(out))
-		// } else if r.URL.Path == fmt.Sprintf("/api/v1/repositories/%s", 
-		// 	dummyRepository.RepositoryId) && r.Method == "DELETE" {
-		// 	// test UPDATE
-		// 	w.WriteHeader(http.StatusOK)
-		// 	out := `{"result": "success", "result_code": 200, "data": null,`
-		// 	out += `"message": null}`
-		// 	w.Write([]byte(out))
 		} else {
 			err := `{"result": "error", "result_code": 404, "data": null, `
 			err += `"message": "Resource not found (you may have a '/' at `
@@ -95,7 +96,12 @@ func TestRepositoryCRUD(t *testing.T) {
 					 repo.Description,
 					dummyRepository.Description)
 		}
-
+		if (*repo).InsertDate == "" {
+			t.Error("insert_date is empty")
+		}
+		if (*repo).LastUpdate == "" {
+			t.Error("last_update is empty")
+		}
 		if (*repo).IsActive != false {
 			t.Errorf("bad isActive, got: %v want: false", (*repo).IsActive)
 		}
@@ -103,49 +109,59 @@ func TestRepositoryCRUD(t *testing.T) {
 		t.Errorf("unexpected: both repository and error are nil!")
 	}
 
-	// // test READ
-	// repo, err = custodia.GetRepository(dummyRepository.RepositoryId)
-	// if err != nil {
-	// 	t.Errorf("unexpected error: %v", err)
-	// } else if repo != nil {
-	// 	if (*repo).RepositoryId != dummyRepository.RepositoryId {
-	// 		t.Errorf("bad RepositoryId, got: %v want: %v", 
-	// 				 repo.RepositoryId, dummyRepository.RepositoryId)
-	// 	}
-	// 	if (*repo).Description != dummyRepository.Description {
-	// 		t.Errorf("bad Description, got: %v want: %s", 
-	// 				 repo.Description,
-	// 				dummyRepository.Description)
-	// 	}
+	// test READ
+	repo, err = custodia.GetRepository(dummyRepository.RepositoryId)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	} else if repo != nil {
+		if (*repo).RepositoryId != dummyRepository.RepositoryId {
+			t.Errorf("bad RepositoryId, got: %v want: %v", 
+					 repo.RepositoryId, dummyRepository.RepositoryId)
+		}
+		if (*repo).Description != dummyRepository.Description {
+			t.Errorf("bad Description, got: %v want: %s", 
+					 repo.Description,
+					dummyRepository.Description)
+		}
+		if (*repo).InsertDate == "" {
+			t.Error("insert_date is empty")
+		}
+		if (*repo).LastUpdate == "" {
+			t.Error("last_update is empty")
+		}
+		if (*repo).IsActive != false {
+			t.Errorf("bad isActive, got: %v want: false", (*repo).IsActive)
+		}
+	} else {
+		t.Errorf("unexpected: both repository and error are nil!")
+	}
 
-	// 	if (*repo).IsActive != true {
-	// 		t.Errorf("bad isActive, got: %v want: true", (*repo).IsActive)
-	// 	}
-	// } else {
-	// 	t.Errorf("unexpected: both repository and error are nil!")
-	// }
-
-	// // test UPDATE
-	// repo, err = custodia.UpdateRepository(&dummyRepository, "changed", false)
-	// if err != nil {
-	// 	t.Errorf("unexpected error: %v", err)
-	// } else if repo != nil {
-	// 	if (*repo).RepositoryId != dummyRepository.RepositoryId {
-	// 		t.Errorf("bad RepositoryId, got: %v want: %v", 
-	// 				 repo.RepositoryId, dummyRepository.RepositoryId)
-	// 	}
-	// 	if (*repo).Description != dummyRepository.Description {
-	// 		t.Errorf("bad Description, got: %v want: %s", 
-	// 				 repo.Description,
-	// 				dummyRepository.Description)
-	// 	}
-
-	// 	if (*repo).IsActive != true {
-	// 		t.Errorf("bad isActive, got: %v want: true", (*repo).IsActive)
-	// 	}
-	// } else {
-	// 	t.Errorf("unexpected: both repository and error are nil!")
-	// }
+	// test UPDATE
+	repo, err = custodia.UpdateRepository(&dummyRepository, "changed", false)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	} else if repo != nil {
+		if (*repo).RepositoryId != dummyRepository.RepositoryId {
+			t.Errorf("bad RepositoryId, got: %v want: %v", 
+					 repo.RepositoryId, dummyRepository.RepositoryId)
+		}
+		if (*repo).Description != dummyRepository.Description {
+			t.Errorf("bad Description, got: %v want: %s", 
+					 repo.Description,
+					dummyRepository.Description)
+		}
+		if (*repo).InsertDate == "" {
+			t.Error("insert_date is empty")
+		}
+		if (*repo).LastUpdate == "" {
+			t.Error("last_update is empty")
+		}
+		if (*repo).IsActive != false {
+			t.Errorf("bad isActive, got: %v want: false", (*repo).IsActive)
+		}
+	} else {
+		t.Errorf("unexpected: both repository and error are nil!")
+	}
 	
 	// // test DELETE
 	// err = custodia.DeleteRepository(&dummyRepository)
