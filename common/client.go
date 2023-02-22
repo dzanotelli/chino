@@ -184,8 +184,8 @@ func NewClient(serverUrl string, auth *ClientAuth) *Client {
 	}
 }
 
-// Performs a HTTP call using Client configuration
-func (c *Client) call(method, path string, data ...string) (*http.Response, 
+// Performs a HTTP Call using Client configuration
+func (c *Client) Call(method, path string, data ...string) (*http.Response, 
 	error) {
 	url := c.rootUrl.String() + path  //FIXME join strings
 	var req *http.Request
@@ -235,33 +235,30 @@ func (c *Client) call(method, path string, data ...string) (*http.Response,
 		return resp, err
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		err = fmt.Errorf("server returned error. Details: %s", resp.Body)
-	}
 	return resp, err
 }
 
 // Get wraps call to perform a HTTP GET call
 func (c *Client) Get(path string) (*http.Response, error) {
-	return c.call("GET", path)
+	return c.Call("GET", path)
 }
 
 // Post wraps call to perform a HTTP POST call
 func (c *Client) Post(path, payload string) (*http.Response, error) {
-	return c.call("POST", path, payload)
+	return c.Call("POST", path, payload)
 }
 
 // Put wraps call to perform a HTTP PUT call
 func (c *Client) Put(path, payload string) (*http.Response, error) {
-	return c.call("PUT", path, payload)
+	return c.Call("PUT", path, payload)
 }
 
 // Patch wraps call to perform a HTTP PATCH call
 func (c *Client) Patch(path, payload string) (*http.Response, error) {
-	return c.call("PATCH", path, payload)
+	return c.Call("PATCH", path, payload)
 }
 
 // Delete wraps call to perform a HTTP DELETE call
 func (c *Client) Delete(path string) (*http.Response, error) {
-	return c.call("DELETE", path)
+	return c.Call("DELETE", path)
 }

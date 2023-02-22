@@ -1,10 +1,20 @@
 package custodia
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/dzanotelli/chino/common"
 )
+
+// CustodiaEnvelope is the enveloped response, with data in subobject "data"
+type CustodiaEnvelope struct {
+	Result string `json:"result"`
+	ResultCode uint8 `json:"result_code"`
+	Message json.RawMessage `json:"message"`
+	Data json.RawMessage `json:"data"`
+}
 
 type CustodiaAPIv1 struct {
 	client *common.Client
@@ -18,22 +28,24 @@ func NewCustodiaAPIv1(client *common.Client) *CustodiaAPIv1 {
 	return capi
 }
 
-func (ca *CustodiaAPIv1) Get(path string) (*http.Response, error) {
-	return ca.client.Get("/api/v1" + path)
-}
+func (ca *CustodiaAPIv1) Call(method, path string, data ...string) (
+	string, error) {
 
-func (ca *CustodiaAPIv1) Post(path, payload string) (*http.Response, error) {
-	return ca.client.Post("/api/v1" + path, payload)
-}
+	httpResp, err := ca.client.Call(method, "/api/v1" + path, data...)
+	if err != nil {
+		return "", err
+	}
+	defer httpResp.Body.Close()
 
-func (ca *CustodiaAPIv1) Put(path, payload string) (*http.Response, error) {
-	return ca.client.Put("/api/v1" + path, payload)
-}
+	resp := CustodiaEnvelope{}
+	if err := json.NewDecoder(httpResp.Body).Decode(&resp); err != nil {
+		return "", err
+	}
 
-func (ca *CustodiaAPIv1) Patch(path, payload string) (*http.Response, error) {
-	return ca.client.Patch("/api/v1" + path, payload)
-}
+	if httpResp.StatusCode != http.StatusOK {
+		err := fmt.Errorf("Error %v: %s", resp.ResultCode, resp.Message)
+		return "", err
+	}
 
-func (ca *CustodiaAPIv1) Delete(path string) (*http.Response, error) {
-	return ca.client.Delete("/api/v1" + path)
+	return string(resp.Data), nil
 }
