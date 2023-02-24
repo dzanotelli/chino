@@ -13,8 +13,16 @@ import (
 
 
 func TestRepositoryCRUD(t *testing.T) {
+	type RepoResponse struct {
+		RepositoryId string
+		Description string
+		InsertDate string
+		LastUpdate string
+		IsActive bool
+	}
+
 	// init stuff
-	dummyRepository := Repository{
+	dummyRepository := RepoResponse{
 		RepositoryId: uuid.New().String(),
 		Description: "unittest",
 		InsertDate: "2015-02-24T21:48:16.332",
@@ -96,11 +104,13 @@ func TestRepositoryCRUD(t *testing.T) {
 					 repo.Description,
 					dummyRepository.Description)
 		}
-		if (*repo).InsertDate == "" {
-			t.Error("insert_date is empty")
+		if (*repo).InsertDate.Year() != 2015 {
+			t.Errorf("bad insert_date year, got: %v want: 2015", 
+				(*repo).InsertDate.Year())
 		}
-		if (*repo).LastUpdate == "" {
-			t.Error("last_update is empty")
+		if (*repo).LastUpdate.Year() != 2015 {
+			t.Errorf("bad last_update year, got: %v want: 2015", 
+				(*repo).InsertDate.Year())			
 		}
 		if (*repo).IsActive != false {
 			t.Errorf("bad isActive, got: %v want: false", (*repo).IsActive)
@@ -123,11 +133,13 @@ func TestRepositoryCRUD(t *testing.T) {
 					 repo.Description,
 					dummyRepository.Description)
 		}
-		if (*repo).InsertDate == "" {
-			t.Error("insert_date is empty")
+		if (*repo).InsertDate.Year() != 2015 {
+			t.Errorf("bad insert_date year, got: %v want: 2015", 
+				(*repo).InsertDate.Year())
 		}
-		if (*repo).LastUpdate == "" {
-			t.Error("last_update is empty")
+		if (*repo).LastUpdate.Year() != 2015 {
+			t.Errorf("bad last_update year, got: %v want: 2015", 
+				(*repo).InsertDate.Year())			
 		}
 		if (*repo).IsActive != false {
 			t.Errorf("bad isActive, got: %v want: false", (*repo).IsActive)
@@ -137,7 +149,7 @@ func TestRepositoryCRUD(t *testing.T) {
 	}
 
 	// test UPDATE
-	repo, err = custodia.UpdateRepository(&dummyRepository, "changed", false)
+	repo, err = custodia.UpdateRepository(repo, "changed", false)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	} else if repo != nil {
@@ -150,11 +162,13 @@ func TestRepositoryCRUD(t *testing.T) {
 					 repo.Description,
 					dummyRepository.Description)
 		}
-		if (*repo).InsertDate == "" {
-			t.Error("insert_date is empty")
+		if (*repo).InsertDate.Year() != 2015 {
+			t.Errorf("bad insert_date year, got: %v want: 2015", 
+				(*repo).InsertDate.Year())
 		}
-		if (*repo).LastUpdate == "" {
-			t.Error("last_update is empty")
+		if (*repo).LastUpdate.Year() != 2015 {
+			t.Errorf("bad last_update year, got: %v want: 2015", 
+				(*repo).InsertDate.Year())			
 		}
 		if (*repo).IsActive != false {
 			t.Errorf("bad isActive, got: %v want: false", (*repo).IsActive)

@@ -6,14 +6,15 @@ import (
 	"fmt"
 
 	"github.com/dzanotelli/chino/common"
+	"github.com/simplereach/timeutils"
 )
 
 // Repository represent a repository stored in Custodia
 type Repository struct {
 	RepositoryId string `json:"repository_id,omitempty"`
 	Description string
-	InsertDate string `json:"insert_date"`
-	LastUpdate string `json:"last_update"`
+	InsertDate timeutils.Time `json:"insert_date"`
+	LastUpdate timeutils.Time `json:"last_update"`
 	IsActive bool `json:"is_active"`
 }
 
