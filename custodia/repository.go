@@ -92,16 +92,15 @@ func (ca *CustodiaAPIv1) UpdateRepository(repository *Repository,
 	return repoEnvelope.Repository, nil
 }
 
-// // [D]elete an existent repository
-// func (ca *CustodiaAPIv1) DeleteRepository(repository *Repository) (error) {
-// 	url := fmt.Sprintf("/repositories/%s", repository.RepositoryId)
-// 	resp, err := ca.Delete(url)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	resp.Body.Close()	
-// 	return nil
-// }
+// [D]elete an existent repository
+func (ca *CustodiaAPIv1) DeleteRepository(repository *Repository) (error) {
+	url := fmt.Sprintf("/repositories/%s", repository.RepositoryId)
+	_, err := ca.Call("DELETE", url)
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
 // // [L]ist all the repositories
 // func (ca *CustodiaAPIv1) ListRepositories() ([]*Repository, error) {

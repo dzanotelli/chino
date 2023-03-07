@@ -13,12 +13,20 @@ import (
 
 
 func TestRepositoryCRUD(t *testing.T) {
+	// RepoResponse will be marshalled to create an API-like response
 	type RepoResponse struct {
 		RepositoryId string
 		Description string
 		InsertDate string
 		LastUpdate string
 		IsActive bool
+	}
+
+	// ReposResponse will be marshalled to create an API-like reponse
+	type ReposResponse struct {
+		Repositories struct {
+			// FIXME
+		}
 	}
 
 	// init stuff

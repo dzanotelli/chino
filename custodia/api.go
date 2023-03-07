@@ -43,7 +43,7 @@ func (ca *CustodiaAPIv1) Call(method, path string, data ...string) (
 	}
 
 	if httpResp.StatusCode != http.StatusOK {
-		err := fmt.Errorf("Error %v: %s", resp.ResultCode, resp.Message)
+		err := fmt.Errorf("error %v: %s", resp.ResultCode, resp.Message)
 		return "", err
 	}
 
