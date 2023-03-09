@@ -13,24 +13,31 @@ import (
 
 
 func TestRepositoryCRUD(t *testing.T) {
-	// RepoResponse will be marshalled to create an API-like response
+	// ResponseInnerRepository will be added to RepoResponse
+	type ResponseInnerRepository struct {
+		RepositoryId string `json:"repository_id"`
+		Description string `json:"description"`
+		InsertDate string `json:"insert_date"`
+		LastUpdate string `json:"last_update"`
+		IsActive bool `json:"is_active"`
+	}
+
+	// RepoResponse will be marshalled to create an API-like reponse
 	type RepoResponse struct {
-		RepositoryId string
-		Description string
-		InsertDate string
-		LastUpdate string
-		IsActive bool
+		Repository ResponseInnerRepository `json:"repository"`
 	}
 
 	// ReposResponse will be marshalled to create an API-like reponse
 	type ReposResponse struct {
-		Repositories struct {
-			// FIXME
-		}
+		Count int `json:"count"`
+		TotalCount int `json:"total_count"`
+		Limit int `json:"limit"`
+		Offset int `json:"offset"`
+		Repositories []ResponseInnerRepository
 	}
 
 	// init stuff
-	dummyRepository := RepoResponse{
+	dummyRepository := ResponseInnerRepository{
 		RepositoryId: uuid.New().String(),
 		Description: "unittest",
 		InsertDate: "2015-02-24T21:48:16.332",
@@ -39,20 +46,12 @@ func TestRepositoryCRUD(t *testing.T) {
 	}
 
 	writeRepoResponse := func(w http.ResponseWriter) {
-		data := fmt.Sprintf(`{"repository": {"repository_id": "%s", ` +
-		`"description": "%s", "insert_date": "%s", `+ 
-		`"last_update": "%s", "is_active": %v}}`, 
-		dummyRepository.RepositoryId,
-		dummyRepository.Description,
-		dummyRepository.InsertDate,
-		dummyRepository.LastUpdate,
-		dummyRepository.IsActive)
-
+		data, _ := json.Marshal(RepoResponse{dummyRepository})
 		envelope := CustodiaEnvelope{
 			Result: "success",
 			ResultCode: 200,
 			Message: nil,
-			Data: []byte(data),
+			Data: data,
 		}
 		out, _ := json.Marshal(envelope)
 
@@ -82,6 +81,21 @@ func TestRepositoryCRUD(t *testing.T) {
 			envelope := CustodiaEnvelope{Result: "success", ResultCode: 200}
 			out, _ := json.Marshal(envelope)
 			w.WriteHeader(http.StatusOK)			
+			w.Write(out)
+		} else if r.URL.Path == "/api/v1/repositories" && r.Method == "GET" {
+			// test LIST
+			repositoriesResp := ReposResponse {
+				Count: 1,
+				TotalCount: 1,
+				Limit: 100,
+				Offset: 0,
+				Repositories: []ResponseInnerRepository{dummyRepository},
+			}
+			data, _ := json.Marshal(repositoriesResp)
+			envelope := CustodiaEnvelope{Result: "success", ResultCode: 200}
+			envelope.Data = data
+			out, _ := json.Marshal(envelope)
+			w.WriteHeader(http.StatusOK)
 			w.Write(out)
 		} else {
 			err := `{"result": "error", "result_code": 404, "data": null, `
@@ -185,9 +199,12 @@ func TestRepositoryCRUD(t *testing.T) {
 		t.Errorf("unexpected: both repository and error are nil!")
 	}
 	
-	// // test DELETE
-	// err = custodia.DeleteRepository(&dummyRepository)
-	// if err != nil {
-	// 	t.Errorf("error while deleting repository. Details: %v", err)
-	// }
+	// test DELETE
+	err = custodia.DeleteRepository(repo)
+	if err != nil {
+		t.Errorf("error while deleting repository. Details: %v", err)
+	}
+
+	// test LIST
+	// FIXME
 }
