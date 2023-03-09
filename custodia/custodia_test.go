@@ -206,5 +206,15 @@ func TestRepositoryCRUD(t *testing.T) {
 	}
 
 	// test LIST
-	// FIXME
+	repos, err := custodia.ListRepositories()
+	if err != nil {
+		t.Errorf("error while listing repositories. Details: %v", err)
+	}
+	if len(repos) != 1 {
+		t.Errorf("bad repositories lenght, got: %v want: 1", len(repos))
+	}
+	if repos[0].RepositoryId != dummyRepository.RepositoryId {
+		t.Errorf("bad repository id, got: %v want: %v", 
+			dummyRepository.RepositoryId, repos[0].RepositoryId)
+	}
 }

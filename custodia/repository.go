@@ -12,14 +12,19 @@ import (
 // Repository represent a repository stored in Custodia
 type Repository struct {
 	RepositoryId string `json:"repository_id,omitempty"`
-	Description string
+	Description string `json:"description"`
 	InsertDate timeutils.Time `json:"insert_date"`
 	LastUpdate timeutils.Time `json:"last_update"`
 	IsActive bool `json:"is_active"`
 }
-
+// RepositoryEnvelope: used the unmarshal the CRU responses
 type RepositoryEnvelope struct {
-	Repository *Repository
+	Repository *Repository `json:"repository"`
+}
+
+// RepositoriesEnvelope: used the unmarshal the L response
+type RepositoriesEnvelope struct {
+	Repositories []Repository `json:"repositories"`
 }
 
 // [C]reate a new repository
@@ -102,9 +107,24 @@ func (ca *CustodiaAPIv1) DeleteRepository(repository *Repository) (error) {
 	return nil
 }
 
-// // [L]ist all the repositories
-// func (ca *CustodiaAPIv1) ListRepositories() ([]*Repository, error) {
-// 	// FIXME
-// 	return nil, nil
-// }
+// [L]ist all the repositories
+func (ca *CustodiaAPIv1) ListRepositories() ([]*Repository, error) {
+	resp, err := ca.Call("GET", "/repositories")
+	if err != nil {
+		return nil, err
+	}
+
+	// JSON: unmarshal resp content
+	reposEnvelope := RepositoriesEnvelope{}
+	if err := json.Unmarshal([]byte(resp), &reposEnvelope); err != nil {
+		return nil, err
+	}
+
+	result := []*Repository{}
+	for _, repo := range reposEnvelope.Repositories {
+		result = append(result, &repo)
+	}
+
+	return result, nil
+}
 
