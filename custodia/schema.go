@@ -35,15 +35,22 @@ type SchemasEnvelope struct {
 }
 
 // [C]reate a new schema
-func (ca *CustodiaAPIv1) CreateSchema(r Repository, descritpion string, 
-	fields []SchemaField, isActive bool) (*Schema, error) {
-	schema := Schema{RepositoryId: r.RepositoryId, Description: descritpion,
+func (ca *CustodiaAPIv1) CreateSchema(repositoryId string, descritpion string, 
+	isActive bool, fields []SchemaField) (*Schema, error) {
+	if !common.IsValidUUID(repositoryId) {
+		return nil, errors.New("repositoryId is not a valid UUID: " +
+			repositoryId)
+	}
+	
+	schema := Schema{RepositoryId: repositoryId, Description: descritpion,
 		Structure: fields, IsActive: isActive}
 	data, err := json.Marshal(schema)
 	if err != nil {
 		return nil, err
 	}
-	resp, err := ca.Call("POST", "/schemas", string(data))
+
+	url := fmt.Sprintf("/repositories/%s/schemas", repositoryId)
+	resp, err := ca.Call("POST", url, string(data))
 	if err != nil {
 		return nil, err
 	}

@@ -6,9 +6,11 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/dzanotelli/chino/common"
 	"github.com/google/uuid"
+	"github.com/simplereach/timeutils"
 )
 
 
@@ -254,15 +256,74 @@ func TestSchemaCRUDL(t *testing.T) {
 		LastUpdate: "2015-02-24T21:48:16.332",
 		IsActive: false,
 		Structure: []SchemaField{
-			{Name: "IntField", Type: "integer", Indexed: true},
+			{Name: "IntField", Type: "integer", Indexed: true, Default: 42},
 			{Name: "StrField", Type: "string", Indexed: true, Default: "asd"},
 			{Name: "FloatField", Type: "float", Indexed: false, Default: 3.14},
 			{Name: "BoolField", Type: "bool", Indexed: false},
 			{Name: "DateField", Type: "date", Default: "2023-03-15"},
 			{Name: "TimeField", Type: "time", Default: "11:43:04.058"},
 			{Name: "DateTimeField", Type: "datetime", 
-				Default: "2023-03-15T11:43:04.058"},
+				Default: timeutils.NewTime(time.Now(), timeutils.RFC3339)},
 		},
 	}
+
+	// shortcut
+	repoId := dummySchema.RepositoryId
+
+	writeSchemaResponse := func(w http.ResponseWriter) {
+		data, _ := json.Marshal(SchemaResponse{dummySchema})
+		envelope := CustodiaEnvelope{
+			Result: "success",
+			ResultCode: 200,
+			Message: nil,
+			Data: data,
+		}
+		out, _ := json.Marshal(envelope)
+
+		w.WriteHeader(http.StatusOK)
+		w.Write(out)
+	}
+
+	// mock calls
+	mockHandler := func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == fmt.Sprintf("/api/v1/repositories/%s/schemas", 
+			repoId) && r.Method == "POST" {
+			// test CREATE
+			writeSchemaResponse(w)
+		} else {
+			err := `{"result": "error", "result_code": 404, "data": null, `
+			err += `"message": "Resource not found (you may have a '/' at `
+			err += `the end)"}`
+			w.WriteHeader(http.StatusNotFound)
+			w.Write([]byte(err))
+		}
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(mockHandler))
+	defer server.Close()
+
+	auth := common.NewClientAuth()  // auth is tested elsewhere
+	client := common.NewClient(server.URL, auth)
+	custodia := NewCustodiaAPIv1(client)
+
+	// test CREATE
+	structure := []SchemaField{}
+	schema, err := custodia.CreateSchema(repoId, "unittest", true, structure)
+
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	} else if schema != nil {
+		if (*schema).RepositoryId != repoId {
+			t.Errorf("bad RepositoryId, got: %v want: %v", 
+				schema.RepositoryId, repoId)
+		}
+		// FIXME
+
+	}
+
+
+
+
+
 
 }
