@@ -12,8 +12,8 @@ import (
 )
 
 
-func TestRepositoryCRUD(t *testing.T) {
-	// ResponseInnerRepository will be added to RepoResponse
+func TestRepositoryCRUDL(t *testing.T) {
+	// ResponseInnerRepository will be included in responses
 	type ResponseInnerRepository struct {
 		RepositoryId string `json:"repository_id"`
 		Description string `json:"description"`
@@ -217,4 +217,52 @@ func TestRepositoryCRUD(t *testing.T) {
 		t.Errorf("bad repository id, got: %v want: %v", 
 			dummyRepository.RepositoryId, repos[0].RepositoryId)
 	}
+}
+
+func TestSchemaCRUDL(t *testing.T) {
+	// ResponseInnerSchema will be included in responses
+	type ResponseInnerSchema struct {
+		SchemaId string `json:"schema_id"`
+		RepositoryId string `json:"repository_id"`
+		Description string `json:"description"`
+		InsertDate string `json:"insert_date"`
+		LastUpdate string `json:"last_update"`
+		IsActive bool `json:"is_active"`
+		Structure []SchemaField `json:"structure"`
+	}
+
+	// SchemaResponse will be marshalled to create an API-like response
+	type SchemaResponse struct {
+		Schema ResponseInnerSchema `json:"schema"`
+	}
+
+	// SchemasResponse will be marshalled to create an API-like response
+	type SchemasResponse struct {
+		Count int `json:"count"`
+		TotalCount int `json:"total_count"`
+		Limit int `json:"limit"`
+		Offset int `json:"offset"`
+		Schemas []ResponseInnerSchema `json:"schemas"`
+	}
+
+	// init stuff
+	dummySchema := ResponseInnerSchema{
+		SchemaId: uuid.New().String(),
+		RepositoryId: uuid.New().String(),
+		Description: "unittest",
+		InsertDate: "2015-02-24T21:48:16.332",
+		LastUpdate: "2015-02-24T21:48:16.332",
+		IsActive: false,
+		Structure: []SchemaField{
+			{Name: "IntField", Type: "integer", Indexed: true},
+			{Name: "StrField", Type: "string", Indexed: true, Default: "asd"},
+			{Name: "FloatField", Type: "float", Indexed: false, Default: 3.14},
+			{Name: "BoolField", Type: "bool", Indexed: false},
+			{Name: "DateField", Type: "date", Default: "2023-03-15"},
+			{Name: "TimeField", Type: "time", Default: "11:43:04.058"},
+			{Name: "DateTimeField", Type: "datetime", 
+				Default: "2023-03-15T11:43:04.058"},
+		},
+	}
+
 }

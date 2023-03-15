@@ -23,7 +23,7 @@ type Schema struct {
 	InsertDate timeutils.Time `json:"insert_date"`
 	LastUpdate timeutils.Time `json:"last_update"`
 	IsActive bool `json:"is_active"`
-	Structure []SchemaField
+	Structure []SchemaField `json:"structure"`
 }
 
 type SchemaEnvelope struct {
