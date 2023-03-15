@@ -142,7 +142,7 @@ func TestRepositoryCRUD(t *testing.T) {
 	}
 
 	// test READ
-	repo, err = custodia.GetRepository(dummyRepository.RepositoryId)
+	repo, err = custodia.ReadRepository(dummyRepository.RepositoryId)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	} else if repo != nil {

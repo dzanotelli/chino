@@ -58,7 +58,7 @@ func (ca *CustodiaAPIv1) CreateSchema(r Repository, descritpion string,
 }
 
 // [R]ead an existent schema
-func (ca *CustodiaAPIv1) GetSchema(id string) (*Schema, error) {
+func (ca *CustodiaAPIv1) ReadSchema(id string) (*Schema, error) {
 	if !common.IsValidUUID(id) {
 		return nil, errors.New("id is not a valid UUID: " + id)
 	}
@@ -77,13 +77,69 @@ func (ca *CustodiaAPIv1) GetSchema(id string) (*Schema, error) {
 	return schemaEnvelope.Schema, nil
 }
 
-// // [U]pdate an existent schema
-// func (ca *CustodiaAPIv1) UpdateSchema(schema *Schema, description string,
-// 	isActive bool, structure []SchemaField) {
-// 		url := fmt.Sprintf("/schemas/%s", (*schema).SchemaId)
+// [U]pdate an existent schema
+func (ca *CustodiaAPIv1) UpdateSchema(schema *Schema, description string,
+	isActive bool, structure []SchemaField) (*Schema, error) {
+		url := fmt.Sprintf("/schemas/%s", (*schema).SchemaId)
 
-// 		// get a copy and update the values, so we can easily marshal it
-// 		structure :=
-// 		copy := *schema
-// 		copy.Structure
-// 	}
+		// get a copy and update the values, so we can easily marshal it
+		
+		// copying the struct is not necessary since we re-assign it, so the
+		// one passed to the func is already a copy
+		// structCopy := make([]SchemaField, len(schema.Structure))
+		// copy(structCopy, schema.Structure)
+		copy := *schema
+		copy.Description = description
+		copy.IsActive = isActive
+		copy.Structure = structure
+		data, err := json.Marshal(copy)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := ca.Call("PUT", url, string(data))
+		if err != nil {
+			return nil, err
+		}
+
+		// JSON: unmarshal resp content overwriting the old repository
+		schemaEnvelope := SchemaEnvelope{}
+		if err := json.Unmarshal([]byte(resp), &schemaEnvelope); err != nil {
+			return nil, err
+		}
+		return schemaEnvelope.Schema, nil
+}
+
+// [D]elete and existent schema
+func (ca *CustodiaAPIv1) DeleteSchema(schema *Schema) (error) {
+	url := fmt.Sprintf("/schemas/%s", (*schema).SchemaId)
+	_, err := ca.Call("DELETE", url)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// [L]ist all the schemas in a repository
+func (ca *CustodiaAPIv1) ListSchemas(repositoryId string) ([]*Schema, error) {
+	if !common.IsValidUUID(repositoryId) {
+		return nil, errors.New("repositoryId is not a valid UUID: " +
+			repositoryId)
+	}
+	url := fmt.Sprintf("/repositories/%s/schemas", repositoryId)
+	resp, err := ca.Call("GET", url)
+	if err != nil {
+		return nil, err
+	}
+
+	// JSON: unmarshal resp content
+	schemasEnvelope := SchemasEnvelope{}
+	if err := json.Unmarshal([]byte(resp), &schemasEnvelope); err != nil {
+		return nil, err
+	}
+
+	result := []*Schema{}
+	for _, schema := range schemasEnvelope.Schemas {
+		result = append(result, &schema)
+	}
+	return result, nil
+}

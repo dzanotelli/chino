@@ -51,7 +51,7 @@ func (ca *CustodiaAPIv1) CreateRepository(description string, isActive bool) (
 }
 
 // [R]ead an existent repository
-func (ca *CustodiaAPIv1) GetRepository(id string) (*Repository, error) {
+func (ca *CustodiaAPIv1) ReadRepository(id string) (*Repository, error) {
 	if !common.IsValidUUID(id) {
 		return nil, errors.New("id is not a valid UUID: " + id)
 	}
@@ -124,7 +124,6 @@ func (ca *CustodiaAPIv1) ListRepositories() ([]*Repository, error) {
 	for _, repo := range reposEnvelope.Repositories {
 		result = append(result, &repo)
 	}
-
 	return result, nil
 }
 
