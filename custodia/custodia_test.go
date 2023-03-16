@@ -199,7 +199,7 @@ func TestRepositoryCRUDL(t *testing.T) {
     }
     
     // test DELETE
-    err = custodia.DeleteRepository(repo)
+    err = custodia.DeleteRepository(repo, true)
     if err != nil {
         t.Errorf("error while deleting repository. Details: %v", err)
     }
@@ -452,7 +452,7 @@ func TestSchemaCRUDL(t *testing.T) {
     }
     
     // test DELETE
-    err = custodia.DeleteSchema(schema)
+    err = custodia.DeleteSchema(schema, true, true)
     if err != nil {
         t.Errorf("error while listing schemas. Details: %v", err)
     }

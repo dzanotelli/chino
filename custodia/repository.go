@@ -98,8 +98,13 @@ func (ca *CustodiaAPIv1) UpdateRepository(repository *Repository,
 }
 
 // [D]elete an existent repository
-func (ca *CustodiaAPIv1) DeleteRepository(repository *Repository) (error) {
+// if force=true recursively deletes all the repository content, else the
+// repository is just deactivated
+func (ca *CustodiaAPIv1) DeleteRepository(repository *Repository, force bool) (
+	error) {
 	url := fmt.Sprintf("/repositories/%s", repository.RepositoryId)
+	url += fmt.Sprintf("?force=%v", force)
+
 	_, err := ca.Call("DELETE", url)
 	if err != nil {
 		return err

@@ -144,8 +144,20 @@ func (ca *CustodiaAPIv1) UpdateSchema(schema *Schema, description string,
 }
 
 // [D]elete and existent schema
-func (ca *CustodiaAPIv1) DeleteSchema(schema *Schema) (error) {
+// if force=true the schema is deleted, else it's just deactivated
+// if all_content=true the schema content is deleted too (it also sets 
+// automatically force=true)
+func (ca *CustodiaAPIv1) DeleteSchema(schema *Schema, force, allContent bool) (
+	error) {
 	url := fmt.Sprintf("/schemas/%s", (*schema).SchemaId)
+
+	// allContent requires force=true
+	if allContent {
+		url += "?force=true&all_content=true"
+	} else if force {
+		url += "?force=true"
+	}
+
 	_, err := ca.Call("DELETE", url)
 	if err != nil {
 		return err
