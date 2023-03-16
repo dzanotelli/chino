@@ -62,28 +62,27 @@ func TestRepositoryCRUDL(t *testing.T) {
     // mock calls
     mockHandler := func(w http.ResponseWriter, r *http.Request) {
         if r.URL.Path == "/api/v1/repositories" && r.Method == "POST" {
-            // test CREATE
+            // mock CREATE response
             writeRepoResponse(w)
         } else if r.URL.Path == fmt.Sprintf("/api/v1/repositories/%s", 
             dummyRepository.RepositoryId) && r.Method == "GET" {
-            // test READ
+            // mock READ response
             writeRepoResponse(w)
         } else if r.URL.Path == fmt.Sprintf("/api/v1/repositories/%s", 
             dummyRepository.RepositoryId) && r.Method == "PUT" {
-            // test UPDATE
+            // mock UPDATE response
             dummyRepository.Description = "changed"
             dummyRepository.IsActive = false
             writeRepoResponse(w)
         } else if r.URL.Path == fmt.Sprintf("/api/v1/repositories/%s", 
             dummyRepository.RepositoryId) && r.Method == "DELETE" {
-            // test DELETE
-            w.WriteHeader(http.StatusOK)
+            // mock DELETE response
             envelope := CustodiaEnvelope{Result: "success", ResultCode: 200}
             out, _ := json.Marshal(envelope)
             w.WriteHeader(http.StatusOK)			
             w.Write(out)
         } else if r.URL.Path == "/api/v1/repositories" && r.Method == "GET" {
-            // test LIST
+            // mock LIST response
             repositoriesResp := ReposResponse {
                 Count: 1,
                 TotalCount: 1,
@@ -286,8 +285,41 @@ func TestSchemaCRUDL(t *testing.T) {
     mockHandler := func(w http.ResponseWriter, r *http.Request) {
         if r.URL.Path == fmt.Sprintf("/api/v1/repositories/%s/schemas", 
             repoId) && r.Method == "POST" {
-            // test CREATE
+            // mock CREATE response
             writeSchemaResponse(w)
+        } else if r.URL.Path == fmt.Sprintf("/api/v1/schemas/%s", 
+            dummySchema.SchemaId) && r.Method == "GET" {
+            // mock READ response
+            writeSchemaResponse(w)
+        } else if r.URL.Path == fmt.Sprintf("/api/v1/schemas/%s", 
+            dummySchema.SchemaId) && r.Method == "PUT" {
+            // mock UPDATE response
+            dummySchema.Description = "changed"
+            dummySchema.Structure[0].Default = 21    
+            writeSchemaResponse(w)
+        } else if r.URL.Path == fmt.Sprintf("/api/v1/schemas/%s", 
+            dummySchema.SchemaId) && r.Method == "DELETE" {
+            // mock DELETE response
+            envelope := CustodiaEnvelope{Result: "success", ResultCode: 200}
+            out, _ := json.Marshal(envelope)
+            w.WriteHeader(http.StatusOK)
+            w.Write(out)
+        } else if r.URL.Path == fmt.Sprintf("/api/v1/repositories/%s/schemas", 
+            repoId) &&  r.Method == "GET" {
+            // mock LIST response
+            schemasResp := SchemasResponse{
+                Count: 1,
+                TotalCount: 1,
+                Limit: 100,
+                Offset: 0,
+                Schemas: []ResponseInnerSchema{dummySchema},
+            }
+            data, _ := json.Marshal(schemasResp)
+            envelope := CustodiaEnvelope{Result: "success", ResultCode: 200}
+            envelope.Data = data
+            out, _ := json.Marshal(envelope)
+            w.WriteHeader(http.StatusOK)
+            w.Write(out)
         } else {
             err := `{"result": "error", "result_code": 404, "data": null, `
             err += `"message": "Resource not found (you may have a '/' at `
@@ -345,12 +377,96 @@ func TestSchemaCRUDL(t *testing.T) {
         t.Errorf("unexpected: both schema and error are nil!")
     }
     
+    // test READ
+    if err != nil {
+        t.Errorf("unexpected error: %v", err)
+    } else if schema != nil {
+        if (*schema).RepositoryId != repoId {
+            t.Errorf("bad RepositoryId, got: %v want: %v", 
+                schema.RepositoryId, repoId)
+        }
+        if (*schema).Description != dummySchema.Description {
+            t.Errorf("bad Description, got: %v want: %s", 
+                     schema.Description,
+                     dummySchema.Description)
+        }
+        if (*schema).InsertDate.Year() != 2015 {
+            t.Errorf("bad insert_date year, got: %v want: 2015", 
+                (*schema).InsertDate.Year())
+        }
+        if (*schema).LastUpdate.Year() != 2015 {
+            t.Errorf("bad last_update year, got: %v want: 2015", 
+                (*schema).InsertDate.Year())			
+        }
+        if (*schema).IsActive != false {
+            t.Errorf("bad isActive, got: %v want: false", (*schema).IsActive)
+        }
 
+        expectedFields := dummySchema.Structure        
+        for i, want := range expectedFields {
+            got := schema.Structure[i]
+            if want != got {
+                t.Errorf("bad field received, got: %v want: %v", got, want)
+            }
+        }
+    } else {
+        t.Errorf("unexpected: both schema and error are nil!")
+    }
+
+    // test UPDATE
+    schema, err = custodia.UpdateSchema(schema, "changed", true, structure)
+
+    if err != nil {
+        t.Errorf("unexpected error: %v", err)
+    } else if schema != nil {
+        if (*schema).RepositoryId != repoId {
+            t.Errorf("bad RepositoryId, got: %v want: %v", 
+                schema.RepositoryId, repoId)
+        }
+        if (*schema).Description != dummySchema.Description {
+            t.Errorf("bad Description, got: %v want: %s", 
+                     schema.Description,
+                     dummySchema.Description)
+        }
+        if (*schema).InsertDate.Year() != 2015 {
+            t.Errorf("bad insert_date year, got: %v want: 2015", 
+                (*schema).InsertDate.Year())
+        }
+        if (*schema).LastUpdate.Year() != 2015 {
+            t.Errorf("bad last_update year, got: %v want: 2015", 
+                (*schema).InsertDate.Year())			
+        }
+        if (*schema).IsActive != false {
+            t.Errorf("bad isActive, got: %v want: false", (*schema).IsActive)
+        }
+
+        expectedFields := dummySchema.Structure        
+        for i, want := range expectedFields {
+            got := schema.Structure[i]
+            if want != got {
+                t.Errorf("bad field received, got: %v want: %v", got, want)
+            }
+        }
+    } else {
+        t.Errorf("unexpected: both schema and error are nil!")
+    }
     
+    // test DELETE
+    err = custodia.DeleteSchema(schema)
+    if err != nil {
+        t.Errorf("error while listing schemas. Details: %v", err)
+    }
 
-
-
-
-
-
+    // test LIST
+    schemas, err := custodia.ListSchemas(repoId)
+    if err != nil {
+        t.Errorf("error while listing schemas. Details: %v", err)
+    }
+    if len(schemas) != 1 {
+        t.Errorf("bad schemas lenght, got: %v want: 1", len(schemas))
+    }
+    if schemas[0].SchemaId != dummySchema.SchemaId {
+        t.Errorf("bad schema id, got: %v want: %v", 
+        dummySchema.SchemaId, schemas[0].SchemaId)
+    }
 }
