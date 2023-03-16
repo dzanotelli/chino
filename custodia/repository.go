@@ -51,7 +51,7 @@ func (ca *CustodiaAPIv1) CreateRepository(description string, isActive bool) (
 }
 
 // [R]ead an existent repository
-func (ca *CustodiaAPIv1) GetRepository(id string) (*Repository, error) {
+func (ca *CustodiaAPIv1) ReadRepository(id string) (*Repository, error) {
 	if !common.IsValidUUID(id) {
 		return nil, errors.New("id is not a valid UUID: " + id)
 	}
@@ -98,8 +98,13 @@ func (ca *CustodiaAPIv1) UpdateRepository(repository *Repository,
 }
 
 // [D]elete an existent repository
-func (ca *CustodiaAPIv1) DeleteRepository(repository *Repository) (error) {
+// if force=true recursively deletes all the repository content, else the
+// repository is just deactivated
+func (ca *CustodiaAPIv1) DeleteRepository(repository *Repository, force bool) (
+	error) {
 	url := fmt.Sprintf("/repositories/%s", repository.RepositoryId)
+	url += fmt.Sprintf("?force=%v", force)
+
 	_, err := ca.Call("DELETE", url)
 	if err != nil {
 		return err
@@ -124,7 +129,6 @@ func (ca *CustodiaAPIv1) ListRepositories() ([]*Repository, error) {
 	for _, repo := range reposEnvelope.Repositories {
 		result = append(result, &repo)
 	}
-
 	return result, nil
 }
 
