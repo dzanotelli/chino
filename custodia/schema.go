@@ -34,6 +34,28 @@ type SchemasEnvelope struct {
 	Schemas []Schema `json:"schemas"`
 }
 
+// adjustDefaultType fixes the automatic interface-to-type conversion done
+// by json.Unmarshal to the desired type (e.g. json int values are
+// automatically converted to float and we want int instead)
+func (f *SchemaField) adjustDefaultType() {
+	if f.Default == nil {
+		return
+	}
+
+	switch f.Type {
+	case "integer":
+		floatVal, _ := f.Default.(float64)
+		f.Default = int(floatVal)
+	}
+}
+
+// adjustDefaultTypes for each field calls adjustDefaultType
+func (s *Schema) adjustDefaultTypes() {
+	for i := range s.Structure {
+		s.Structure[i].adjustDefaultType()
+	}
+}
+
 // [C]reate a new schema
 func (ca *CustodiaAPIv1) CreateSchema(repositoryId string, descritpion string, 
 	isActive bool, fields []SchemaField) (*Schema, error) {
@@ -60,6 +82,7 @@ func (ca *CustodiaAPIv1) CreateSchema(repositoryId string, descritpion string,
 	if err := json.Unmarshal([]byte(resp), &schemaEnvelope); err != nil {
 		return nil, err
 	}
+	schemaEnvelope.Schema.adjustDefaultTypes()
 
 	return schemaEnvelope.Schema, nil
 }
@@ -81,6 +104,8 @@ func (ca *CustodiaAPIv1) ReadSchema(id string) (*Schema, error) {
 	if err := json.Unmarshal([]byte(resp), &schemaEnvelope); err != nil {
 		return nil, err
 	}
+	schemaEnvelope.Schema.adjustDefaultTypes()
+
 	return schemaEnvelope.Schema, nil
 }
 
@@ -113,6 +138,8 @@ func (ca *CustodiaAPIv1) UpdateSchema(schema *Schema, description string,
 		if err := json.Unmarshal([]byte(resp), &schemaEnvelope); err != nil {
 			return nil, err
 		}
+		schemaEnvelope.Schema.adjustDefaultTypes()
+
 		return schemaEnvelope.Schema, nil
 }
 
@@ -147,6 +174,8 @@ func (ca *CustodiaAPIv1) ListSchemas(repositoryId string) ([]*Schema, error) {
 	result := []*Schema{}
 	for _, schema := range schemasEnvelope.Schemas {
 		result = append(result, &schema)
+		schema.adjustDefaultTypes()
 	}
+
 	return result, nil
 }
