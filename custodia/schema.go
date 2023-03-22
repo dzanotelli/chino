@@ -57,21 +57,26 @@ func (s *Schema) adjustDefaultTypes() {
 }
 
 // [C]reate a new schema
-func (ca *CustodiaAPIv1) CreateSchema(repositoryId string, descritpion string, 
+func (ca *CustodiaAPIv1) CreateSchema(repository *Repository, descritpion string, 
 	isActive bool, fields []SchemaField) (*Schema, error) {
-	if !common.IsValidUUID(repositoryId) {
-		return nil, errors.New("repositoryId is not a valid UUID: " +
-			repositoryId)
+	if repository.RepositoryId == "" {
+		return nil, fmt.Errorf("repository has no RepositoryId, " + 
+			"does it exist?")
+	} else if !common.IsValidUUID(repository.RepositoryId) {
+		return nil, fmt.Errorf("RepositoryId is not a valid UUID: %s (it " +
+			"should not be manually set)", repository.RepositoryId)
 	}
+
+	// FIXME: missing field type validation, and indexed property validation
 	
-	schema := Schema{RepositoryId: repositoryId, Description: descritpion,
-		Structure: fields, IsActive: isActive}
+	schema := Schema{RepositoryId: repository.RepositoryId, 
+		Description: descritpion, Structure: fields, IsActive: isActive}
 	data, err := json.Marshal(schema)
 	if err != nil {
 		return nil, err
 	}
 
-	url := fmt.Sprintf("/repositories/%s/schemas", repositoryId)
+	url := fmt.Sprintf("/repositories/%s/schemas", repository.RepositoryId)
 	resp, err := ca.Call("POST", url, string(data))
 	if err != nil {
 		return nil, err
@@ -190,4 +195,14 @@ func (ca *CustodiaAPIv1) ListSchemas(repositoryId string) ([]*Schema, error) {
 	}
 
 	return result, nil
+}
+
+// getStructureAsMap returns the list of fields in a map using the Name
+// as key for quick access
+func (s *Schema) getStructureAsMap() map[string]SchemaField {
+	result := make(map[string]SchemaField)
+	for _, field := range s.Structure {
+		result[field.Name] = field
+	}
+	return result
 }

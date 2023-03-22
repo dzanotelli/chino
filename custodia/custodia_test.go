@@ -340,7 +340,9 @@ func TestSchemaCRUDL(t *testing.T) {
     // and we will still get a working structure. The purpose here is to test
     // that the received data are correctly populating the objects
     structure := []SchemaField{}
-    schema, err := custodia.CreateSchema(repoId, "unittest", true, structure)
+    // we init a Repository with just the right id, don't need other data
+    repo := Repository{RepositoryId: dummySchema.RepositoryId}
+    schema, err := custodia.CreateSchema(&repo, "unittest", true, structure)
 
     if err != nil {
         t.Errorf("unexpected error: %v", err)
