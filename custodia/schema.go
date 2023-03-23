@@ -68,6 +68,7 @@ func (ca *CustodiaAPIv1) CreateSchema(repository *Repository, descritpion string
 	}
 
 	// FIXME: missing field type validation, and indexed property validation
+	//   and insensitive property
 	
 	schema := Schema{RepositoryId: repository.RepositoryId, 
 		Description: descritpion, Structure: fields, IsActive: isActive}
