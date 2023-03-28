@@ -1,6 +1,7 @@
 package custodia
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/dzanotelli/chino/common"
@@ -15,7 +16,7 @@ type Document struct {
 	InsertDate timeutils.Time `json:"insert_date"`
 	LastUpdate timeutils.Time `json:"last_update"`
 	IsActive bool `json:"is_active"`
-	Content  map[string]interface{} `json:"content"`
+	Content  map[string]interface{} `json:"content,omitempty"`
 }
 
 type DocumentEnvelope struct {
@@ -37,7 +38,6 @@ func (ca *CustodiaAPIv1) CreateDocument(schema *Schema, isActive bool,
 	}
 
 	// validate document content
-
 	errors := validateContent(content, schema.getStructureAsMap())
 	if len(errors) > 0 {
 		err := fmt.Errorf("content validation failed: ")
@@ -49,5 +49,23 @@ func (ca *CustodiaAPIv1) CreateDocument(schema *Schema, isActive bool,
 	}
 
 	doc := Document{IsActive: isActive, Content: content}
-	return &doc, nil
+	data, err := json.Marshal(doc)
+	if err != nil {
+		return nil, err
+	}
+
+	url := fmt.Sprintf("/schemas/%s/documents", schema.SchemaId)
+	resp, err := ca.Call("POST", url, string(data))
+	if err != nil {
+		return nil, err
+	}
+	// JSON: unmarshal resp content
+	docEnvelope := DocumentEnvelope{}
+	if err := json.Unmarshal([]byte(resp), &docEnvelope); err != nil {
+		return nil, err
+	}
+
+	// FIXME: add the content or not?
+	docEnvelope.Document.Content = content
+	return docEnvelope.Document, nil
 }

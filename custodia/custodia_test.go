@@ -351,6 +351,10 @@ func TestSchemaCRUDL(t *testing.T) {
             t.Errorf("bad RepositoryId, got: %v want: %v", 
                 schema.RepositoryId, repoId)
         }
+        if (*schema).SchemaId != dummySchema.SchemaId {
+            t.Errorf("bad SchemaId, got: %v want: %v", 
+                schema.SchemaId, dummySchema.SchemaId)
+        }
         if (*schema).Description != dummySchema.Description {
             t.Errorf("bad Description, got: %v want: %s", 
                      schema.Description,
@@ -471,4 +475,128 @@ func TestSchemaCRUDL(t *testing.T) {
         t.Errorf("bad schema id, got: %v want: %v", 
         dummySchema.SchemaId, schemas[0].SchemaId)
     }
+}
+
+func TestDocumentCRUDL(t *testing.T) {
+    // ResponseInnerDocument will be included in responses
+    type ResponseInnerDocument struct {
+        DocumentId string `json:"document_id"`
+        SchemaId string `json:"schema_id"`
+        RepositoryId string `json:"repository_id"`
+        InsertDate string `json:"insert_date"`
+        LastUpdate string `json:"last_update"`
+        IsActive bool `json:"is_active"`
+        Content map[string]interface{} `json:"content,omitempty"`
+    }
+
+    // DocumentResponse will be marshalled to create and API-like response
+    type DocumentResponse struct {
+        Document ResponseInnerDocument `json:"document"`        
+    }
+
+    // DocumentsResponse will be marshalled to crete an API-like response
+    type DocumentsResponse struct {
+        Count int `json:"count"`
+        TotalCount int `json:"total_count"`
+        Limit int `json:"limit"`
+        Offset int `json:"offset"`
+        Documents []ResponseInnerDocument `json:"documents"`
+    }
+
+    // init stuff
+    dummyDoc := ResponseInnerDocument{
+        DocumentId: uuid.New().String(),
+        SchemaId: uuid.New().String(),
+        RepositoryId: uuid.New().String(),
+        InsertDate: "2015-02-24T21:48:16.332",
+        LastUpdate: "2015-02-24T21:48:16.332",
+        IsActive: false,
+    }
+    // this can be added to dummyDoc later
+    // dummyContent := map[string]interface{}{
+    //     "intField": 42,
+    //     "strField": "antani",
+    // }
+
+    // shortcuts
+    schemaId := dummyDoc.SchemaId
+    // docId := dummyDoc.DocumentId
+
+    writeDocResponse := func(w http.ResponseWriter) {
+        data, _ := json.Marshal(DocumentResponse{dummyDoc})
+        envelope := CustodiaEnvelope{
+            Result: "success",
+            ResultCode: 200,
+            Message: nil,
+            Data: data,
+        }
+        out, _ := json.Marshal(envelope)
+
+        w.WriteHeader(http.StatusOK)
+        w.Write(out)
+    }
+
+    // mock calls
+    mockHandler := func(w http.ResponseWriter, r *http.Request) {
+        if r.URL.Path == fmt.Sprintf("/api/v1/schemas/%s/documents", 
+            schemaId) && r.Method == "POST" {
+            // mock CREATE response
+            writeDocResponse(w)
+        } else {
+            err := `{"result": "error", "result_code": 404, "data": null, `
+            err += `"message": "Resource not found (you may have a '/' at `
+            err += `the end)"}`
+            w.WriteHeader(http.StatusNotFound)
+            w.Write([]byte(err))
+        }
+    }
+
+    server := httptest.NewServer(http.HandlerFunc(mockHandler))
+    defer server.Close()
+
+    auth := common.NewClientAuth()  // auth is tested elsewhere
+    client := common.NewClient(server.URL, auth)
+    custodia := NewCustodiaAPIv1(client)
+
+    // test CREATE: we submit no content, since the response is mocked
+    // we init instead a Schema with just the right ids
+    schema := Schema{
+        RepositoryId: dummyDoc.RepositoryId, 
+        SchemaId: dummyDoc.SchemaId,
+    }
+    content := map[string]interface{}{}
+    document, err := custodia.CreateDocument(&schema, false, content)
+
+    if err != nil {
+        t.Errorf("unexpected error: %v", err)
+    } else if document != nil {
+        if (*document).RepositoryId != dummyDoc.RepositoryId {
+            t.Errorf("bad RepositoryId, got: %v want: %v", 
+            document.RepositoryId, dummyDoc.RepositoryId)
+        }        
+        if (*document).SchemaId != dummyDoc.SchemaId {
+            t.Errorf("bad SchemaId, got: %v want: %v", 
+            document.SchemaId, dummyDoc.SchemaId)
+        }
+        if (*document).DocumentId != dummyDoc.DocumentId {
+            t.Errorf("bad DocumentId, got: %v want: %v", 
+            document.DocumentId, dummyDoc.DocumentId)
+        }
+        if (*document).InsertDate.Year() != 2015 {
+            t.Errorf("bad insert_date year, got: %v want: 2015", 
+                (*document).InsertDate.Year())
+        }
+        if (*document).LastUpdate.Year() != 2015 {
+            t.Errorf("bad last_update year, got: %v want: 2015", 
+                (*document).InsertDate.Year())			
+        }
+        if (*document).IsActive != false {
+            t.Errorf("bad isActive, got: %v want: false", (*document).IsActive)
+        }
+
+
+    } else {
+        t.Errorf("unexpected: both document and error are nil!")
+    }
+
 }
