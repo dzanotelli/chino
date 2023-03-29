@@ -139,7 +139,7 @@ func (ca *CustodiaAPIv1) UpdateSchema(schema *Schema, description string,
 			return nil, err
 		}
 
-		// JSON: unmarshal resp content overwriting the old repository
+		// JSON: unmarshal resp content overwriting the old schema
 		schemaEnvelope := SchemaEnvelope{}
 		if err := json.Unmarshal([]byte(resp), &schemaEnvelope); err != nil {
 			return nil, err

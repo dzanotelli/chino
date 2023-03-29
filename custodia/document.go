@@ -2,6 +2,7 @@ package custodia
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/dzanotelli/chino/common"
@@ -13,8 +14,8 @@ type Document struct {
 	DocumentId string `json:"document_id,omitempty"`
 	SchemaId string `json:"schema_id,omitempty"`
 	RepositoryId string `json:"repository_id,omitempty"`
-	InsertDate timeutils.Time `json:"insert_date"`
-	LastUpdate timeutils.Time `json:"last_update"`
+	InsertDate timeutils.Time `json:"insert_date,omitempty"`
+	LastUpdate timeutils.Time `json:"last_update,omitempty"`
 	IsActive bool `json:"is_active"`
 	Content  map[string]interface{} `json:"content,omitempty"`
 }
@@ -24,7 +25,7 @@ type DocumentEnvelope struct {
 }
 
 type DocumentsEnvelope struct {
-	Document []Document `json:"documents"`
+	Document []Document `json:"documen// get a copy and update the values, so we can easily marshal itts"`
 }
 
 // [C]reate a new document
@@ -64,8 +65,62 @@ func (ca *CustodiaAPIv1) CreateDocument(schema *Schema, isActive bool,
 	if err := json.Unmarshal([]byte(resp), &docEnvelope); err != nil {
 		return nil, err
 	}
-
-	// FIXME: add the content or not?
+	
+	// if everything is ok, we can safely set the given content as the
+	// returned document content, since the API doesn't return it
 	docEnvelope.Document.Content = content
+
+	return docEnvelope.Document, nil
+}
+
+// [R]ead an existent document
+func (ca *CustodiaAPIv1) ReadDocument(id string) (*Document, error) {
+	if !common.IsValidUUID(id) {
+		return nil, errors.New("id is not a valid UUID: " + id)
+	}
+
+	url := fmt.Sprintf("/documents/%s", id)
+	resp, err := ca.Call("GET", url)
+	if err != nil {
+		return nil, err
+	}
+
+	// JSON: unmarshal resp content
+	docEnvelope := DocumentEnvelope{}
+	if err := json.Unmarshal([]byte(resp), &docEnvelope); err != nil {
+		return nil, err
+	}
+
+	return docEnvelope.Document, nil
+}
+
+
+// [U]pdate an existent document
+func (ca *CustodiaAPIv1) UpdateDocument(document *Document, isActive bool, 
+	content map[string]interface{}) (*Document, error) {
+	url := fmt.Sprintf("/documents/%s", document.DocumentId)
+
+	// FIXME: TBD: pass documentId or a Document with modified data ?
+	//   Maybe we can keep this with documentId and implement a method
+	//   Document.save() which handles both create and update
+
+	// create a doc with just the values we can send, and we marshal it
+	doc := Document{IsActive: isActive, Content: content}
+	data, err := json.Marshal(doc)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := ca.Call("PUT", url, string(data))
+	if err != nil {
+		return nil, err
+	}
+
+	// JSON: unmarshal resp content overwriting the old document
+	docEnvelope := DocumentEnvelope{}
+	if err := json.Unmarshal([]byte(resp), &docEnvelope); err != nil {
+		return nil, err
+	}
+
+	// PUT call returns the whole documents, along with its content
 	return docEnvelope.Document, nil
 }
