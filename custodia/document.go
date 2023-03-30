@@ -25,7 +25,7 @@ type DocumentEnvelope struct {
 }
 
 type DocumentsEnvelope struct {
-	Document []Document `json:"documen// get a copy and update the values, so we can easily marshal itts"`
+	Document []Document `json:"document"`
 }
 
 // [C]reate a new document
@@ -94,17 +94,16 @@ func (ca *CustodiaAPIv1) ReadDocument(id string) (*Document, error) {
 	return docEnvelope.Document, nil
 }
 
-
 // [U]pdate an existent document
-func (ca *CustodiaAPIv1) UpdateDocument(document *Document, isActive bool, 
+func (ca *CustodiaAPIv1) UpdateDocument(id string , isActive bool, 
 	content map[string]interface{}) (*Document, error) {
-	url := fmt.Sprintf("/documents/%s", document.DocumentId)
+		if !common.IsValidUUID(id) {
+			return nil, errors.New("id is not a valid UUID: " + id)
+		}	
+	
+	url := fmt.Sprintf("/documents/%s", id)
 
-	// FIXME: TBD: pass documentId or a Document with modified data ?
-	//   Maybe we can keep this with documentId and implement a method
-	//   Document.save() which handles both create and update
-
-	// create a doc with just the values we can send, and we marshal it
+	// create a doc with just the values we can send, and marshal it
 	doc := Document{IsActive: isActive, Content: content}
 	data, err := json.Marshal(doc)
 	if err != nil {

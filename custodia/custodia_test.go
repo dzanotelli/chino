@@ -170,7 +170,7 @@ func TestRepositoryCRUDL(t *testing.T) {
     }
 
     // test UPDATE
-    repo, err = custodia.UpdateRepository(repo, "changed", false)
+    repo, err = custodia.UpdateRepository(repo.RepositoryId, "changed", false)
     if err != nil {
         t.Errorf("unexpected error: %v", err)
     } else if repo != nil {
@@ -199,7 +199,7 @@ func TestRepositoryCRUDL(t *testing.T) {
     }
     
     // test DELETE
-    err = custodia.DeleteRepository(repo, true)
+    err = custodia.DeleteRepository(repo.RepositoryId, true)
     if err != nil {
         t.Errorf("error while deleting repository. Details: %v", err)
     }
@@ -420,7 +420,8 @@ func TestSchemaCRUDL(t *testing.T) {
     }
 
     // test UPDATE
-    schema, err = custodia.UpdateSchema(schema, "changed", true, structure)
+    schema, err = custodia.UpdateSchema(schema.SchemaId, "changed", true, 
+        structure)
 
     if err != nil {
         t.Errorf("unexpected error: %v", err)
@@ -458,7 +459,7 @@ func TestSchemaCRUDL(t *testing.T) {
     }
     
     // test DELETE
-    err = custodia.DeleteSchema(schema, true, true)
+    err = custodia.DeleteSchema(schema.SchemaId, true, true)
     if err != nil {
         t.Errorf("error while listing schemas. Details: %v", err)
     }
@@ -513,14 +514,26 @@ func TestDocumentCRUDL(t *testing.T) {
         IsActive: false,
     }
     // this can be added to dummyDoc later
-    // dummyContent := map[string]interface{}{
-    //     "intField": 42,
-    //     "strField": "antani",
-    // }
+    dummyContent := map[string]interface{}{
+        "integerField": 42,
+        "flaotField": 3.14,
+        "stringField": "antani",
+        "textField": "this is not a very long string, but should be",
+        "boolField": true,
+        "date": "1970-01-01",
+        "time": "00:01:30",
+        "datetime": "1970-01-01T00:01:30",
+        "base64": "VGhpcyBpcyBhIGJhc2UtNjQgZW5jb2RlZCBzdHJpbmcu",
+        "json": `{"success": true}`,
+        "blob": uuid.New().String(),
+        "array[integer]": `[0, 1, 1, 2, 3, 5]`,
+        "array[float]": `[1.1, 2.2, 3.3, 4.4]`,
+        "array[string]": `["Hello", "world", "!"]`,
+    }
 
     // shortcuts
     schemaId := dummyDoc.SchemaId
-    // docId := dummyDoc.DocumentId
+    docId := dummyDoc.DocumentId
 
     writeDocResponse := func(w http.ResponseWriter) {
         data, _ := json.Marshal(DocumentResponse{dummyDoc})
@@ -541,6 +554,11 @@ func TestDocumentCRUDL(t *testing.T) {
         if r.URL.Path == fmt.Sprintf("/api/v1/schemas/%s/documents", 
             schemaId) && r.Method == "POST" {
             // mock CREATE response
+            writeDocResponse(w)
+        } else if r.URL.Path == fmt.Sprintf("/api/v1/documents/%s", 
+            docId) && r.Method == "GET" {
+            // mock READ response
+            dummyDoc.Content = dummyContent
             writeDocResponse(w)
         } else {
             err := `{"result": "error", "result_code": 404, "data": null, `
@@ -598,5 +616,7 @@ func TestDocumentCRUDL(t *testing.T) {
     } else {
         t.Errorf("unexpected: both document and error are nil!")
     }
+
+    // test READ: FIXME
 
 }

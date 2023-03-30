@@ -20,8 +20,8 @@ type Schema struct {
 	SchemaId string `json:"schema_id,omitempty"`
 	RepositoryId string `json:"repository_id,omitempty"`
 	Description string `json:"description"`
-	InsertDate timeutils.Time `json:"insert_date"`
-	LastUpdate timeutils.Time `json:"last_update"`
+	InsertDate timeutils.Time `json:"insert_date,omitempty"`
+	LastUpdate timeutils.Time `json:"last_update,omitempty"`
 	IsActive bool `json:"is_active"`
 	Structure []SchemaField `json:"structure"`
 }
@@ -116,21 +116,17 @@ func (ca *CustodiaAPIv1) ReadSchema(id string) (*Schema, error) {
 }
 
 // [U]pdate an existent schema
-func (ca *CustodiaAPIv1) UpdateSchema(schema *Schema, description string,
+func (ca *CustodiaAPIv1) UpdateSchema(id string, description string,
 	isActive bool, structure []SchemaField) (*Schema, error) {
-		url := fmt.Sprintf("/schemas/%s", (*schema).SchemaId)
+		url := fmt.Sprintf("/schemas/%s", id)
 
-		// get a copy and update the values, so we can easily marshal it
-		
-		// copying the struct is not necessary since we re-assign it, so the
-		// one passed to the func is already a copy
-		// structCopy := make([]SchemaField, len(schema.Structure))
-		// copy(structCopy, schema.Structure)
-		copy := *schema
-		copy.Description = description
-		copy.IsActive = isActive
-		copy.Structure = structure
-		data, err := json.Marshal(copy)
+		// Schema with just the data to send, so we can easily marshal it
+		schema := Schema{
+			Description: description, 
+			IsActive: isActive, 
+			Structure: structure,
+		}
+		data, err := json.Marshal(schema)
 		if err != nil {
 			return nil, err
 		}
@@ -153,9 +149,9 @@ func (ca *CustodiaAPIv1) UpdateSchema(schema *Schema, description string,
 // if force=true the schema is deleted, else it's just deactivated
 // if all_content=true the schema content is deleted too (it also sets 
 // automatically force=true)
-func (ca *CustodiaAPIv1) DeleteSchema(schema *Schema, force, allContent bool) (
+func (ca *CustodiaAPIv1) DeleteSchema(id string, force, allContent bool) (
 	error) {
-	url := fmt.Sprintf("/schemas/%s", (*schema).SchemaId)
+	url := fmt.Sprintf("/schemas/%s", id)
 
 	// allContent requires force=true
 	if allContent {

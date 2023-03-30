@@ -98,6 +98,13 @@ func validateContent(data map[string]interface{},
 				err = fmt.Errorf("field '%s' expected to be a list of " + 
 				"string ", key)
 			}
+		case "blob":
+			err = fmt.Errorf("field '%s' is of type blob, cannot be submitted",
+				key)
+		default:			
+			err = fmt.Errorf("unhandled type '%s' of field '%s'", 
+				field.Type, key)
+			panic(err)
 		}
 		
 		// an error occurred, return immediately
