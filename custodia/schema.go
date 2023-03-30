@@ -170,8 +170,8 @@ func (ca *CustodiaAPIv1) DeleteSchema(id string, force, allContent bool) (
 // [L]ist all the schemas in a repository
 func (ca *CustodiaAPIv1) ListSchemas(repositoryId string) ([]*Schema, error) {
 	if !common.IsValidUUID(repositoryId) {
-		return nil, errors.New("repositoryId is not a valid UUID: " +
-			repositoryId)
+		err := fmt.Errorf("repositoryId is not a valid UUID: %v", repositoryId)
+		return nil, err
 	}
 	url := fmt.Sprintf("/repositories/%s/schemas", repositoryId)
 	resp, err := ca.Call("GET", url)

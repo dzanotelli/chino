@@ -123,3 +123,34 @@ func (ca *CustodiaAPIv1) UpdateDocument(id string , isActive bool,
 	// PUT call returns the whole documents, along with its content
 	return docEnvelope.Document, nil
 }
+
+// [D]elete an existent document
+// if force=false document is just deactivated
+// if consisten=true the operation is done sync (server waits to respond)
+func (ca *CustodiaAPIv1) DeleteDocument(id string, force, consistent bool) (
+	error) {
+	url := fmt.Sprintf("/documents/%s", id)
+	url += fmt.Sprintf("?force=%v&consistent=%v", force, consistent)
+
+	_, err := ca.Call("DELETE", url)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// [L]ist all the documents in a Schema
+func (ca *CustodiaAPIv1) ListDocuments(schemaId string, 
+	params ...interface{}) ([]*Document, error) {
+	if !common.IsValidUUID(schemaId) {		
+		return nil, fmt.Errorf("schemaId is not a valid UUID: %s", schemaId)
+	}
+
+	url := fmt.Sprintf("/schema/%s/documents", schemaId)
+	if len(params) > 0 {
+
+	}
+
+	
+	return nil, nil
+}
