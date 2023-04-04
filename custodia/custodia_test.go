@@ -145,24 +145,24 @@ func TestRepositoryCRUDL(t *testing.T) {
     if err != nil {
         t.Errorf("unexpected error: %v", err)
     } else if repo != nil {
-        if (*repo).RepositoryId != dummyRepository.RepositoryId {
+        if repo.RepositoryId != dummyRepository.RepositoryId {
             t.Errorf("bad RepositoryId, got: %v want: %v", 
                      repo.RepositoryId, dummyRepository.RepositoryId)
         }
-        if (*repo).Description != dummyRepository.Description {
+        if repo.Description != dummyRepository.Description {
             t.Errorf("bad Description, got: %v want: %s", 
                      repo.Description,
                     dummyRepository.Description)
         }
-        if (*repo).InsertDate.Year() != 2015 {
+        if repo.InsertDate.Year() != 2015 {
             t.Errorf("bad insert_date year, got: %v want: 2015", 
-                (*repo).InsertDate.Year())
+                repo.InsertDate.Year())
         }
-        if (*repo).LastUpdate.Year() != 2015 {
+        if repo.LastUpdate.Year() != 2015 {
             t.Errorf("bad last_update year, got: %v want: 2015", 
-                (*repo).InsertDate.Year())			
+                repo.InsertDate.Year())			
         }
-        if (*repo).IsActive != false {
+        if repo.IsActive != false {
             t.Errorf("bad isActive, got: %v want: false", (*repo).IsActive)
         }
     } else {
@@ -174,25 +174,25 @@ func TestRepositoryCRUDL(t *testing.T) {
     if err != nil {
         t.Errorf("unexpected error: %v", err)
     } else if repo != nil {
-        if (*repo).RepositoryId != dummyRepository.RepositoryId {
+        if repo.RepositoryId != dummyRepository.RepositoryId {
             t.Errorf("bad RepositoryId, got: %v want: %v", 
                      repo.RepositoryId, dummyRepository.RepositoryId)
         }
-        if (*repo).Description != dummyRepository.Description {
+        if repo.Description != dummyRepository.Description {
             t.Errorf("bad Description, got: %v want: %s", 
                      repo.Description,
                     dummyRepository.Description)
         }
-        if (*repo).InsertDate.Year() != 2015 {
+        if repo.InsertDate.Year() != 2015 {
             t.Errorf("bad insert_date year, got: %v want: 2015", 
-                (*repo).InsertDate.Year())
+                repo.InsertDate.Year())
         }
-        if (*repo).LastUpdate.Year() != 2015 {
+        if repo.LastUpdate.Year() != 2015 {
             t.Errorf("bad last_update year, got: %v want: 2015", 
-                (*repo).InsertDate.Year())			
+                repo.InsertDate.Year())			
         }
-        if (*repo).IsActive != false {
-            t.Errorf("bad isActive, got: %v want: false", (*repo).IsActive)
+        if repo.IsActive != false {
+            t.Errorf("bad isActive, got: %v want: false", repo.IsActive)
         }
     } else {
         t.Errorf("unexpected: both repository and error are nil!")
@@ -347,29 +347,29 @@ func TestSchemaCRUDL(t *testing.T) {
     if err != nil {
         t.Errorf("unexpected error: %v", err)
     } else if schema != nil {
-        if (*schema).RepositoryId != repoId {
+        if schema.RepositoryId != repoId {
             t.Errorf("bad RepositoryId, got: %v want: %v", 
                 schema.RepositoryId, repoId)
         }
-        if (*schema).SchemaId != dummySchema.SchemaId {
+        if schema.SchemaId != dummySchema.SchemaId {
             t.Errorf("bad SchemaId, got: %v want: %v", 
                 schema.SchemaId, dummySchema.SchemaId)
         }
-        if (*schema).Description != dummySchema.Description {
+        if schema.Description != dummySchema.Description {
             t.Errorf("bad Description, got: %v want: %s", 
                      schema.Description,
                      dummySchema.Description)
         }
-        if (*schema).InsertDate.Year() != 2015 {
+        if schema.InsertDate.Year() != 2015 {
             t.Errorf("bad insert_date year, got: %v want: 2015", 
-                (*schema).InsertDate.Year())
+                schema.InsertDate.Year())
         }
-        if (*schema).LastUpdate.Year() != 2015 {
+        if schema.LastUpdate.Year() != 2015 {
             t.Errorf("bad last_update year, got: %v want: 2015", 
-                (*schema).InsertDate.Year())			
+                schema.InsertDate.Year())			
         }
-        if (*schema).IsActive != false {
-            t.Errorf("bad isActive, got: %v want: false", (*schema).IsActive)
+        if schema.IsActive != false {
+            t.Errorf("bad isActive, got: %v want: false", schema.IsActive)
         }
 
         expectedFields := dummySchema.Structure        
@@ -384,28 +384,29 @@ func TestSchemaCRUDL(t *testing.T) {
     }
     
     // test READ
+    schema, err = custodia.ReadSchema(dummySchema.SchemaId)
     if err != nil {
         t.Errorf("unexpected error: %v", err)
     } else if schema != nil {
-        if (*schema).RepositoryId != repoId {
+        if schema.RepositoryId != repoId {
             t.Errorf("bad RepositoryId, got: %v want: %v", 
                 schema.RepositoryId, repoId)
         }
-        if (*schema).Description != dummySchema.Description {
+        if schema.Description != dummySchema.Description {
             t.Errorf("bad Description, got: %v want: %s", 
                      schema.Description,
                      dummySchema.Description)
         }
-        if (*schema).InsertDate.Year() != 2015 {
+        if schema.InsertDate.Year() != 2015 {
             t.Errorf("bad insert_date year, got: %v want: 2015", 
-                (*schema).InsertDate.Year())
+                schema.InsertDate.Year())
         }
-        if (*schema).LastUpdate.Year() != 2015 {
+        if schema.LastUpdate.Year() != 2015 {
             t.Errorf("bad last_update year, got: %v want: 2015", 
-                (*schema).InsertDate.Year())			
+                schema.InsertDate.Year())			
         }
-        if (*schema).IsActive != false {
-            t.Errorf("bad isActive, got: %v want: false", (*schema).IsActive)
+        if schema.IsActive != false {
+            t.Errorf("bad isActive, got: %v want: false", schema.IsActive)
         }
 
         expectedFields := dummySchema.Structure        
@@ -426,25 +427,25 @@ func TestSchemaCRUDL(t *testing.T) {
     if err != nil {
         t.Errorf("unexpected error: %v", err)
     } else if schema != nil {
-        if (*schema).RepositoryId != repoId {
+        if schema.RepositoryId != repoId {
             t.Errorf("bad RepositoryId, got: %v want: %v", 
                 schema.RepositoryId, repoId)
         }
-        if (*schema).Description != dummySchema.Description {
+        if schema.Description != dummySchema.Description {
             t.Errorf("bad Description, got: %v want: %s", 
                      schema.Description,
                      dummySchema.Description)
         }
-        if (*schema).InsertDate.Year() != 2015 {
+        if schema.InsertDate.Year() != 2015 {
             t.Errorf("bad insert_date year, got: %v want: 2015", 
-                (*schema).InsertDate.Year())
+                schema.InsertDate.Year())
         }
-        if (*schema).LastUpdate.Year() != 2015 {
+        if schema.LastUpdate.Year() != 2015 {
             t.Errorf("bad last_update year, got: %v want: 2015", 
-                (*schema).InsertDate.Year())			
+                schema.InsertDate.Year())			
         }
-        if (*schema).IsActive != false {
-            t.Errorf("bad isActive, got: %v want: false", (*schema).IsActive)
+        if schema.IsActive != false {
+            t.Errorf("bad isActive, got: %v want: false", schema.IsActive)
         }
 
         expectedFields := dummySchema.Structure        
@@ -618,5 +619,39 @@ func TestDocumentCRUDL(t *testing.T) {
     }
 
     // test READ: FIXME
+    doc, err := custodia.ReadDocument(dummyDoc.DocumentId)
+    if err != nil {
+        t.Errorf("unespected error: %v", err)
+    } else if doc != nil {
+        if doc.DocumentId != dummyDoc.DocumentId {
+            t.Errorf("bad DocumentId, got: %v want: %v", doc.DocumentId,
+                dummyDoc.DocumentId)
+        }
+        if doc.SchemaId != dummyDoc.SchemaId {
+            t.Errorf("bad SchemaId, got: %v want: %v", doc.SchemaId,
+                dummyDoc.SchemaId)
+        }
+        if doc.RepositoryId != dummyDoc.RepositoryId {
+            t.Errorf("bad RepositoryId, got: %v want: %v", doc.RepositoryId,
+                dummyDoc.RepositoryId)
+        }
+        if doc.InsertDate.Year() != 2015 {
+            t.Errorf("bad insert_date year, got: %v want: 2015", 
+                doc.InsertDate.Year())
+        }
+        if doc.LastUpdate.Year() != 2015 {
+            t.Errorf("bad last_update year, got: %v want: 2015", 
+                doc.InsertDate.Year())			
+        }
+        if doc.IsActive != false {
+            t.Errorf("bad isActive, got: %v want: false", doc.IsActive)
+        }
+
+        // check the content
+
+    } else {
+        t.Errorf("unexpected: both document and error are nil!")
+
+    }
 
 }
