@@ -521,15 +521,15 @@ func TestDocumentCRUDL(t *testing.T) {
         "stringField": "antani",
         "textField": "this is not a very long string, but should be",
         "boolField": true,
-        "date": "1970-01-01",
-        "time": "00:01:30",
-        "datetime": "1970-01-01T00:01:30",
-        "base64": "VGhpcyBpcyBhIGJhc2UtNjQgZW5jb2RlZCBzdHJpbmcu",
-        "json": `{"success": true}`,
-        "blob": uuid.New().String(),
-        "array[integer]": `[0, 1, 1, 2, 3, 5]`,
-        "array[float]": `[1.1, 2.2, 3.3, 4.4]`,
-        "array[string]": `["Hello", "world", "!"]`,
+        "dateField": "1970-01-01",
+        "timeField": "00:01:30",
+        "datetimeField": "1970-01-01T00:01:30",
+        "base64Field": "VGhpcyBpcyBhIGJhc2UtNjQgZW5jb2RlZCBzdHJpbmcu",
+        "jsonField": `{"success": true}`,
+        "blobField": uuid.New().String(),
+        "arrayIntegerField": `[0, 1, 1, 2, 3, 5]`,
+        "arrayFloatField": `[1.1, 2.2, 3.3, 4.4]`,
+        "arrayStringField": `["Hello", "world", "!"]`,
     }
 
     // shortcuts
@@ -582,6 +582,22 @@ func TestDocumentCRUDL(t *testing.T) {
     schema := Schema{
         RepositoryId: dummyDoc.RepositoryId, 
         SchemaId: dummyDoc.SchemaId,
+        Structure: []SchemaField{
+            {Name: "integerField", Type: "integer"},
+            {Name: "floatField", Type: "float"},
+            {Name: "stringField", Type: "string"},
+            {Name: "textField", Type: "text"},
+            {Name: "boolField", Type: "boolean"},
+            {Name: "dateField", Type: "date"},
+            {Name: "timeField", Type: "time"},
+            {Name: "datetimeField", Type: "datetime"},
+            {Name: "base64Field", Type: "base64"},
+            {Name: "jsonField", Type: "json"},
+            {Name: "blobField", Type: "blob"},
+            {Name: "arrayIntegerField", Type: "array[integer]"},
+            {Name: "arrayFloatField", Type: "array[float]"},
+            {Name: "arrayStringField", Type: "array[string]"},
+        },
     }
     content := map[string]interface{}{}
     document, err := custodia.CreateDocument(&schema, false, content)
@@ -612,13 +628,11 @@ func TestDocumentCRUDL(t *testing.T) {
         if (*document).IsActive != false {
             t.Errorf("bad isActive, got: %v want: false", (*document).IsActive)
         }
-
-
     } else {
         t.Errorf("unexpected: both document and error are nil!")
     }
 
-    // test READ: FIXME
+    // test READ
     doc, err := custodia.ReadDocument(dummyDoc.DocumentId)
     if err != nil {
         t.Errorf("unespected error: %v", err)
@@ -648,6 +662,13 @@ func TestDocumentCRUDL(t *testing.T) {
         }
 
         // check the content
+        // check the content types  
+        contentErrs := validateContent(doc.Content, schema.getStructureAsMap())
+        if len(contentErrs) > 0 {
+            t.Error(common.JoinErrors("content errors:", contentErrs))
+        }
+        
+        // FIXME: add checks on the values (?)
 
     } else {
         t.Errorf("unexpected: both document and error are nil!")

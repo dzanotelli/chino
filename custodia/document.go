@@ -43,12 +43,7 @@ func (ca *CustodiaAPIv1) CreateDocument(schema *Schema, isActive bool,
 	// validate document content
 	errors := validateContent(content, schema.getStructureAsMap())
 	if len(errors) > 0 {
-		msg := "content validation failed: "
-		for _, e := range errors {
-			msg = fmt.Sprintf("%s %v", msg, e)
-		}
-		return nil, fmt.Errorf(msg)
-
+		return nil, common.JoinErrors("content validation failed:", errors)
 		// FIXME: errors.Join available from go 1.20+
 		//err = errors.Join(err, errors...)
 		//return nil, err

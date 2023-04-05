@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+
 func validateContent(data map[string]interface{}, 
 	structure map[string]SchemaField) []error {
 	var errors []error
@@ -83,20 +84,20 @@ func validateContent(data map[string]interface{},
 		case "array[integer]":
 			val, ok = value.([]int)
 			if !ok {
-				err = fmt.Errorf("field '%s' expected to be a list of int ", 
+				err = fmt.Errorf("field '%s' expected to be a slice of int",
 					key)
 			}
-		case "array[foat]":
+		case "array[float]":
 			val, ok = value.([]float64)
 			if !ok {
-				err = fmt.Errorf("field '%s' expected to be a list of " + 
-				"float64 ", key)
+				err = fmt.Errorf("field '%s' expected to be a slice of " + 
+				"float64", key)
 			}
 		case "array[string]":
 			val, ok = value.([]string)
 			if !ok {
-				err = fmt.Errorf("field '%s' expected to be a list of " + 
-				"string ", key)
+				err = fmt.Errorf("field '%s' expected to be a slice of " + 
+				"string", key)
 			}
 		case "blob":
 			err = fmt.Errorf("field '%s' is of type blob, cannot be submitted",
