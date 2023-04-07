@@ -2,6 +2,7 @@ package custodia
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -665,7 +666,8 @@ func TestDocumentCRUDL(t *testing.T) {
         // check the content types  
         contentErrs := validateContent(doc.Content, schema.getStructureAsMap())
         if len(contentErrs) > 0 {
-            t.Error(common.JoinErrors("content errors:", contentErrs))
+            e := fmt.Errorf("content errors: %w", errors.Join(contentErrs...))
+            t.Errorf(fmt.Sprintf("%v", e))
         }
         
         // FIXME: add checks on the values (?)
