@@ -41,7 +41,8 @@ func (ca *CustodiaAPIv1) CreateDocument(schema *Schema, isActive bool,
 	}
 
 	// validate document content
-	contentErrors := validateContent(content, schema.getStructureAsMap())
+	contentErrors := validateContent(&content, schema.getStructureAsMap(), 
+		false)
 	if len(contentErrors) > 0 {
 		e := fmt.Errorf("content errors: %w", errors.Join(contentErrors...))
 		return nil, e
@@ -72,7 +73,8 @@ func (ca *CustodiaAPIv1) CreateDocument(schema *Schema, isActive bool,
 }
 
 // [R]ead an existent document
-func (ca *CustodiaAPIv1) ReadDocument(id string) (*Document, error) {
+func (ca *CustodiaAPIv1) ReadDocument(schema Schema, id string) (*Document,
+	 error) {
 	if !common.IsValidUUID(id) {
 		return nil, errors.New("id is not a valid UUID: " + id)
 	}
@@ -88,6 +90,10 @@ func (ca *CustodiaAPIv1) ReadDocument(id string) (*Document, error) {
 	if err := json.Unmarshal([]byte(resp), &docEnvelope); err != nil {
 		return nil, err
 	}
+
+	// convert values to 	
+	validateContent(&(docEnvelope.Document.Content), 
+		schema.getStructureAsMap(), true)
 
 	return docEnvelope.Document, nil
 }

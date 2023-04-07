@@ -634,7 +634,7 @@ func TestDocumentCRUDL(t *testing.T) {
     }
 
     // test READ
-    doc, err := custodia.ReadDocument(dummyDoc.DocumentId)
+    doc, err := custodia.ReadDocument(schema, dummyDoc.DocumentId)
     if err != nil {
         t.Errorf("unespected error: %v", err)
     } else if doc != nil {
@@ -664,7 +664,8 @@ func TestDocumentCRUDL(t *testing.T) {
 
         // check the content
         // check the content types  
-        contentErrs := validateContent(doc.Content, schema.getStructureAsMap())
+        contentErrs := validateContent(&(doc.Content), 
+            schema.getStructureAsMap(), false)
         if len(contentErrs) > 0 {
             e := fmt.Errorf("content errors: %w", errors.Join(contentErrs...))
             t.Errorf(fmt.Sprintf("%v", e))
@@ -674,7 +675,6 @@ func TestDocumentCRUDL(t *testing.T) {
 
     } else {
         t.Errorf("unexpected: both document and error are nil!")
-
     }
 
 }
