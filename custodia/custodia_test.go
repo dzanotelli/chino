@@ -664,8 +664,7 @@ func TestDocumentCRUDL(t *testing.T) {
 
         // check the content
         // check the content types  
-        contentErrs := validateContent(&(doc.Content), 
-            schema.getStructureAsMap(), false)
+        contentErrs := validateContent(doc.Content, schema.getStructureAsMap())
         if len(contentErrs) > 0 {
             e := fmt.Errorf("content errors: %w", errors.Join(contentErrs...))
             t.Errorf(fmt.Sprintf("%v", e))

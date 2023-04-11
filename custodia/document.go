@@ -41,8 +41,7 @@ func (ca *CustodiaAPIv1) CreateDocument(schema *Schema, isActive bool,
 	}
 
 	// validate document content
-	contentErrors := validateContent(&content, schema.getStructureAsMap(), 
-		false)
+	contentErrors := validateContent(content, schema.getStructureAsMap())
 	if len(contentErrors) > 0 {
 		e := fmt.Errorf("content errors: %w", errors.Join(contentErrors...))
 		return nil, e
@@ -92,8 +91,7 @@ func (ca *CustodiaAPIv1) ReadDocument(schema Schema, id string) (*Document,
 	}
 
 	// convert values to 	
-	validateContent(&(docEnvelope.Document.Content), 
-		schema.getStructureAsMap(), true)
+	validateContent(docEnvelope.Document.Content, schema.getStructureAsMap())
 
 	return docEnvelope.Document, nil
 }

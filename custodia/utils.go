@@ -10,12 +10,12 @@ import (
 )
 
 
-func validateContent(data *map[string]interface{}, 
-	structure map[string]SchemaField, convert bool) []error {
+func validateContent(data map[string]interface{}, 
+	structure map[string]SchemaField) []error {
 	var errors []error
 	var err error
 
-	for key, value := range *data {
+	for key, value := range data {
 		field, ok := structure[key]
 		if !ok {
 			err = fmt.Errorf("field '%s' not defined in given structure", key)
@@ -102,21 +102,16 @@ func validateContent(data *map[string]interface{},
 				"string", key)
 			}
 		case "blob":
-			if !convert {
-				err = fmt.Errorf("field '%s' is of type blob, cannot be " +
-					"submitted", key)
-			} else {
-				val, ok = value.(string)
-				if !ok {
-					err = fmt.Errorf("field '%s' expected to be a string " +
-					"(UUID referencing a blob_id)", key)
-					break
-				}
-				converted := fmt.Sprintf("%v", val)
-				if len(converted) > 0 && !common.IsValidUUID(converted) {
-					err = fmt.Errorf("field '%s' expected to be a valid " +
+			val, ok = value.(string)
+			if !ok {
+				err = fmt.Errorf("field '%s' expected to be a string " +
+				"(UUID referencing a blob_id)", key)
+				break
+			}
+			converted := fmt.Sprintf("%v", val)
+			if len(converted) > 0 && !common.IsValidUUID(converted) {
+				err = fmt.Errorf("field '%s' expected to be a valid " +
 					"UUID (referencing a blob_id)", key)
-				}
 			}
 		default:			
 			err = fmt.Errorf("unhandled type '%s' of field '%s'", 
@@ -127,9 +122,6 @@ func validateContent(data *map[string]interface{},
 		// an error occurred, save it
 		if !ok {
 			errors = append(errors, err)
-		} else if convert {
-			// if convert flag is set, we save the converted value
-			(*data)[key] = val
 		}
 	}
 	return errors
