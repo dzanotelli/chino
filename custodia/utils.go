@@ -126,3 +126,51 @@ func validateContent(data map[string]interface{},
 	}
 	return errors
 }
+
+func convertData(data map[string]interface{}, schema Schema) (
+	map[string]interface{}, []error) {
+	converted := map[string]interface{}{}
+	errors := []error{}
+	structure := schema.getStructureAsMap()
+
+	for name, value := range data {
+		field, ok := structure[name]
+		if !ok {
+			e := fmt.Errorf("field '%s': not belonging to schema %s '%s'",
+				schema.SchemaId, schema.Description)
+			errors = append(errors, e)
+			continue
+		}
+
+		switch field.Type {
+		case "integer":
+			converted[name], ok = value.(int64)
+			if !ok {
+				e := fmt.Errorf("field '%s': cannot convert to int64", name)
+				errors = append(errors, e)
+			}
+		case "float":
+			converted[name], ok = value.(float64)
+			if !ok {
+				e := fmt.Errorf("field '%s': cannot convert to float64", name)
+				errors = append(errors, e)
+			}
+		case "string", "text":
+			converted[name] = fmt.Sprintf("%v", value)
+		case "boolean":
+			converted[name], ok = value.(bool)
+			if !ok {
+				e := fmt.Errorf("field '%s': cannot convert to bool", name)
+				errors = append(errors, e)
+			}
+		case "date", "time", "datetime":
+			// FIXME: continue here
+		default:
+			e := fmt.Errorf("field '%s': type '%s' not handled", name, 
+				field.Type)
+			panic(e)
+		}
+	}
+
+	return converted, errors
+}
