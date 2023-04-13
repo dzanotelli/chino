@@ -90,9 +90,15 @@ func (ca *CustodiaAPIv1) ReadDocument(schema Schema, id string) (*Document,
 		return nil, err
 	}
 
-	// convert values to 	
-	validateContent(docEnvelope.Document.Content, schema.getStructureAsMap())
+	// convert values to concrete types
+	converted, ee := convertData(docEnvelope.Document.Content, schema)
+	if len(ee) > 0 {
+		err := fmt.Errorf("conversion errors: %w", errors.Join(ee...))
+		return docEnvelope.Document, err
+	}
 
+	// all good, assign the new content to doc and return it
+	docEnvelope.Document.Content = converted
 	return docEnvelope.Document, nil
 }
 

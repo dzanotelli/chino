@@ -3,11 +3,22 @@ package custodia
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/dzanotelli/chino/common"
+	"github.com/simplereach/timeutils"
 )
+
+const TypeInt, TypeArrayInt = "integer", "array[integer]"
+const TypeFloat, TypeArrayFloat = "float", "array[float]"
+const TypeStr, TypeText, TypeArrayStr = "string", "text", "array[string]"
+const TypeBool = "boolean"
+const TypeDate, TypeTime, TypeDateTime = "date", "time", "datetime"
+const TypeBase64, TypeJson, TypeBlob = "base64", "json", "blob"
 
 
 func validateContent(data map[string]interface{}, 
@@ -26,17 +37,17 @@ func validateContent(data map[string]interface{},
 		// field exist, check that is of the right type
 		var val interface{}
 		switch field.Type {
-		case "integer":
+		case TypeInt:
 			val, ok = value.(int)
 			if !ok {
 				err = fmt.Errorf("field '%s' expected to be int", key)
 			}
-		case "float":
+		case TypeFloat:
 			val, ok = value.(float64)
 			if !ok {
 				err = fmt.Errorf("field '%s' expected to be float", key)
 			}
-		case "string", "text":
+		case TypeStr, TypeText:
 			val, ok = value.(string)
 			if !ok {
 				err = fmt.Errorf("field '%s' expected to be string", key)
@@ -48,17 +59,17 @@ func validateContent(data map[string]interface{},
 				err = fmt.Errorf("field '%s' exceeded max lenght of 255 chars", 
 					key)
 			}
-		case "boolean":
+		case TypeBool:
 			val, ok = value.(bool)
 			if !ok {
 				err = fmt.Errorf("field '%s' expected to be bool", key)
 			}
-		case "date", "time", "datetime":
+		case TypeDate, TypeTime, TypeDateTime:
 			val, ok = value.(time.Time)
 			if !ok {
 				err = fmt.Errorf("field '%s' expected to be time.Time", key)
 			}
-		case "base64":
+		case TypeBase64:
 			val, ok = value.(string)
 			if !ok {
 				err = fmt.Errorf("field '%s' expected to be a string " +
@@ -71,7 +82,7 @@ func validateContent(data map[string]interface{},
 				err = fmt.Errorf("field '%s' expected to be a valid base64 " +
 					"string", key)
 			}
-		case "json":
+		case TypeJson:
 			val, ok = value.(string)
 			if !ok {
 				err = fmt.Errorf("field '%s' expected to be a string " +
@@ -83,25 +94,25 @@ func validateContent(data map[string]interface{},
 				err = fmt.Errorf("field '%s' expected to be a valid json " +
 					"string", key)
 			}
-		case "array[integer]":
+		case TypeArrayInt:
 			val, ok = value.([]int)
 			if !ok {
 				err = fmt.Errorf("field '%s' expected to be a slice of int",
 					key)
 			}
-		case "array[float]":
+		case TypeArrayFloat:
 			val, ok = value.([]float64)
 			if !ok {
 				err = fmt.Errorf("field '%s' expected to be a slice of " + 
 				"float64", key)
 			}
-		case "array[string]":
+		case TypeArrayStr:
 			val, ok = value.([]string)
 			if !ok {
 				err = fmt.Errorf("field '%s' expected to be a slice of " + 
 				"string", key)
 			}
-		case "blob":
+		case TypeBlob:
 			val, ok = value.(string)
 			if !ok {
 				err = fmt.Errorf("field '%s' expected to be a string " +
@@ -127,6 +138,107 @@ func validateContent(data map[string]interface{},
 	return errors
 }
 
+func parseArrayString(arrayString string, itemType string) ([]interface{}, 
+	error) {
+	var result []interface{}
+	var ee []error
+	var err error
+
+	// remove brackets and split values
+	arrayString = strings.TrimLeft(arrayString, "[")
+	arrayString = strings.TrimRight(arrayString, "]")
+
+	splitted := strings.Split(arrayString, ",")
+	for i, v := range splitted {
+		splitted[i] = strings.Trim(v, " ")
+	}
+
+	switch itemType {
+	case TypeArrayInt:
+		for i, v := range splitted {
+			converted, e := strconv.ParseInt(v, 10, 64)
+			if e != nil {
+				ee = append(ee, fmt.Errorf("%d: ParseInt error", i))
+				result[i] = nil
+			} else {
+				result[i] = converted
+			}			
+		}
+	case TypeArrayFloat:
+		for i, v := range splitted {
+			converted, e := strconv.ParseFloat(v, 64)
+			if e != nil {
+				ee = append(ee, fmt.Errorf("%d: ParseFloat error", i))
+				result[i] = nil
+			} else {
+				result[i] = converted
+			}
+		}
+	case TypeArrayStr:
+		for i, v := range splitted {
+			result[i] = v
+		}
+	default:
+		panic(fmt.Sprintf("unhandled type '%s'", itemType))
+	}
+
+	if len(ee) > 0 {
+		err = errors.Join(ee...)
+	}
+	return result, err
+}
+
+func convertField(value interface{}, field SchemaField) (interface{}, error) {
+	var converted interface{}
+	var e, err error
+	var ok bool
+
+	switch field.Type {
+	case TypeInt:
+		// json.Unmarshall always returns float for numbers
+		c, ok := value.(float64)
+		if !ok {
+			e = fmt.Errorf("field '%s': cannot convert to int64", field.Name)
+		}
+		converted = int64(c)
+	case TypeFloat:
+		converted, ok = value.(float64)
+		if !ok {
+			e = fmt.Errorf("field '%s': cannot convert to float64", field.Name)
+		}
+	case TypeStr, TypeText, TypeBase64, TypeJson, TypeBlob:
+		converted = fmt.Sprintf("%v", value)
+	case TypeBool:
+		converted, ok = value.(bool)
+		if !ok {
+			e = fmt.Errorf("field '%s': cannot convert to bool", field.Name)
+		}
+	case TypeDate, TypeTime, TypeDateTime:
+		dateStr := fmt.Sprintf("%v", value)
+		converted, err = timeutils.ParseDateString(dateStr)
+		if err != nil {
+			e = fmt.Errorf("field '%s': error while converting to " +
+				"time.Time, %w", field.Name, err)
+		}
+	// case "base64":
+	// 	converted = fmt.Sprintf("%v", value)
+	// 	_, err = base64.StdEncoding.DecodeString(converted.(string))
+	// 	if err != nil {
+	// 		e = fmt.Errorf("field '%s': not a valid base64 string, %w",
+	// 			field.Name, err)
+	// 	}
+	case TypeArrayInt, TypeArrayFloat, TypeArrayStr:
+		arrayStr := fmt.Sprintf("%v", value)
+		converted, e = parseArrayString(arrayStr, field.Type)
+	default:
+		e := fmt.Errorf("field '%s': type '%s' not handled", field.Name, 
+			field.Type)
+		panic(e)
+	}
+
+	return converted, e
+}
+
 func convertData(data map[string]interface{}, schema Schema) (
 	map[string]interface{}, []error) {
 	converted := map[string]interface{}{}
@@ -134,41 +246,19 @@ func convertData(data map[string]interface{}, schema Schema) (
 	structure := schema.getStructureAsMap()
 
 	for name, value := range data {
-		field, ok := structure[name]
+		var err error
+
+		field, ok := structure[name]	
 		if !ok {
 			e := fmt.Errorf("field '%s': not belonging to schema %s '%s'",
-				schema.SchemaId, schema.Description)
+				name, schema.SchemaId, schema.Description)
 			errors = append(errors, e)
 			continue
 		}
 
-		switch field.Type {
-		case "integer":
-			converted[name], ok = value.(int64)
-			if !ok {
-				e := fmt.Errorf("field '%s': cannot convert to int64", name)
-				errors = append(errors, e)
-			}
-		case "float":
-			converted[name], ok = value.(float64)
-			if !ok {
-				e := fmt.Errorf("field '%s': cannot convert to float64", name)
-				errors = append(errors, e)
-			}
-		case "string", "text":
-			converted[name] = fmt.Sprintf("%v", value)
-		case "boolean":
-			converted[name], ok = value.(bool)
-			if !ok {
-				e := fmt.Errorf("field '%s': cannot convert to bool", name)
-				errors = append(errors, e)
-			}
-		case "date", "time", "datetime":
-			// FIXME: continue here
-		default:
-			e := fmt.Errorf("field '%s': type '%s' not handled", name, 
-				field.Type)
-			panic(e)
+		converted[name], err = convertField(value, field)
+		if err != nil {
+			errors = append(errors, err)
 		}
 	}
 

@@ -583,9 +583,10 @@ func TestDocumentCRUDL(t *testing.T) {
     schema := Schema{
         RepositoryId: dummyDoc.RepositoryId, 
         SchemaId: dummyDoc.SchemaId,
+        Description: "unittest",
         Structure: []SchemaField{
             {Name: "integerField", Type: "integer"},
-            {Name: "floatField", Type: "float"},
+            {Name: "flaotField", Type: "float"},
             {Name: "stringField", Type: "string"},
             {Name: "textField", Type: "text"},
             {Name: "boolField", Type: "boolean"},
@@ -636,7 +637,7 @@ func TestDocumentCRUDL(t *testing.T) {
     // test READ
     doc, err := custodia.ReadDocument(schema, dummyDoc.DocumentId)
     if err != nil {
-        t.Errorf("unespected error: %v", err)
+        t.Errorf("unexpected error: %v", err)
     } else if doc != nil {
         if doc.DocumentId != dummyDoc.DocumentId {
             t.Errorf("bad DocumentId, got: %v want: %v", doc.DocumentId,
