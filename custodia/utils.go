@@ -21,7 +21,7 @@ const TypeDate, TypeTime, TypeDateTime = "date", "time", "datetime"
 const TypeBase64, TypeJson, TypeBlob = "base64", "json", "blob"
 
 
-func validateContent(data map[string]interface{}, 
+func validateContent(data map[string]interface{},
 	structure map[string]SchemaField) []error {
 	var errors []error
 	var err error
@@ -38,14 +38,14 @@ func validateContent(data map[string]interface{},
 		var val interface{}
 		switch field.Type {
 		case TypeInt:
-			val, ok = value.(int)
+			val, ok = value.(int64)
 			if !ok {
-				err = fmt.Errorf("field '%s' expected to be int", key)
+				err = fmt.Errorf("field '%s' expected to be int64", key)
 			}
 		case TypeFloat:
 			val, ok = value.(float64)
 			if !ok {
-				err = fmt.Errorf("field '%s' expected to be float", key)
+				err = fmt.Errorf("field '%s' expected to be float64", key)
 			}
 		case TypeStr, TypeText:
 			val, ok = value.(string)
@@ -56,7 +56,7 @@ func validateContent(data map[string]interface{},
 			converted := fmt.Sprintf("%v", val)
 			if field.Type == "string" && len(converted) > 255 {
 				ok = false
-				err = fmt.Errorf("field '%s' exceeded max lenght of 255 chars", 
+				err = fmt.Errorf("field '%s' exceeded max lenght of 255 chars",
 					key)
 			}
 		case TypeBool:
@@ -95,21 +95,21 @@ func validateContent(data map[string]interface{},
 					"string", key)
 			}
 		case TypeArrayInt:
-			val, ok = value.([]int)
+			val, ok = value.([]int64)
 			if !ok {
-				err = fmt.Errorf("field '%s' expected to be a slice of int",
+				err = fmt.Errorf("field '%s' expected to be a slice of int64",
 					key)
 			}
 		case TypeArrayFloat:
 			val, ok = value.([]float64)
 			if !ok {
-				err = fmt.Errorf("field '%s' expected to be a slice of " + 
+				err = fmt.Errorf("field '%s' expected to be a slice of " +
 				"float64", key)
 			}
 		case TypeArrayStr:
 			val, ok = value.([]string)
 			if !ok {
-				err = fmt.Errorf("field '%s' expected to be a slice of " + 
+				err = fmt.Errorf("field '%s' expected to be a slice of " +
 				"string", key)
 			}
 		case TypeBlob:
@@ -124,12 +124,12 @@ func validateContent(data map[string]interface{},
 				err = fmt.Errorf("field '%s' expected to be a valid " +
 					"UUID (referencing a blob_id)", key)
 			}
-		default:			
-			err = fmt.Errorf("unhandled type '%s' of field '%s'", 
+		default:
+			err = fmt.Errorf("unhandled type '%s' of field '%s'",
 				field.Type, key)
 			panic(err)
 		}
-		
+
 		// an error occurred, save it
 		if !ok {
 			errors = append(errors, err)
@@ -138,7 +138,7 @@ func validateContent(data map[string]interface{},
 	return errors
 }
 
-func parseArrayString(arrayString string, itemType string) ([]interface{}, 
+func parseArrayString(arrayString string, itemType string) ([]interface{},
 	error) {
 	var result []interface{}
 	var ee []error
@@ -159,24 +159,24 @@ func parseArrayString(arrayString string, itemType string) ([]interface{},
 			converted, e := strconv.ParseInt(v, 10, 64)
 			if e != nil {
 				ee = append(ee, fmt.Errorf("%d: ParseInt error", i))
-				result[i] = nil
+				result = append(result, nil)
 			} else {
-				result[i] = converted
-			}			
+				result = append(result, converted)
+			}
 		}
 	case TypeArrayFloat:
 		for i, v := range splitted {
 			converted, e := strconv.ParseFloat(v, 64)
 			if e != nil {
 				ee = append(ee, fmt.Errorf("%d: ParseFloat error", i))
-				result[i] = nil
+				result = append(result, nil)
 			} else {
-				result[i] = converted
+				result = append(result, converted)
 			}
 		}
 	case TypeArrayStr:
-		for i, v := range splitted {
-			result[i] = v
+		for _, v := range splitted {
+			result = append(result, v)
 		}
 	default:
 		panic(fmt.Sprintf("unhandled type '%s'", itemType))
@@ -231,7 +231,7 @@ func convertField(value interface{}, field SchemaField) (interface{}, error) {
 		arrayStr := fmt.Sprintf("%v", value)
 		converted, e = parseArrayString(arrayStr, field.Type)
 	default:
-		e := fmt.Errorf("field '%s': type '%s' not handled", field.Name, 
+		e := fmt.Errorf("field '%s': type '%s' not handled", field.Name,
 			field.Type)
 		panic(e)
 	}
@@ -248,7 +248,7 @@ func convertData(data map[string]interface{}, schema Schema) (
 	for name, value := range data {
 		var err error
 
-		field, ok := structure[name]	
+		field, ok := structure[name]
 		if !ok {
 			e := fmt.Errorf("field '%s': not belonging to schema %s '%s'",
 				name, schema.SchemaId, schema.Description)
