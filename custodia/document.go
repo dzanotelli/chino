@@ -19,7 +19,7 @@ type Document struct {
 	InsertDate timeutils.Time `json:"insert_date,omitempty"`
 	LastUpdate timeutils.Time `json:"last_update,omitempty"`
 	IsActive bool `json:"is_active"`
-	Content  map[string]interface{} `json:"content,omitempty"`
+	Content map[string]interface{} `json:"content,omitempty"`
 }
 
 type DocumentEnvelope struct {
@@ -31,7 +31,7 @@ type DocumentsEnvelope struct {
 }
 
 // [C]reate a new document
-func (ca *CustodiaAPIv1) CreateDocument(schema *Schema, isActive bool, 
+func (ca *CustodiaAPIv1) CreateDocument(schema *Schema, isActive bool,
 	content map[string]interface{}) (*Document, error) {
 	if schema.SchemaId == "" {
 		return nil, fmt.Errorf("schema has no SchemaId, does it exist?")
@@ -63,7 +63,7 @@ func (ca *CustodiaAPIv1) CreateDocument(schema *Schema, isActive bool,
 	if err := json.Unmarshal([]byte(resp), &docEnvelope); err != nil {
 		return nil, err
 	}
-	
+
 	// if everything is ok, we can safely set the given content as the
 	// returned document content, since the API doesn't return it
 	docEnvelope.Document.Content = content
@@ -103,12 +103,12 @@ func (ca *CustodiaAPIv1) ReadDocument(schema Schema, id string) (*Document,
 }
 
 // [U]pdate an existent document
-func (ca *CustodiaAPIv1) UpdateDocument(id string , isActive bool, 
+func (ca *CustodiaAPIv1) UpdateDocument(id string , isActive bool,
 	content map[string]interface{}) (*Document, error) {
 		if !common.IsValidUUID(id) {
 			return nil, errors.New("id is not a valid UUID: " + id)
-		}	
-	
+		}
+
 	url := fmt.Sprintf("/documents/%s", id)
 
 	// create a doc with just the values we can send, and marshal it
@@ -155,9 +155,9 @@ func (ca *CustodiaAPIv1) DeleteDocument(id string, force, consistent bool) (
 //   insert_date__lt: time.Time
 //   last_update__gt: time.Time
 //   last_update__lt: time.Time
-func (ca *CustodiaAPIv1) ListDocuments(schemaId string, 
+func (ca *CustodiaAPIv1) ListDocuments(schemaId string,
 	params map[string]interface{}) ([]*Document, error) {
-	if !common.IsValidUUID(schemaId) {		
+	if !common.IsValidUUID(schemaId) {
 		return nil, fmt.Errorf("schemaId is not a valid UUID: %s", schemaId)
 	}
 
@@ -180,7 +180,7 @@ func (ca *CustodiaAPIv1) ListDocuments(schemaId string,
 		if !ok {
 			continue
 		}
-		
+
 		switch param {
 		case "full_document", "is_active":
 			_, ok := value.(bool)
@@ -220,6 +220,6 @@ func (ca *CustodiaAPIv1) ListDocuments(schemaId string,
 	for _, doc := range docusEnvelope.Documents {
 		result = append(result, &doc)
 	}
-	
+
 	return result, nil
 }

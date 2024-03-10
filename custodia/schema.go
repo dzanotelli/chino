@@ -9,12 +9,12 @@ import (
 	"github.com/simplereach/timeutils"
 )
 
-// type SchemaField struct {
-// 	Name string `json:"name"`
-// 	Type string `json:"type"`
-// 	Indexed bool `json:"bool,omitempty"`
-// 	Default interface{} `json:"default,omitempty"`
-// }
+type SchemaField struct {
+	Name string `json:"name"`
+	Type string `json:"type"`
+	Indexed bool `json:"bool,omitempty"`
+	Default interface{} `json:"default,omitempty"`
+}
 
 type Schema struct {
 	SchemaId string `json:"schema_id,omitempty"`
@@ -23,8 +23,8 @@ type Schema struct {
 	InsertDate timeutils.Time `json:"insert_date,omitempty"`
 	LastUpdate timeutils.Time `json:"last_update,omitempty"`
 	IsActive bool `json:"is_active"`
-	Structure json.RawMessage `json:"structure"`
-	// Structure []SchemaField `json:"structure"`
+	// Structure json.RawMessage `json:"structure"`
+	Structure []SchemaField `json:"structure"`
 }
 
 type SchemaEnvelope struct {
@@ -37,7 +37,7 @@ type SchemasEnvelope struct {
 
 // adjustDefaultType fixes the automatic interface-to-type conversion done
 // by json.Unmarshal to the desired type (e.g. json int values are
-// automatically converted to float and we want int instead)
+// automatically decoded to float64 and we want int instead)
 func (f *SchemaField) adjustDefaultType() {
 	if f.Default == nil {
 		return
@@ -59,7 +59,7 @@ func (s *Schema) adjustDefaultTypes() {
 
 // [C]reate a new schema
 func (ca *CustodiaAPIv1) CreateSchema(repository *Repository,
-	description string, isActive bool, fields *struct{}) (*Schema, error) {
+	descritpion string, isActive bool, fields []SchemaField) (*Schema, error) {
 	if repository.RepositoryId == "" {
 		return nil, fmt.Errorf("repository has no RepositoryId, " +
 			"does it exist?")
@@ -68,49 +68,31 @@ func (ca *CustodiaAPIv1) CreateSchema(repository *Repository,
 			"should not be manually set)", repository.RepositoryId)
 	}
 
-	
+	// FIXME: missing field type validation, and indexed property validation
+	//   and insensitive property
 
-	return nil, nil
+	schema := Schema{RepositoryId: repository.RepositoryId,
+		Description: descritpion, Structure: fields, IsActive: isActive}
+	data, err := json.Marshal(schema)
+	if err != nil {
+		return nil, err
+	}
+
+	url := fmt.Sprintf("/repositories/%s/schemas", repository.RepositoryId)
+	resp, err := ca.Call("POST", url, string(data))
+	if err != nil {
+		return nil, err
+	}
+
+	// JSON: unmarshal resp content
+	schemaEnvelope := SchemaEnvelope{}
+	if err := json.Unmarshal([]byte(resp), &schemaEnvelope); err != nil {
+		return nil, err
+	}
+	schemaEnvelope.Schema.adjustDefaultTypes()
+
+	return schemaEnvelope.Schema, nil
 }
-
-
-
-// // [C]reate a new schema
-// func (ca *CustodiaAPIv1) CreateSchema(repository *Repository, descritpion string,
-// 	isActive bool, fields []SchemaField) (*Schema, error) {
-// 	if repository.RepositoryId == "" {
-// 		return nil, fmt.Errorf("repository has no RepositoryId, " +
-// 			"does it exist?")
-// 	} else if !common.IsValidUUID(repository.RepositoryId) {
-// 		return nil, fmt.Errorf("RepositoryId is not a valid UUID: %s (it " +
-// 			"should not be manually set)", repository.RepositoryId)
-// 	}
-
-// 	// FIXME: missing field type validation, and indexed property validation
-// 	//   and insensitive property
-
-// 	schema := Schema{RepositoryId: repository.RepositoryId,
-// 		Description: descritpion, Structure: fields, IsActive: isActive}
-// 	data, err := json.Marshal(schema)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	url := fmt.Sprintf("/repositories/%s/schemas", repository.RepositoryId)
-// 	resp, err := ca.Call("POST", url, string(data))
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	// JSON: unmarshal resp content
-// 	schemaEnvelope := SchemaEnvelope{}
-// 	if err := json.Unmarshal([]byte(resp), &schemaEnvelope); err != nil {
-// 		return nil, err
-// 	}
-// 	schemaEnvelope.Schema.adjustDefaultTypes()
-
-// 	return schemaEnvelope.Schema, nil
-// }
 
 // [R]ead an existent schema
 func (ca *CustodiaAPIv1) ReadSchema(id string) (*Schema, error) {
@@ -137,6 +119,7 @@ func (ca *CustodiaAPIv1) ReadSchema(id string) (*Schema, error) {
 // [U]pdate an existent schema
 func (ca *CustodiaAPIv1) UpdateSchema(id string, description string,
 	isActive bool, structure []SchemaField) (*Schema, error) {
+	// isActive bool, structure json.RawMessage) (*Schema, error) {
 		url := fmt.Sprintf("/schemas/%s", id)
 
 		// Schema with just the data to send, so we can easily marshal it
