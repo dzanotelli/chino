@@ -147,7 +147,7 @@ func (ca *CustodiaAPIv1) UpdateSchema(id string, description string,
 		return schemaEnvelope.Schema, nil
 }
 
-// [D]elete and existent schema
+// [D]elete an existent schema
 // if force=true the schema is deleted, else it's just deactivated
 // if all_content=true the schema content is deleted too (it also sets
 // automatically force=true)
