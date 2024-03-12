@@ -690,6 +690,9 @@ func TestDocumentCRUDL(t *testing.T) {
             t.Errorf("content: bad boolField, got: %v want: %v",
                 doc.Content["boolField"], true)
         }
+
+        // FIXME: need to check subitem per subitem (year, month, etc)
+        //   and before, check the type
         if doc.Content["dateField"] !=
             time.Date(1970, time.January, 1, 0, 0, 0, 0, time.UTC) {
             t.Errorf("content: bad dateField, got: %v want: %v",

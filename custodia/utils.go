@@ -194,6 +194,7 @@ func parseArrayString(arrayString string, itemType string) ([]interface{},
 		splitted[i] = strings.Trim(v, " ")
 	}
 
+	// FIXME: probably we can replace this switch with some Unmarshal call
 	switch itemType {
 	case TypeArrayInt:
 		for i, v := range splitted {
