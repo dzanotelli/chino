@@ -216,8 +216,9 @@ func parseArrayString(arrayString string, itemType string) ([]interface{},
 			}
 		}
 	case TypeArrayStr:
+		// FIXME: remove
 		for _, v := range splitted {
-			result = append(result, v)
+			result = append(result, strings.Trim(v, "\""))
 		}
 	default:
 		panic(fmt.Sprintf("unhandled type '%s'", itemType))
