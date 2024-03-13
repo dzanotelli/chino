@@ -179,22 +179,22 @@ func validateContent(data map[string]interface{},
 	return errors
 }
 
-func parseArrayString(arrayString string, itemType string) ([]interface{},
+// Manually parse a JSON array of int, floats or strings
+func parseJSONArray(strArray string, itemType string) ([]interface{},
 	error) {
 	var result []interface{}
 	var ee []error
 	var err error
 
 	// remove brackets and split values
-	arrayString = strings.TrimLeft(arrayString, "[")
-	arrayString = strings.TrimRight(arrayString, "]")
+	strArray = strings.TrimLeft(strArray, "[")
+	strArray = strings.TrimRight(strArray, "]")
 
-	splitted := strings.Split(arrayString, ",")
+	splitted := strings.Split(strArray, ",")
 	for i, v := range splitted {
 		splitted[i] = strings.Trim(v, " ")
 	}
 
-	// FIXME: probably we can replace this switch with some Unmarshal call
 	switch itemType {
 	case TypeArrayInt:
 		for i, v := range splitted {
@@ -217,7 +217,8 @@ func parseArrayString(arrayString string, itemType string) ([]interface{},
 			}
 		}
 	case TypeArrayStr:
-		// FIXME: remove
+		// since we are manually parsing the JSON array of values, we need to
+		// remove the double quotes around each value
 		for _, v := range splitted {
 			result = append(result, strings.Trim(v, "\""))
 		}
@@ -263,16 +264,9 @@ func convertField(value interface{}, field SchemaField) (interface{}, error) {
 			e = fmt.Errorf("field '%s': error while converting to " +
 				"time.Time, %w", field.Name, err)
 		}
-	// case "base64":
-	// 	converted = fmt.Sprintf("%v", value)
-	// 	_, err = base64.StdEncoding.DecodeString(converted.(string))
-	// 	if err != nil {
-	// 		e = fmt.Errorf("field '%s': not a valid base64 string, %w",
-	// 			field.Name, err)
-	// 	}
 	case TypeArrayInt, TypeArrayFloat, TypeArrayStr:
 		arrayStr := fmt.Sprintf("%v", value)
-		converted, e = parseArrayString(arrayStr, field.Type)
+		converted, e = parseJSONArray(arrayStr, field.Type)
 	default:
 		e := fmt.Errorf("field '%s': type '%s' not handled", field.Name,
 			field.Type)

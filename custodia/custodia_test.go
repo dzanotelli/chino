@@ -748,18 +748,36 @@ func TestDocumentCRUDL(t *testing.T) {
                 dateTimeField.Second())
         }
 
+        // base64, json, and blob are just string fields. We don't care if the
+        // string in it actually converts to real data. This is a problem of
+        // the user, his duty to encode/decode data correctly
+        if doc.Content["base64Field"] !=
+            "VGhpcyBpcyBhIGJhc2UtNjQgZW5jb2RlZCBzdHJpbmcu" {
+            t.Errorf("content: bad base64Field, got: %v want: %v",
+            doc.Content["base64Field"],
+            "VGhpcyBpcyBhIGJhc2UtNjQgZW5jb2RlZCBzdHJpbmcu")
+        }
+        if doc.Content["jsonField"] != `{"success": true}` {
+            t.Errorf("content: bad jsonField, got: %v want: {\"success\": true}",
+                doc.Content["jsonField"])
+        }
+        wantBlobField, _ := dummyContent["blobField"].(string)
+        if doc.Content["blobField"] != wantBlobField {
+            t.Errorf("content: bad blobField, got: %v want: %v",
+                doc.Content["blobField"], wantBlobField)
+        }
+
+        // test array fields
         if reflect.DeepEqual(doc.Content["arrayIntegerField"],
             []int{0, 1, 2, 3, 4, 5}) {
             t.Errorf("content: bad arrayIntegerField, got: %v want: %v",
                 doc.Content["arrayIntegerField"], []int{0, 1, 2, 3, 4, 5})
         }
-        // test the content
         if reflect.DeepEqual(doc.Content["arrayFloatField"],
             []float64{1.1, 2.2, 3.3, 4.4}) {
             t.Errorf("content: bad arrayIntegerField, got: %v want: %v",
                 doc.Content["arrayFloatField"], []float64{1.1, 2.2, 3.3, 4.4})
         }
-        // test the content
         if reflect.DeepEqual(doc.Content["arrayStringField"],
             []string{"Hello", "world", "!"}) {
             t.Errorf("content: bad arrayIntegerField, got: %v want: %v",
