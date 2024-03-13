@@ -519,7 +519,6 @@ func TestDocumentCRUDL(t *testing.T) {
         LastUpdate: "2015-02-24T21:48:16.332",
         IsActive: false,
     }
-    // this can be added to dummyDoc later
     dummyContent := map[string]interface{}{
         "integerField": 42,
         "flaotField": 3.14,
@@ -536,6 +535,7 @@ func TestDocumentCRUDL(t *testing.T) {
         "arrayFloatField": `[1.1, 2.2, 3.3, 4.4]`,
         "arrayStringField": `["Hello", "world", "!"]`,
     }
+    dummyDoc.Content = dummyContent
 
     // shortcuts
     schemaId := dummyDoc.SchemaId
@@ -564,7 +564,12 @@ func TestDocumentCRUDL(t *testing.T) {
         } else if r.URL.Path == fmt.Sprintf("/api/v1/documents/%s",
             docId) && r.Method == "GET" {
             // mock READ response
-            dummyDoc.Content = dummyContent
+            writeDocResponse(w)
+        } else if r.URL.Path == fmt.Sprintf("/api/v1/documents/%s",
+        docId) && r.Method == "PUT" {
+            // mock UPDATE response
+            dummyDoc.IsActive = true
+            dummyContent["stringField"] = "brematurata"
             writeDocResponse(w)
         } else {
             err := `{"result": "error", "result_code": 404, "data": null, `
@@ -783,6 +788,23 @@ func TestDocumentCRUDL(t *testing.T) {
             t.Errorf("content: bad arrayIntegerField, got: %v want: %v",
                 doc.Content["arrayStringField"],
                 []string{"Hello", "world", "!"})
+        }
+    } else {
+        t.Errorf("unexpected: both document and error are nil!")
+    }
+
+    // test UPDATE
+    // we still pass empty content, non influential, response is mocked
+    doc, err = custodia.UpdateDocument(doc.DocumentId, true, content)
+    if err != nil {
+        t.Errorf("unexpected error: %v", err)
+    } else if doc != nil {
+        if doc.IsActive != true {
+            t.Errorf("bad isActive, got: %v want: true", doc.IsActive)
+        }
+        if doc.Content["stringField"] != "brematurata" {
+            t.Errorf("bad stringField, got: %v want: brematurata",
+                doc.Content["stringField"])
         }
     } else {
         t.Errorf("unexpected: both document and error are nil!")
