@@ -528,7 +528,7 @@ func TestDocumentCRUDL(t *testing.T) {
         "boolField": true,
         "dateField": "1970-01-01",
         "timeField": "00:01:30",
-        "datetimeField": "1970-01-01T00:01:30",
+        "datetimeField": "2001-03-08T23:31:42",
         "base64Field": "VGhpcyBpcyBhIGJhc2UtNjQgZW5jb2RlZCBzdHJpbmcu",
         "jsonField": `{"success": true}`,
         "blobField": uuid.New().String(),
@@ -691,26 +691,63 @@ func TestDocumentCRUDL(t *testing.T) {
                 doc.Content["boolField"], true)
         }
 
-        // FIXME: need to check subitem per subitem (year, month, etc)
-        //   and before, check the type
-        if doc.Content["dateField"] !=
-            time.Date(1970, time.January, 1, 0, 0, 0, 0, time.UTC) {
-            t.Errorf("content: bad dateField, got: %v want: %v",
-                doc.Content["dateField"],
-                time.Date(1970, time.January, 1, 0, 0, 0, 0, time.UTC))
+        // for date we check just the yyyy-mm-dd part (ignoring time)
+        dateField, _ := doc.Content["dateField"].(time.Time)
+        if dateField.Year() != 1970 {
+            t.Errorf("content: bad dateField year, got: %v want: 1970",
+                dateField.Year())
         }
-        if doc.Content["timeField"] !=
-            time.Date(1970, time.January, 1, 0, 1, 30, 0, time.UTC) {
-            t.Errorf("content: bad timeField, got: %v want: %v",
-                doc.Content["timeField"],
-                time.Date(1970, time.January, 1, 0, 1, 30, 0, time.UTC))
+        if dateField.Month() != 1 {
+            t.Errorf("content: bad dateField month, got: %v want: 1",
+                dateField.Month())
         }
-        if doc.Content["datetimeField"] !=
-            time.Date(1970, time.January, 1, 0, 1, 30, 0, time.UTC) {
-            t.Errorf("content: bad datetimeField, got: %v want: %v",
-                doc.Content["datetimeField"],
-                time.Date(1970, time.January, 1, 0, 1, 30, 0, time.UTC))
+        if dateField.Day() != 1 {
+            t.Errorf("content: bad dateField day, got: %v want: 1",
+                dateField.Day())
         }
+
+        // for time we check just the HH:MM:SS part (ignoring date)
+        timeField, _ := doc.Content["timeField"].(time.Time)
+        if timeField.Hour() != 0 {
+            t.Errorf("content: bad timeField hour, got: %v want: 0",
+                timeField.Hour())
+        }
+        if timeField.Minute() != 1 {
+            t.Errorf("content: bad timeField minute, got: %v want: 1",
+                timeField.Minute())
+        }
+        if timeField.Second() != 30 {
+            t.Errorf("content: bad timeField second, got: %v want: 30",
+                timeField.Second())
+        }
+
+        // for datetime we check all
+        dateTimeField, _ := doc.Content["datetimeField"].(time.Time)
+        if dateTimeField.Year() != 2001 {
+            t.Errorf("content: bad dateTimeField year, got: %v want: 2001",
+                dateTimeField.Year())
+        }
+        if dateTimeField.Month() != 3 {
+            t.Errorf("content: bad dateTimeField month, got: %v want: 3",
+                dateTimeField.Month())
+        }
+        if dateTimeField.Day() != 8 {
+            t.Errorf("content: bad dateTimeField day, got: %v want: 8",
+                dateTimeField.Day())
+        }
+        if dateTimeField.Hour() != 23 {
+            t.Errorf("content: bad dateTimeField hour, got: %v want: 23",
+                dateTimeField.Hour())
+        }
+        if dateTimeField.Minute() != 31 {
+            t.Errorf("content: bad dateTimeField minute, got: %v want: 31",
+                dateTimeField.Minute())
+        }
+        if dateTimeField.Second() != 42 {
+            t.Errorf("content: bad dateTimeField second, got: %v want: 42",
+                dateTimeField.Second())
+        }
+
         if reflect.DeepEqual(doc.Content["arrayIntegerField"],
             []int{0, 1, 2, 3, 4, 5}) {
             t.Errorf("content: bad arrayIntegerField, got: %v want: %v",
