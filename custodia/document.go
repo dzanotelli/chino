@@ -178,7 +178,7 @@ func (ca *CustodiaAPIv1) ListDocuments(schemaId string,
 		// if arg not given, skip it
 		value, ok := params[param]
 		if !ok {
-			continue
+			return nil, fmt.Errorf("got unexpected param '%s'", param)
 		}
 
 		switch param {

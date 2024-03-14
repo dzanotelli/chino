@@ -467,7 +467,7 @@ func TestSchemaCRUDL(t *testing.T) {
     // test DELETE
     err = custodia.DeleteSchema(schema.SchemaId, true, true)
     if err != nil {
-        t.Errorf("error while listing schemas. Details: %v", err)
+        t.Errorf("error while deleting schema. Details: %v", err)
     }
 
     // test LIST
@@ -571,6 +571,28 @@ func TestDocumentCRUDL(t *testing.T) {
             dummyDoc.IsActive = true
             dummyContent["stringField"] = "brematurata"
             writeDocResponse(w)
+        } else if r.URL.Path == fmt.Sprintf("/api/v1/documents/%s",
+            docId) && r.Method == "DELETE" {
+            // mock DELETE response
+            envelope := CustodiaEnvelope{Result: "success", ResultCode: 200}
+            out, _ := json.Marshal(envelope)
+            w.WriteHeader(http.StatusOK)
+            w.Write(out)
+        } else if r.URL.Path == fmt.Sprintf("/api/v1/schemas/%s/documents",
+            schemaId) && r.Method == "GET" {
+            documentsResp := DocumentsResponse{
+                Count: 1,
+                TotalCount: 1,
+                Limit: 100,
+                Offset: 0,
+                Documents: []ResponseInnerDocument{dummyDoc},
+            }
+            data, _ := json.Marshal(documentsResp)
+            envelope := CustodiaEnvelope{Result: "success", ResultCode: 200}
+            envelope.Data = data
+            out, _ := json.Marshal(envelope)
+            w.WriteHeader(http.StatusOK)
+            w.Write(out)
         } else {
             err := `{"result": "error", "result_code": 404, "data": null, `
             err += `"message": "Resource not found (you may have a '/' at `
@@ -810,4 +832,34 @@ func TestDocumentCRUDL(t *testing.T) {
         t.Errorf("unexpected: both document and error are nil!")
     }
 
+    // test DELETE
+    err = custodia.DeleteDocument(doc.DocumentId, true, true)
+    if err != nil {
+        t.Errorf("error while deleting document. Details: %v", err)
+    }
+
+    // test LIST
+    // test we gave a wrong argument
+    params := map[string]interface{}{"antani": 42}
+    _, err = custodia.ListDocuments(schema.SchemaId, params)
+    if err == nil {
+        t.Errorf("ListDocuments is not giving error with wrong param %v",
+            params)
+    }
+    // test that all the other params are accepted instead
+    goodParams := map[string]interface{}{
+		"full_document": true,
+		"is_active": true,
+		"insert_date__gt": time.Time{},
+		"insert_date__lt": time.Time{},
+		"last_update__gt": time.Time{},
+		"last_update__lt": time.Time{},
+	}
+    documents, err := custodia.ListDocuments(schema.SchemaId, goodParams)
+    if err != nil {
+        t.Errorf("error while listing documents. Details: %v", err)
+    } else if reflect.TypeOf(documents) != reflect.TypeOf([]*Document{}) {
+        t.Errorf("documents is not list of Documents, got: %T want: %T",
+            documents, []*Document{})
+    }
 }
