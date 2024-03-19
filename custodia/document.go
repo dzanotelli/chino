@@ -174,12 +174,13 @@ func (ca *CustodiaAPIv1) ListDocuments(schemaId string,
 		"last_update__gt": time.Time{},
 		"last_update__lt": time.Time{},
 	}
-	for param := range availableParams {
-		// if arg not given, skip it
-		value, ok := params[param]
+	for param := range params {
+		// check that param is legit
+		_, ok := availableParams[param]
 		if !ok {
 			return nil, fmt.Errorf("got unexpected param '%s'", param)
 		}
+		value := params[param]
 
 		switch param {
 		case "full_document", "is_active":
@@ -191,12 +192,13 @@ func (ca *CustodiaAPIv1) ListDocuments(schemaId string,
 			}
 		case "insert_date__gt", "insert_date__lt", "last_update__gt",
 			"last_update__lt":
-			_, ok := value.(time.Time)
+			time_value, ok := value.(time.Time)
 			if !ok {
 				err := fmt.Errorf("param '%s': bad type: '%T', must be Time",
 					param, value)
 				return nil, err
 			}
+			value = time_value.Format(time.RFC3339)
 		default:
 			return nil, fmt.Errorf("got unexpected param '%s'", param)
 		}
