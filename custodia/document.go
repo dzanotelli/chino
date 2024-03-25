@@ -161,7 +161,7 @@ func (ca *CustodiaAPIv1) ListDocuments(schemaId string,
 		return nil, fmt.Errorf("schemaId is not a valid UUID: %s", schemaId)
 	}
 
-	url := fmt.Sprintf("/schema/%s/documents", schemaId)
+	url := fmt.Sprintf("/schemas/%s/documents", schemaId)
 	if len(params) > 0 {
 		url += "?"
 	}
