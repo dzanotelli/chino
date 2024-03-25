@@ -20,9 +20,10 @@ type Schema struct {
 	SchemaId string `json:"schema_id,omitempty"`
 	RepositoryId string `json:"repository_id,omitempty"`
 	Description string `json:"description"`
-	InsertDate timeutils.Time `json:"insert_date"`
-	LastUpdate timeutils.Time `json:"last_update"`
+	InsertDate timeutils.Time `json:"insert_date,omitempty"`
+	LastUpdate timeutils.Time `json:"last_update,omitempty"`
 	IsActive bool `json:"is_active"`
+	// Structure json.RawMessage `json:"structure"`
 	Structure []SchemaField `json:"structure"`
 }
 
@@ -36,7 +37,7 @@ type SchemasEnvelope struct {
 
 // adjustDefaultType fixes the automatic interface-to-type conversion done
 // by json.Unmarshal to the desired type (e.g. json int values are
-// automatically converted to float and we want int instead)
+// automatically decoded to float64 and we want int instead)
 func (f *SchemaField) adjustDefaultType() {
 	if f.Default == nil {
 		return
@@ -57,21 +58,27 @@ func (s *Schema) adjustDefaultTypes() {
 }
 
 // [C]reate a new schema
-func (ca *CustodiaAPIv1) CreateSchema(repositoryId string, descritpion string, 
-	isActive bool, fields []SchemaField) (*Schema, error) {
-	if !common.IsValidUUID(repositoryId) {
-		return nil, errors.New("repositoryId is not a valid UUID: " +
-			repositoryId)
+func (ca *CustodiaAPIv1) CreateSchema(repository *Repository,
+	descritpion string, isActive bool, fields []SchemaField) (*Schema, error) {
+	if repository.RepositoryId == "" {
+		return nil, fmt.Errorf("repository has no RepositoryId, " +
+			"does it exist?")
+	} else if !common.IsValidUUID(repository.RepositoryId) {
+		return nil, fmt.Errorf("RepositoryId is not a valid UUID: %s (it " +
+			"should not be manually set)", repository.RepositoryId)
 	}
-	
-	schema := Schema{RepositoryId: repositoryId, Description: descritpion,
-		Structure: fields, IsActive: isActive}
+
+	// FIXME: missing field type validation, and indexed property validation
+	//   and insensitive property
+
+	schema := Schema{RepositoryId: repository.RepositoryId,
+		Description: descritpion, Structure: fields, IsActive: isActive}
 	data, err := json.Marshal(schema)
 	if err != nil {
 		return nil, err
 	}
 
-	url := fmt.Sprintf("/repositories/%s/schemas", repositoryId)
+	url := fmt.Sprintf("/repositories/%s/schemas", repository.RepositoryId)
 	resp, err := ca.Call("POST", url, string(data))
 	if err != nil {
 		return nil, err
@@ -110,21 +117,18 @@ func (ca *CustodiaAPIv1) ReadSchema(id string) (*Schema, error) {
 }
 
 // [U]pdate an existent schema
-func (ca *CustodiaAPIv1) UpdateSchema(schema *Schema, description string,
+func (ca *CustodiaAPIv1) UpdateSchema(id string, description string,
 	isActive bool, structure []SchemaField) (*Schema, error) {
-		url := fmt.Sprintf("/schemas/%s", (*schema).SchemaId)
+	// isActive bool, structure json.RawMessage) (*Schema, error) {
+		url := fmt.Sprintf("/schemas/%s", id)
 
-		// get a copy and update the values, so we can easily marshal it
-		
-		// copying the struct is not necessary since we re-assign it, so the
-		// one passed to the func is already a copy
-		// structCopy := make([]SchemaField, len(schema.Structure))
-		// copy(structCopy, schema.Structure)
-		copy := *schema
-		copy.Description = description
-		copy.IsActive = isActive
-		copy.Structure = structure
-		data, err := json.Marshal(copy)
+		// Schema with just the data to send, so we can easily marshal it
+		schema := Schema{
+			Description: description,
+			IsActive: isActive,
+			Structure: structure,
+		}
+		data, err := json.Marshal(schema)
 		if err != nil {
 			return nil, err
 		}
@@ -133,7 +137,7 @@ func (ca *CustodiaAPIv1) UpdateSchema(schema *Schema, description string,
 			return nil, err
 		}
 
-		// JSON: unmarshal resp content overwriting the old repository
+		// JSON: unmarshal resp content overwriting the old schema
 		schemaEnvelope := SchemaEnvelope{}
 		if err := json.Unmarshal([]byte(resp), &schemaEnvelope); err != nil {
 			return nil, err
@@ -143,13 +147,13 @@ func (ca *CustodiaAPIv1) UpdateSchema(schema *Schema, description string,
 		return schemaEnvelope.Schema, nil
 }
 
-// [D]elete and existent schema
+// [D]elete an existent schema
 // if force=true the schema is deleted, else it's just deactivated
-// if all_content=true the schema content is deleted too (it also sets 
+// if all_content=true the schema content is deleted too (it also sets
 // automatically force=true)
-func (ca *CustodiaAPIv1) DeleteSchema(schema *Schema, force, allContent bool) (
+func (ca *CustodiaAPIv1) DeleteSchema(id string, force, allContent bool) (
 	error) {
-	url := fmt.Sprintf("/schemas/%s", (*schema).SchemaId)
+	url := fmt.Sprintf("/schemas/%s", id)
 
 	// allContent requires force=true
 	if allContent {
@@ -168,8 +172,8 @@ func (ca *CustodiaAPIv1) DeleteSchema(schema *Schema, force, allContent bool) (
 // [L]ist all the schemas in a repository
 func (ca *CustodiaAPIv1) ListSchemas(repositoryId string) ([]*Schema, error) {
 	if !common.IsValidUUID(repositoryId) {
-		return nil, errors.New("repositoryId is not a valid UUID: " +
-			repositoryId)
+		err := fmt.Errorf("repositoryId is not a valid UUID: %v", repositoryId)
+		return nil, err
 	}
 	url := fmt.Sprintf("/repositories/%s/schemas", repositoryId)
 	resp, err := ca.Call("GET", url)
@@ -190,4 +194,14 @@ func (ca *CustodiaAPIv1) ListSchemas(repositoryId string) ([]*Schema, error) {
 	}
 
 	return result, nil
+}
+
+// getStructureAsMap returns the list of fields in a map using the Name
+// as key for quick access
+func (s *Schema) getStructureAsMap() map[string]SchemaField {
+	result := make(map[string]SchemaField)
+	for _, field := range s.Structure {
+		result[field.Name] = field
+	}
+	return result
 }

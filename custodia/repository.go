@@ -71,16 +71,13 @@ func (ca *CustodiaAPIv1) ReadRepository(id string) (*Repository, error) {
 }
 
 // [U]pdate an existent repository
-func (ca *CustodiaAPIv1) UpdateRepository(repository *Repository, 
-	description string, isActive bool) (*Repository, error) {	
-	url := fmt.Sprintf("/repositories/%s", (*repository).RepositoryId)
+func (ca *CustodiaAPIv1) UpdateRepository(id string, description string,
+	isActive bool) (*Repository, error) {	
+	url := fmt.Sprintf("/repositories/%s", id)
 
-	// get a copy and update the values, so we can easily marshal it
-	copy := *repository	
-	copy.RepositoryId = ""  // we must not send this
-	copy.Description = description
-	copy.IsActive = isActive
-	data, err := json.Marshal(copy)
+	// Repository with just the data to send, so we can easily marshal it
+	repo := Repository{Description: description, IsActive: isActive}
+	data, err := json.Marshal(repo)
 	if err != nil {
 		return nil, err
 	}
@@ -100,9 +97,9 @@ func (ca *CustodiaAPIv1) UpdateRepository(repository *Repository,
 // [D]elete an existent repository
 // if force=true recursively deletes all the repository content, else the
 // repository is just deactivated
-func (ca *CustodiaAPIv1) DeleteRepository(repository *Repository, force bool) (
+func (ca *CustodiaAPIv1) DeleteRepository(id string, force bool) (
 	error) {
-	url := fmt.Sprintf("/repositories/%s", repository.RepositoryId)
+	url := fmt.Sprintf("/repositories/%s", id)
 	url += fmt.Sprintf("?force=%v", force)
 
 	_, err := ca.Call("DELETE", url)

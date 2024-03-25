@@ -8,3 +8,5 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 - base client (with tests)
 - custodia repository API
+- custodia schema API
+- custodia document API
