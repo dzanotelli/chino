@@ -17,12 +17,12 @@ type Repository struct {
 	LastUpdate timeutils.Time `json:"last_update"`
 	IsActive bool `json:"is_active"`
 }
-// RepositoryEnvelope: used the unmarshal the CRU responses
+// RepositoryEnvelope: used to unmarshal the CRU responses
 type RepositoryEnvelope struct {
 	Repository *Repository `json:"repository"`
 }
 
-// RepositoriesEnvelope: used the unmarshal the L response
+// RepositoriesEnvelope: used to unmarshal the L response
 type RepositoriesEnvelope struct {
 	Repositories []Repository `json:"repositories"`
 }
@@ -61,7 +61,7 @@ func (ca *CustodiaAPIv1) ReadRepository(id string) (*Repository, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// JSON: unmarshal resp content
 	repoEnvelope := RepositoryEnvelope{}
 	if err := json.Unmarshal([]byte(resp), &repoEnvelope); err != nil {
@@ -72,7 +72,7 @@ func (ca *CustodiaAPIv1) ReadRepository(id string) (*Repository, error) {
 
 // [U]pdate an existent repository
 func (ca *CustodiaAPIv1) UpdateRepository(id string, description string,
-	isActive bool) (*Repository, error) {	
+	isActive bool) (*Repository, error) {
 	url := fmt.Sprintf("/repositories/%s", id)
 
 	// Repository with just the data to send, so we can easily marshal it

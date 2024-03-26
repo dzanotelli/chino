@@ -24,6 +24,16 @@ const TypeDate, TypeTime, TypeDateTime = "date", "time", "datetime"
 const TypeBase64, TypeJson, TypeBlob = "base64", "json", "blob"
 
 
+func indexOf(word string, data []string) (int) {
+    for k, v := range data {
+        if word == v {
+            return k
+        }
+    }
+    return -1
+}
+
+
 // func struct2json(fields *struct{}) string {
 // 	out = "{"
 // 	fieldTemplate :=
