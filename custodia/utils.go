@@ -23,7 +23,13 @@ const TypeBool = "boolean"
 const TypeDate, TypeTime, TypeDateTime = "date", "time", "datetime"
 const TypeBase64, TypeJson, TypeBlob = "base64", "json", "blob"
 
+// type Enum struct {
+// 	Index int
+// 	Choices []string
+// }
 
+// Return the index of the first found occurence of word in data
+// or -1 if not found
 func indexOf(word string, data []string) (int) {
     for k, v := range data {
         if word == v {

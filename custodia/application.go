@@ -21,12 +21,7 @@ func (gt GrantType) String() string {
 	return gt.Choices()[gt-1]
 }
 
-func (gt GrantType) EnumIndex() int {
-	return int(gt)
-}
-
 func (gt GrantType) MarshalJSON() ([]byte, error) {
-    // It is assumed Suit implements fmt.Stringer.
     return json.Marshal(gt.String())
 }
 
@@ -52,14 +47,35 @@ const (
 	ClientTypeConfidential
 )
 
+func (ct ClientType) Choices() ([]string) {
+	return []string{"public", "confidential"}
+}
+
 func (ct ClientType) String() string {
-	return [...]string{"public", "confidential"}[ct-1]
+	return ct.Choices()[ct-1]
 }
 
 func (ct ClientType) EnumIndex() int {
 	return int(ct)
 }
 
+func (ct ClientType) MarshalJSON() ([]byte, error) {
+    return json.Marshal(ct.String())
+}
+
+func (ct *ClientType) UnmarshalJSON(data []byte) (err error) {
+	var value string
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	intValue := indexOf(value, ct.Choices()) + 1   // enum starts from 1
+	if intValue < 1 {
+		return fmt.Errorf("ClientType: received unknown value '%v'", value)
+	}
+
+	*ct = ClientType(intValue)
+	return nil
+}
 
 // Application represent an application stored in Custodia
 type Application struct {
