@@ -122,7 +122,7 @@ func (ca *CustodiaAPIv1) UpdateDocument(id string , isActive bool,
 		return nil, err
 	}
 
-	// JSON: unmarshal resp content overwriting the old document
+	// JSON: unmarshal resp content and return a fresh document instance
 	docEnvelope := DocumentEnvelope{}
 	if err := json.Unmarshal([]byte(resp), &docEnvelope); err != nil {
 		return nil, err
