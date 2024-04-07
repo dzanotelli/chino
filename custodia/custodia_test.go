@@ -863,3 +863,36 @@ func TestDocumentCRUDL(t *testing.T) {
             documents, []*Document{})
     }
 }
+
+func TestApplicationCRULD(t *testing.T) {
+    // ResponseInnerApp will be included in responses
+    type ResponseInnerApp struct {
+        AppSecret string `json:"app_secret"`
+        GrantType string `json:"grant_type"`
+        AppName string `json:"app_name"`
+        RedirectUrl string `json:"redirect_url"`
+        AppId string `json:"app_id"`
+    }
+
+    type ApplicationResponse struct {
+        Application ResponseInnerApp `json:"application"`
+    }
+
+    type ApplicationsResponse struct {
+        Count int `json:"count"`
+        TotalCount int `json:"total_count"`
+        Limit int `json:"limit"`
+        Offset int `json:"offset"`
+        Applications []ResponseInnerApp `json:"applications"`
+    }
+
+    // init stuff
+    dummyApp := ResponseInnerApp{
+        AppSecret: "123456",
+        GrantType: "password",
+        AppName: "antani",
+        RedirectUrl: "http://antani.org",
+        AppId: "this_is_the_app_id",
+    }
+
+}
