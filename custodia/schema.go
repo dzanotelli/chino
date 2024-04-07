@@ -9,6 +9,7 @@ import (
 	"github.com/simplereach/timeutils"
 )
 
+// SchemaField is used by both Schema and UserSchema
 type SchemaField struct {
 	Name string `json:"name"`
 	Type string `json:"type"`

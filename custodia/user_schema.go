@@ -9,14 +9,6 @@ import (
 	"github.com/simplereach/timeutils"
 )
 
-type UserSchemaField struct {
-	Name string `json:"name"`
-	Type string `json:"type"`
-	Indexed bool `json:"bool,omitempty"`
-	Default interface{} `json:"default,omitempty"`
-	Insensitive bool `json:"insensitive,omitempty"`
-}
-
 type UserSchema struct {
 	UserSchemaId string `json:"user_schema_id,omitempty"`
 	Description string `json:"description"`
@@ -24,7 +16,7 @@ type UserSchema struct {
 	InsertDate timeutils.Time `json:"insert_date,omitempty"`
 	LastUpdate timeutils.Time `json:"last_update,omitempty"`
 	IsActive bool `json:"is_active"`
-	Structure []UserSchemaField `json:"structure"`
+	Structure []SchemaField `json:"structure"`
 }
 
 type UserSchemaEnvelope struct {
@@ -33,21 +25,6 @@ type UserSchemaEnvelope struct {
 
 type UserSchemasEnvelope struct {
 	UserSchemas []UserSchema `json:"user_schemas"`
-}
-
-// adjustDefaultType fixes the automatic interface-to-type conversion done
-// by json.Unmarshal to the desired type (e.g. json int values are
-// automatically decoded to float64 and we want int instead)
-func (f *UserSchemaField) adjustDefaultType() {
-	if f.Default == nil {
-		return
-	}
-
-	switch f.Type {
-	case "integer":
-		floatVal, _ := f.Default.(float64)
-		f.Default = int(floatVal)
-	}
 }
 
 // adjustDefaultTypes for each field calls adjustDefaultType
@@ -59,7 +36,7 @@ func (s *UserSchema) adjustDefaultTypes() {
 
 // [C]reate a new user schema
 func (ca *CustodiaAPIv1) CreateUserSchema(descritpion string, isActive bool,
-	 fields []UserSchemaField) (*UserSchema, error) {
+	 fields []SchemaField) (*UserSchema, error) {
 	// FIXME: missing field type validation, and indexed property validation
 	//   and insensitive property
 
@@ -110,7 +87,7 @@ func (ca *CustodiaAPIv1) ReadUserSchema(id string) (*UserSchema, error) {
 
 // [U]pdate an existent user schema
 func (ca *CustodiaAPIv1) UpdateUserSchema(id string, description string,
-	isActive bool, structure []UserSchemaField) (*UserSchema, error) {
+	isActive bool, structure []SchemaField) (*UserSchema, error) {
 	// isActive bool, structure json.RawMessage) (*UserSchema, error) {
 		url := fmt.Sprintf("/user_schemas/%s", id)
 
@@ -180,8 +157,8 @@ func (ca *CustodiaAPIv1) ListUserSchemas() ([]*UserSchema, error) {
 
 // getStructureAsMap returns the list of fields in a map using the Name
 // as key for quick access
-func (us *UserSchema) getStructureAsMap() map[string]UserSchemaField {
-	result := make(map[string]UserSchemaField)
+func (us *UserSchema) getStructureAsMap() map[string]SchemaField {
+	result := make(map[string]SchemaField)
 	for _, field := range us.Structure {
 		result[field.Name] = field
 	}
