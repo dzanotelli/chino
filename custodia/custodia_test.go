@@ -580,6 +580,7 @@ func TestDocumentCRUDL(t *testing.T) {
             w.Write(out)
         } else if r.URL.Path == fmt.Sprintf("/api/v1/schemas/%s/documents",
             schemaId) && r.Method == "GET" {
+            // mock LIST response
             documentsResp := DocumentsResponse{
                 Count: 1,
                 TotalCount: 1,
@@ -887,12 +888,105 @@ func TestApplicationCRULD(t *testing.T) {
     }
 
     // init stuff
+    aid := "MyAppId42"
     dummyApp := ResponseInnerApp{
         AppSecret: "123456",
         GrantType: "password",
         AppName: "antani",
-        RedirectUrl: "http://antani.org",
-        AppId: "this_is_the_app_id",
+        RedirectUrl: "",
+    }
+
+    writeAppResponse := func(w http.ResponseWriter) {
+        data, _ := json.Marshal(ApplicationResponse{dummyApp})
+        envelope := CustodiaEnvelope{
+            Result: "success",
+            ResultCode: 200,
+            Message: nil,
+            Data: data,
+        }
+        out, _ := json.Marshal(envelope)
+
+        w.WriteHeader(http.StatusOK)
+        w.Write(out)
+    }
+
+    // mock calls
+    mockHandler := func(w http.ResponseWriter, r *http.Request) {
+        if r.URL.Path == "/api/v1/auth/applications" && r.Method == "POST" {
+            // mock CREATE response
+            writeAppResponse(w)
+        } else if r.URL.Path == fmt.Sprintf("/api/v1/auth/applications/%s",
+            aid) && r.Method == "GET" {
+            // mock READ response
+            writeAppResponse(w)
+        } else if r.URL.Path == fmt.Sprintf("/api/v1/auth/applications/%s",
+            aid) && r.Method == "PUT" {
+            // mock UPDATE response
+            dummyApp.GrantType = "confidential"
+            dummyApp.RedirectUrl = "http://antani.org"
+            writeAppResponse(w)
+        } else if r.URL.Path == fmt.Sprintf("/api/v1/auth/applications/%s",
+            aid) && r.Method == "DELETE" {
+            // mock DELETE response
+            envelope := CustodiaEnvelope{Result: "success", ResultCode: 200}
+            out, _ := json.Marshal(envelope)
+            w.WriteHeader(http.StatusOK)
+            w.Write(out)
+        } else if r.URL.Path == "/api/v1/auth/applications" &&
+            r.Method == "GET" {
+            // mock LIST response
+            appsResp := ApplicationsResponse{
+                Count: 1,
+                TotalCount: 1,
+                Limit: 100,
+                Offset: 0,
+                Applications: []ResponseInnerApp{dummyApp},
+            }
+            data, _ := json.Marshal(appsResp)
+            envelope := CustodiaEnvelope{Result: "success", ResultCode: 200}
+            envelope.Data = data
+            out, _ := json.Marshal(envelope)
+            w.WriteHeader(http.StatusOK)
+            w.Write(out)
+        } else {
+            err := `{"result": "error", "result_code": 404, "data": null, `
+            err += `"message": "Resource not found (you may have a '/' at `
+            err += `the end)"}`
+            w.WriteHeader(http.StatusNotFound)
+            w.Write([]byte(err))
+        }
+    }
+
+    server := httptest.NewServer(http.HandlerFunc(mockHandler))
+    defer server.Close()
+
+    auth := common.NewClientAuth()  // auth is tested elsewhere
+    client := common.NewClient(server.URL, auth)
+    custodia := NewCustodiaAPIv1(client)
+
+    // test CREATE
+    app, err := custodia.CreateApplication("antani", GrantPassword,
+        ClientConfidential, "")
+
+    if err != nil {
+        t.Errorf("unexpected error: %v", err)
+    } else if app != nil {
+        var tests = []struct {
+            want interface{}
+            got interface{}
+        }{
+            {dummyApp.AppId, app.Id},
+            {GrantPassword, app.GrantType},
+            {dummyApp.AppName, app.Name},
+            {dummyApp.AppSecret, app.Secret},
+
+        }
+        for _, test := range tests {
+            if test.want != test.got {
+                t.Errorf("Application CREATE: bad value, got: %v want: %v",
+                    test.got, test.want)
+            }
+        }
     }
 
 }

@@ -79,11 +79,11 @@ func (ct *ClientType) UnmarshalJSON(data []byte) (err error) {
 
 // Application represent an application stored in Custodia
 type Application struct {
-	AppSecret string `json:"app_secret,omitempty"`
+	Secret string `json:"app_secret,omitempty"`
 	GrantType GrantType `json:"grant_type"`
 	ClientType ClientType `json:"client_type"`
-	AppName string `json:"app_name"`
-	AppId string `json:"app_id,omitempty"`
+	Name string `json:"app_name"`
+	Id string `json:"app_id,omitempty"`
 	RedirectUrl string `json:"redirect_url,omitempty"`
 }
 
@@ -108,7 +108,7 @@ func (ca *CustodiaAPIv1) CreateApplication(name string, grantType GrantType,
 	}
 
 	application := Application{
-		AppName: name,
+		Name: name,
 		GrantType: grantType,
 		ClientType: clientType,
 		RedirectUrl: redirectUrl,
@@ -160,7 +160,7 @@ func (ca *CustodiaAPIv1) UpdateApplication(id string, name string,
 	}
 
 	application := Application{
-		AppName: name,
+		Name: name,
 		GrantType: grantType,
 		ClientType: clientType,
 		RedirectUrl: redirectUrl,
