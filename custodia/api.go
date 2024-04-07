@@ -18,6 +18,7 @@ type CustodiaEnvelope struct {
 
 type CustodiaAPIv1 struct {
 	client *common.Client
+	RawResponse *http.Response
 }
 
 // NewCustodiaAPI returns a new CustodiaAPI object to interact
@@ -32,6 +33,10 @@ func (ca *CustodiaAPIv1) Call(method, path string, data ...string) (
 	string, error) {
 
 	httpResp, err := ca.client.Call(method, "/api/v1" + path, data...)
+
+	// save the response for further inspection on need
+	ca.RawResponse = httpResp
+
 	if err != nil {
 		return "", err
 	}

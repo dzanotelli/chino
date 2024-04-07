@@ -195,7 +195,7 @@ func (ca *CustodiaAPIv1) DeleteApplication(id string) (error) {
 }
 
 // [L]ist all the applications
-func (ca *CustodiaAPIv1) ListApplications() ([]Application, error) {
+func (ca *CustodiaAPIv1) ListApplications() ([]*Application, error) {
 	url := "/auth/applications"
 	resp, err := ca.Call("GET", url)
 	if err != nil {
@@ -208,5 +208,10 @@ func (ca *CustodiaAPIv1) ListApplications() ([]Application, error) {
 		return nil, err
 	}
 
-	return appsEnvelope.Applications, nil
+	result := []*Application{}
+	for _, app := range appsEnvelope.Applications {
+		result = append(result, &app)
+	}
+
+	return result, nil
 }
