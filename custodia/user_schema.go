@@ -120,7 +120,7 @@ func (ca *CustodiaAPIv1) UpdateUserSchema(id string, description string,
 // if force=true the user schema is deleted, else it's just deactivated
 func (ca *CustodiaAPIv1) DeleteUserSchema(id string, force bool) (
 	error) {
-	url := fmt.Sprintf("/schemas/%s", id)
+	url := fmt.Sprintf("/user_schemas/%s", id)
 	if force {
 		url += "?force=true"
 	}

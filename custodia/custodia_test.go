@@ -1058,7 +1058,7 @@ func TestApplicationCRULD(t *testing.T) {
 func TestUserSchemaCRUDL(t *testing.T) {
     // ResponseInnerUserSchema will be included in responses
     type ResponseInnerUserSchema struct {
-        UserSchemaId string `json:"schema_id"`
+        UserSchemaId string `json:"user_schema_id"`
         Description string `json:"description"`
         Groups []string `json:"groups"`
         InsertDate string `json:"insert_date"`
@@ -1127,6 +1127,7 @@ func TestUserSchemaCRUDL(t *testing.T) {
             dummyUserSchema.UserSchemaId) && r.Method == "PUT" {
             // mock UPDATE response
             dummyUserSchema.Description = "changed"
+            dummyUserSchema.IsActive = true
             // dummyUserSchema.Structure[0].Default = 21
             writeUserSchemaResponse(w)
         } else if r.URL.Path == fmt.Sprintf("/api/v1/user_schemas/%s",
@@ -1172,15 +1173,91 @@ func TestUserSchemaCRUDL(t *testing.T) {
     // that the received data are correctly populating the objects
     structure := []SchemaField{}
 
-    user_schema, err := custodia.CreateUserSchema("unittest", true, structure);
+    userSchema, err := custodia.CreateUserSchema("unittest", true, structure);
 
     if err != nil {
         t.Errorf("unexpected error: %v", err)
-    } else if user_schema != nil {
-
+    } else if userSchema != nil {
+        var tests = []struct {
+            want interface{}
+            got interface{}
+        }{
+            {dummyUserSchema.UserSchemaId, userSchema.UserSchemaId},
+            {dummyUserSchema.Description, userSchema.Description},
+            {dummyUserSchema.Groups, userSchema.Groups},
+            {2015, userSchema.InsertDate.Year()},
+            {2015, userSchema.LastUpdate.Year()},
+            {false, userSchema.IsActive},
+        }
+        for _, test := range tests {
+            if !reflect.DeepEqual(test.want, test.got) {
+                t.Errorf("UserSchema CREATE: bad value, got: %v want: %v",
+                    test.got, test.want)
+            }
+        }
     } else {
-        t.Errorf("unexpected: both schema and error are nil!")
+        t.Errorf("unexpected: both userSchema and error are nil!")
     }
 
+    // test READ
+    userSchema, err = custodia.ReadUserSchema(dummyUserSchema.UserSchemaId)
+    if err != nil {
+        t.Errorf("unexpected error: %v", err)
+    } else if userSchema != nil {
+        var tests = []struct {
+            want interface{}
+            got interface{}
+        }{
+            {dummyUserSchema.UserSchemaId, userSchema.UserSchemaId},
+            {dummyUserSchema.Description, userSchema.Description},
+            {dummyUserSchema.Groups, userSchema.Groups},
+            {2015, userSchema.InsertDate.Year()},
+            {2015, userSchema.LastUpdate.Year()},
+            {false, userSchema.IsActive},
+        }
+        for _, test := range tests {
+            if !reflect.DeepEqual(test.want, test.got) {
+                t.Errorf("UserSchema CREATE: bad value, got: %v want: %v",
+                    test.got, test.want)
+            }
+        }
+    } else {
+        t.Errorf("unexpected: both userSchema and error are nil!")
+    }
 
+    // test UPDATE
+    userSchema, err = custodia.UpdateUserSchema(dummyUserSchema.UserSchemaId,
+        "antani2", true, dummyUserSchema.Structure)
+        var tests = []struct {
+            want interface{}
+            got interface{}
+        }{
+            {dummyUserSchema.UserSchemaId, userSchema.UserSchemaId},
+            {dummyUserSchema.Description, userSchema.Description},
+            {dummyUserSchema.Groups, userSchema.Groups},
+            {2015, userSchema.InsertDate.Year()},
+            {2015, userSchema.LastUpdate.Year()},
+            {true, userSchema.IsActive},
+        }
+        for _, test := range tests {
+            if !reflect.DeepEqual(test.want, test.got) {
+                t.Errorf("UserSchema CREATE: bad value, got: %v want: %v",
+                    test.got, test.want)
+            }
+        }
+
+    // test DELETE
+    err = custodia.DeleteUserSchema(dummyUserSchema.UserSchemaId, false)
+    if err != nil {
+        t.Errorf("error while deleting user schema. Details: %v", err)
+    }
+
+    // test LIST
+    uss, err := custodia.ListUserSchemas()
+    if err != nil {
+        t.Errorf("error while listing user schemas. Details: %v", err)
+    } else if reflect.TypeOf(uss) != reflect.TypeOf([]*UserSchema{}) {
+        t.Errorf("uss is not list of UserSchemas, got: %T want: %T",
+            uss, []*UserSchema{})
+    }
 }
