@@ -230,7 +230,6 @@ func TestSchemaCRUDL(t *testing.T) {
         LastUpdate string `json:"last_update"`
         IsActive bool `json:"is_active"`
         Structure []SchemaField `json:"structure"`
-        // Structure json.RawMessage `json:"structure"`
     }
 
     // SchemaResponse will be marshalled to create an API-like response
@@ -344,7 +343,6 @@ func TestSchemaCRUDL(t *testing.T) {
     // and we will still get a working structure. The purpose here is to test
     // that the received data are correctly populating the objects
     structure := []SchemaField{}
-    // structure := json.RawMessage{}
     // we init a Repository with just the right id, don't need other data
     repo := Repository{RepositoryId: dummySchema.RepositoryId}
     schema, err := custodia.CreateSchema(&repo, "unittest", true, structure)
@@ -1055,8 +1053,134 @@ func TestApplicationCRULD(t *testing.T) {
         t.Errorf("apps is not list of Applications, got: %T want: %T",
             apps, []*Application{})
     }
+}
 
+func TestUserSchemaCRUDL(t *testing.T) {
+    // ResponseInnerUserSchema will be included in responses
+    type ResponseInnerUserSchema struct {
+        UserSchemaId string `json:"schema_id"`
+        Description string `json:"description"`
+        Groups []string `json:"groups"`
+        InsertDate string `json:"insert_date"`
+        LastUpdate string `json:"last_update"`
+        IsActive bool `json:"is_active"`
+        Structure []SchemaField `json:"structure"`
+    }
 
+    // SchemaResponse will be marshalled to create an API-like response
+    type UserSchemaResponse struct {
+        Schema ResponseInnerUserSchema `json:"user_schema"`
+    }
+
+    // SchemasResponse will be marshalled to create an API-like response
+    type UserSchemasResponse struct {
+        Count int `json:"count"`
+        TotalCount int `json:"total_count"`
+        Limit int `json:"limit"`
+        Offset int `json:"offset"`
+        UserSchemas []ResponseInnerUserSchema `json:"user_schemas"`
+    }
+
+    dummyUserSchema := ResponseInnerUserSchema{
+        UserSchemaId: uuid.New().String(),
+        Description: "unittest",
+        InsertDate: "2015-02-24T21:48:16.332",
+        LastUpdate: "2015-02-24T21:48:16.332",
+        IsActive: false,
+        // Structure: json.RawMessage{},
+        Structure: []SchemaField{
+            {Name: "IntField", Type: "integer", Indexed: true, Default: 42},
+            {Name: "StrField", Type: "string", Indexed: true, Default: "asd"},
+            {Name: "FloatField", Type: "float", Indexed: false, Default: 3.14},
+            {Name: "BoolField", Type: "bool", Indexed: false},
+            {Name: "DateField", Type: "date", Default: "2023-03-15"},
+            {Name: "TimeField", Type: "time", Default: "11:43:04.058"},
+            {Name: "DateTimeField", Type: "datetime",
+                Default: "2023-03-15T11:43:04.058"},
+        },
+    }
+
+    writeUserSchemaResponse := func(w http.ResponseWriter) {
+        data, _ := json.Marshal(UserSchemaResponse{dummyUserSchema})
+        envelope := CustodiaEnvelope{
+            Result: "success",
+            ResultCode: 200,
+            Message: nil,
+            Data: data,
+        }
+        out, _ := json.Marshal(envelope)
+
+        w.WriteHeader(http.StatusOK)
+        w.Write(out)
+    }
+
+    // mock calls
+    mockHandler := func(w http.ResponseWriter, r *http.Request) {
+        if r.URL.Path == "/api/v1/user_schemas" && r.Method == "POST" {
+            // mock CREATE response
+            writeUserSchemaResponse(w)
+        } else if r.URL.Path == fmt.Sprintf("/api/v1/user_schemas/%s",
+            dummyUserSchema.UserSchemaId) && r.Method == "GET" {
+            // mock READ response
+            writeUserSchemaResponse(w)
+        } else if r.URL.Path == fmt.Sprintf("/api/v1/user_schemas/%s",
+            dummyUserSchema.UserSchemaId) && r.Method == "PUT" {
+            // mock UPDATE response
+            dummyUserSchema.Description = "changed"
+            // dummyUserSchema.Structure[0].Default = 21
+            writeUserSchemaResponse(w)
+        } else if r.URL.Path == fmt.Sprintf("/api/v1/user_schemas/%s",
+            dummyUserSchema.UserSchemaId) && r.Method == "DELETE" {
+            // mock DELETE response
+            envelope := CustodiaEnvelope{Result: "success", ResultCode: 200}
+            out, _ := json.Marshal(envelope)
+            w.WriteHeader(http.StatusOK)
+            w.Write(out)
+        } else if r.URL.Path == "/api/v1/user_schemas" &&  r.Method == "GET" {
+            // mock LIST response
+            schemasResp := UserSchemasResponse{
+                Count: 1,
+                TotalCount: 1,
+                Limit: 100,
+                Offset: 0,
+                UserSchemas: []ResponseInnerUserSchema{dummyUserSchema},
+            }
+            data, _ := json.Marshal(schemasResp)
+            envelope := CustodiaEnvelope{Result: "success", ResultCode: 200}
+            envelope.Data = data
+            out, _ := json.Marshal(envelope)
+            w.WriteHeader(http.StatusOK)
+            w.Write(out)
+        } else {
+            err := `{"result": "error", "result_code": 404, "data": null, `
+            err += `"message": "Resource not found (you may have a '/' at `
+            err += `the end)"}`
+            w.WriteHeader(http.StatusNotFound)
+            w.Write([]byte(err))
+        }
+    }
+
+    server := httptest.NewServer(http.HandlerFunc(mockHandler))
+    defer server.Close()
+
+    auth := common.NewClientAuth()  // auth is tested elsewhere
+    client := common.NewClient(server.URL, auth)
+    custodia := NewCustodiaAPIv1(client)
+
+    // test CREATE: we submit an empty field list, since the response is mocked
+    // and we will still get a working structure. The purpose here is to test
+    // that the received data are correctly populating the objects
+    structure := []SchemaField{}
+
+    user_schema, err := custodia.CreateUserSchema("unittest", true, structure);
+
+    if err != nil {
+        t.Errorf("unexpected error: %v", err)
+    } else if user_schema != nil {
+
+    } else {
+        t.Errorf("unexpected: both schema and error are nil!")
+    }
 
 
 }
