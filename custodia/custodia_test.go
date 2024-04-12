@@ -1228,6 +1228,9 @@ func TestUserSchemaCRUDL(t *testing.T) {
     // test UPDATE
     userSchema, err = custodia.UpdateUserSchema(dummyUserSchema.UserSchemaId,
         "antani2", true, dummyUserSchema.Structure)
+    if err != nil {
+        t.Errorf("unexpected error: %v", err)
+    } else if userSchema != nil {
         var tests = []struct {
             want interface{}
             got interface{}
@@ -1245,6 +1248,9 @@ func TestUserSchemaCRUDL(t *testing.T) {
                     test.got, test.want)
             }
         }
+    } else {
+        t.Errorf("unexpected: both userSchema and error are nil!")
+    }
 
     // test DELETE
     err = custodia.DeleteUserSchema(dummyUserSchema.UserSchemaId, false)
@@ -1407,9 +1413,89 @@ func TestUserCRUDL(t *testing.T) {
     if err != nil {
         t.Errorf("unexpected error: %v", err)
     } else if user != nil {
-
+        var tests = []struct {
+            want interface{}
+            got interface{}
+        }{
+            {dummyUser.UserId, user.UserId},
+            {dummyUser.UserSchemaId, userSchema.UserSchemaId},
+            {dummyUser.Username, user.Username},
+            {2015, user.InsertDate.Year()},
+            {2, int(user.LastUpdate.Month())},
+            {false, user.IsActive},
+            {reflect.TypeOf(map[string]interface{}{}), reflect.TypeOf(user.Attributes)},
+            {reflect.TypeOf([]string{}), reflect.TypeOf(user.Groups)},
+        }
+        for _, test := range tests {
+            if !reflect.DeepEqual(test.want, test.got) {
+                t.Errorf("Users CREATE: bad value, got: %v want: %v",
+                    test.got, test.want)
+            }
+        }
     } else {
         t.Errorf("unexpected: both user and error are nil!")
+    }
+
+    // test UPDATE
+    user, err = custodia.UpdateUser(dummyUser.UserId, true, attributes)
+
+    if err != nil {
+        t.Errorf("unexpected error: %v", err)
+    } else if user != nil {
+        var tests = []struct {
+            want interface{}
+            got interface{}
+        }{
+            {dummyUser.UserId, user.UserId},
+            {dummyUser.UserSchemaId, userSchema.UserSchemaId},
+            {dummyUser.Username, user.Username},
+            {2015, user.InsertDate.Year()},
+            {2, int(user.LastUpdate.Month())},
+            {true, user.IsActive},
+            {reflect.TypeOf(map[string]interface{}{}), reflect.TypeOf(user.Attributes)},
+            {reflect.TypeOf([]string{}), reflect.TypeOf(user.Groups)},
+        }
+        for _, test := range tests {
+            if !reflect.DeepEqual(test.want, test.got) {
+                t.Errorf("Users CREATE: bad value, got: %v want: %v",
+                    test.got, test.want)
+            }
+        }
+    } else {
+        t.Errorf("unexpected: both user and error are nil!")
+    }
+
+    // test DELETE
+    err = custodia.DeleteUser(dummyUser.UserId, false, false)
+    if err != nil {
+        t.Errorf("error while deleting user. Details: %v", err)
+    }
+
+    // test LIST
+    // test we gave a wrong argument
+    params := map[string]interface{}{"antani": 42}
+    users, err := custodia.ListUsers(dummyUser.UserSchemaId, params)
+    if err == nil {
+        t.Errorf("ListUsers is not giving error with wrong param %v",
+            params)
+    }
+
+    // test that all the other params are accepted instead
+    goodParams := map[string]interface{}{
+        "full_user": true,
+        "is_active": true,
+        "insert_date__gt": time.Time{},
+        "insert_date__lt": time.Time{},
+        "last_update__gt": time.Time{},
+        "last_update__lt": time.Time{},
+    }
+    users, err = custodia.ListUsers(dummyUser.UserSchemaId, goodParams)
+
+    if err != nil {
+        t.Errorf("error while listing users. Details: %v", err)
+    } else if reflect.TypeOf(users) != reflect.TypeOf([]*User{}) {
+        t.Errorf("users is not list of Users, got: %T want: %T",
+            users, []*User{})
     }
 
 }

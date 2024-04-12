@@ -56,7 +56,7 @@ func (ca *CustodiaAPIv1) CreateUser(userSchema *UserSchema, isActive bool,
 		return nil, err
 	}
 
-	url := fmt.Sprintf("/schemas/%s/users", userSchema.UserSchemaId)
+	url := fmt.Sprintf("/user_schemas/%s/users", userSchema.UserSchemaId)
 	resp, err := ca.Call("POST", url, string(data))
 	if err != nil {
 		return nil, err
@@ -164,7 +164,7 @@ func (ca *CustodiaAPIv1) ListUsers(schemaId string,
 		return nil, fmt.Errorf("schemaId is not a valid UUID: %s", schemaId)
 	}
 
-	url := fmt.Sprintf("/schemas/%s/users", schemaId)
+	url := fmt.Sprintf("/user_schemas/%s/users", schemaId)
 	if len(params) > 0 {
 		url += "?"
 	}
