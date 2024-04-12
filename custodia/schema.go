@@ -9,11 +9,13 @@ import (
 	"github.com/simplereach/timeutils"
 )
 
+// SchemaField is used by both Schema and UserSchema
 type SchemaField struct {
 	Name string `json:"name"`
 	Type string `json:"type"`
 	Indexed bool `json:"bool,omitempty"`
 	Default interface{} `json:"default,omitempty"`
+	Insensitive bool `json:"insensitive,omitempty"`
 }
 
 type Schema struct {
@@ -23,7 +25,6 @@ type Schema struct {
 	InsertDate timeutils.Time `json:"insert_date,omitempty"`
 	LastUpdate timeutils.Time `json:"last_update,omitempty"`
 	IsActive bool `json:"is_active"`
-	// Structure json.RawMessage `json:"structure"`
 	Structure []SchemaField `json:"structure"`
 }
 
@@ -137,7 +138,7 @@ func (ca *CustodiaAPIv1) UpdateSchema(id string, description string,
 			return nil, err
 		}
 
-		// JSON: unmarshal resp content overwriting the old schema
+		// JSON: unmarshal resp content and return new schema
 		schemaEnvelope := SchemaEnvelope{}
 		if err := json.Unmarshal([]byte(resp), &schemaEnvelope); err != nil {
 			return nil, err

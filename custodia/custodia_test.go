@@ -230,7 +230,6 @@ func TestSchemaCRUDL(t *testing.T) {
         LastUpdate string `json:"last_update"`
         IsActive bool `json:"is_active"`
         Structure []SchemaField `json:"structure"`
-        // Structure json.RawMessage `json:"structure"`
     }
 
     // SchemaResponse will be marshalled to create an API-like response
@@ -344,7 +343,6 @@ func TestSchemaCRUDL(t *testing.T) {
     // and we will still get a working structure. The purpose here is to test
     // that the received data are correctly populating the objects
     structure := []SchemaField{}
-    // structure := json.RawMessage{}
     // we init a Repository with just the right id, don't need other data
     repo := Repository{RepositoryId: dummySchema.RepositoryId}
     schema, err := custodia.CreateSchema(&repo, "unittest", true, structure)
@@ -566,7 +564,7 @@ func TestDocumentCRUDL(t *testing.T) {
             // mock READ response
             writeDocResponse(w)
         } else if r.URL.Path == fmt.Sprintf("/api/v1/documents/%s",
-        docId) && r.Method == "PUT" {
+            docId) && r.Method == "PUT" {
             // mock UPDATE response
             dummyDoc.IsActive = true
             dummyContent["stringField"] = "brematurata"
@@ -580,6 +578,7 @@ func TestDocumentCRUDL(t *testing.T) {
             w.Write(out)
         } else if r.URL.Path == fmt.Sprintf("/api/v1/schemas/%s/documents",
             schemaId) && r.Method == "GET" {
+            // mock LIST response
             documentsResp := DocumentsResponse{
                 Count: 1,
                 TotalCount: 1,
@@ -862,4 +861,641 @@ func TestDocumentCRUDL(t *testing.T) {
         t.Errorf("documents is not list of Documents, got: %T want: %T",
             documents, []*Document{})
     }
+}
+
+func TestApplicationCRULD(t *testing.T) {
+    // ResponseInnerApp will be included in responses
+    type ResponseInnerApp struct {
+        AppSecret string `json:"app_secret"`
+        ClientType string `json:"client_type"`
+        GrantType string `json:"grant_type"`
+        AppName string `json:"app_name"`
+        RedirectUrl string `json:"redirect_url"`
+        AppId string `json:"app_id"`
+    }
+
+    type ApplicationResponse struct {
+        Application ResponseInnerApp `json:"application"`
+    }
+
+    type ApplicationsResponse struct {
+        Count int `json:"count"`
+        TotalCount int `json:"total_count"`
+        Limit int `json:"limit"`
+        Offset int `json:"offset"`
+        Applications []ResponseInnerApp `json:"applications"`
+    }
+
+    // init stuff
+    aid := "MyAppId42"
+    dummyApp := ResponseInnerApp{
+        AppId: aid,
+        AppSecret: "123456",
+        ClientType: "public",
+        GrantType: "password",
+        AppName: "antani",
+        RedirectUrl: "",
+    }
+
+    writeAppResponse := func(w http.ResponseWriter) {
+        data, _ := json.Marshal(ApplicationResponse{dummyApp})
+        envelope := CustodiaEnvelope{
+            Result: "success",
+            ResultCode: 200,
+            Message: nil,
+            Data: data,
+        }
+        out, _ := json.Marshal(envelope)
+
+        w.WriteHeader(http.StatusOK)
+        w.Write(out)
+    }
+
+    // mock calls
+    mockHandler := func(w http.ResponseWriter, r *http.Request) {
+        if r.URL.Path == "/api/v1/auth/applications" && r.Method == "POST" {
+            // mock CREATE response
+            writeAppResponse(w)
+        } else if r.URL.Path == fmt.Sprintf("/api/v1/auth/applications/%s",
+            aid) && r.Method == "GET" {
+            // mock READ response
+            writeAppResponse(w)
+        } else if r.URL.Path == fmt.Sprintf("/api/v1/auth/applications/%s",
+            aid) && r.Method == "PUT" {
+            // mock UPDATE response
+            dummyApp.GrantType = GrantAuthorizationCode.String()
+            dummyApp.ClientType = ClientConfidential.String()
+            dummyApp.RedirectUrl = "http://antani.org"
+            writeAppResponse(w)
+        } else if r.URL.Path == fmt.Sprintf("/api/v1/auth/applications/%s",
+            aid) && r.Method == "DELETE" {
+            // mock DELETE response
+            envelope := CustodiaEnvelope{Result: "success", ResultCode: 200}
+            out, _ := json.Marshal(envelope)
+            w.WriteHeader(http.StatusOK)
+            w.Write(out)
+        } else if r.URL.Path == "/api/v1/auth/applications" &&
+            r.Method == "GET" {
+            // mock LIST response
+            appsResp := ApplicationsResponse{
+                Count: 1,
+                TotalCount: 1,
+                Limit: 100,
+                Offset: 0,
+                Applications: []ResponseInnerApp{dummyApp},
+            }
+            data, _ := json.Marshal(appsResp)
+            envelope := CustodiaEnvelope{Result: "success", ResultCode: 200}
+            envelope.Data = data
+            out, _ := json.Marshal(envelope)
+            w.WriteHeader(http.StatusOK)
+            w.Write(out)
+        } else {
+            err := `{"result": "error", "result_code": 404, "data": null, `
+            err += `"message": "Resource not found (you may have a '/' at `
+            err += `the end)"}`
+            w.WriteHeader(http.StatusNotFound)
+            w.Write([]byte(err))
+        }
+    }
+
+    server := httptest.NewServer(http.HandlerFunc(mockHandler))
+    defer server.Close()
+
+    auth := common.NewClientAuth()  // auth is tested elsewhere
+    client := common.NewClient(server.URL, auth)
+    custodia := NewCustodiaAPIv1(client)
+
+    // test CREATE
+    app, err := custodia.CreateApplication("antani", GrantPassword,
+        ClientConfidential, "")
+
+    if err != nil {
+        t.Errorf("unexpected error: %v", err)
+    } else if app != nil {
+        var tests = []struct {
+            want interface{}
+            got interface{}
+        }{
+            {dummyApp.AppId, app.Id},
+            {GrantPassword, app.GrantType},
+            {dummyApp.AppName, app.Name},
+            {dummyApp.AppSecret, app.Secret},
+
+        }
+        for _, test := range tests {
+            if test.want != test.got {
+                t.Errorf("Application CREATE: bad value, got: %v want: %v",
+                    test.got, test.want)
+            }
+        }
+    }
+
+    // test READ
+    app, err = custodia.ReadApplication(dummyApp.AppId)
+    if err != nil {
+        t.Errorf("unexpected error: %v", err)
+    } else if app != nil {
+        var tests = []struct {
+            want interface{}
+            got interface{}
+        }{
+            {dummyApp.AppId, app.Id},
+            {GrantPassword, app.GrantType},
+            {dummyApp.AppName, app.Name},
+            {dummyApp.AppSecret, app.Secret},
+
+        }
+        for _, test := range tests {
+            if test.want != test.got {
+                t.Errorf("Application GET: bad value, got: %v want: %v",
+                    test.got, test.want)
+            }
+        }
+    }
+
+    // test UPDATE
+    app, err = custodia.UpdateApplication(dummyApp.AppId, "antani",
+        GrantAuthorizationCode, ClientConfidential, "http://antani.org")
+    if err != nil {
+        t.Errorf("unexpected error: %v", err)
+    } else if app != nil {
+        var tests = []struct {
+            want interface{}
+            got interface{}
+        }{
+            {dummyApp.AppId, app.Id},
+            {ClientConfidential, app.ClientType},
+            {GrantAuthorizationCode, app.GrantType},
+            {"antani", app.Name},
+            {dummyApp.AppSecret, app.Secret},
+
+        }
+        for _, test := range tests {
+            if test.want != test.got {
+                t.Errorf("Application GET: bad value, got: %v want: %v",
+                    test.got, test.want)
+            }
+        }
+    }
+
+    // test DELETE
+    err = custodia.DeleteApplication(dummyApp.AppId)
+    if err != nil {
+        t.Errorf("error while deleting application. Details: %v", err)
+    }
+
+    // test LIST
+    apps, err := custodia.ListApplications()
+    if err != nil {
+        t.Errorf("error while listing applications. Details: %v", err)
+    } else if reflect.TypeOf(apps) != reflect.TypeOf([]*Application{}) {
+        t.Errorf("apps is not list of Applications, got: %T want: %T",
+            apps, []*Application{})
+    }
+}
+
+func TestUserSchemaCRUDL(t *testing.T) {
+    // ResponseInnerUserSchema will be included in responses
+    type ResponseInnerUserSchema struct {
+        UserSchemaId string `json:"user_schema_id"`
+        Description string `json:"description"`
+        Groups []string `json:"groups"`
+        InsertDate string `json:"insert_date"`
+        LastUpdate string `json:"last_update"`
+        IsActive bool `json:"is_active"`
+        Structure []SchemaField `json:"structure"`
+    }
+
+    // SchemaResponse will be marshalled to create an API-like response
+    type UserSchemaResponse struct {
+        Schema ResponseInnerUserSchema `json:"user_schema"`
+    }
+
+    // SchemasResponse will be marshalled to create an API-like response
+    type UserSchemasResponse struct {
+        Count int `json:"count"`
+        TotalCount int `json:"total_count"`
+        Limit int `json:"limit"`
+        Offset int `json:"offset"`
+        UserSchemas []ResponseInnerUserSchema `json:"user_schemas"`
+    }
+
+    dummyUserSchema := ResponseInnerUserSchema{
+        UserSchemaId: uuid.New().String(),
+        Description: "unittest",
+        InsertDate: "2015-02-24T21:48:16.332",
+        LastUpdate: "2015-02-24T21:48:16.332",
+        IsActive: false,
+        // Structure: json.RawMessage{},
+        Structure: []SchemaField{
+            {Name: "IntField", Type: "integer", Indexed: true, Default: 42},
+            {Name: "StrField", Type: "string", Indexed: true, Default: "asd"},
+            {Name: "FloatField", Type: "float", Indexed: false, Default: 3.14},
+            {Name: "BoolField", Type: "bool", Indexed: false},
+            {Name: "DateField", Type: "date", Default: "2023-03-15"},
+            {Name: "TimeField", Type: "time", Default: "11:43:04.058"},
+            {Name: "DateTimeField", Type: "datetime",
+                Default: "2023-03-15T11:43:04.058"},
+        },
+    }
+
+    writeUserSchemaResponse := func(w http.ResponseWriter) {
+        data, _ := json.Marshal(UserSchemaResponse{dummyUserSchema})
+        envelope := CustodiaEnvelope{
+            Result: "success",
+            ResultCode: 200,
+            Message: nil,
+            Data: data,
+        }
+        out, _ := json.Marshal(envelope)
+
+        w.WriteHeader(http.StatusOK)
+        w.Write(out)
+    }
+
+    // mock calls
+    mockHandler := func(w http.ResponseWriter, r *http.Request) {
+        if r.URL.Path == "/api/v1/user_schemas" && r.Method == "POST" {
+            // mock CREATE response
+            writeUserSchemaResponse(w)
+        } else if r.URL.Path == fmt.Sprintf("/api/v1/user_schemas/%s",
+            dummyUserSchema.UserSchemaId) && r.Method == "GET" {
+            // mock READ response
+            writeUserSchemaResponse(w)
+        } else if r.URL.Path == fmt.Sprintf("/api/v1/user_schemas/%s",
+            dummyUserSchema.UserSchemaId) && r.Method == "PUT" {
+            // mock UPDATE response
+            dummyUserSchema.Description = "changed"
+            dummyUserSchema.IsActive = true
+            // dummyUserSchema.Structure[0].Default = 21
+            writeUserSchemaResponse(w)
+        } else if r.URL.Path == fmt.Sprintf("/api/v1/user_schemas/%s",
+            dummyUserSchema.UserSchemaId) && r.Method == "DELETE" {
+            // mock DELETE response
+            envelope := CustodiaEnvelope{Result: "success", ResultCode: 200}
+            out, _ := json.Marshal(envelope)
+            w.WriteHeader(http.StatusOK)
+            w.Write(out)
+        } else if r.URL.Path == "/api/v1/user_schemas" &&  r.Method == "GET" {
+            // mock LIST response
+            schemasResp := UserSchemasResponse{
+                Count: 1,
+                TotalCount: 1,
+                Limit: 100,
+                Offset: 0,
+                UserSchemas: []ResponseInnerUserSchema{dummyUserSchema},
+            }
+            data, _ := json.Marshal(schemasResp)
+            envelope := CustodiaEnvelope{Result: "success", ResultCode: 200}
+            envelope.Data = data
+            out, _ := json.Marshal(envelope)
+            w.WriteHeader(http.StatusOK)
+            w.Write(out)
+        } else {
+            err := `{"result": "error", "result_code": 404, "data": null, `
+            err += `"message": "Resource not found (you may have a '/' at `
+            err += `the end)"}`
+            w.WriteHeader(http.StatusNotFound)
+            w.Write([]byte(err))
+        }
+    }
+
+    server := httptest.NewServer(http.HandlerFunc(mockHandler))
+    defer server.Close()
+
+    auth := common.NewClientAuth()  // auth is tested elsewhere
+    client := common.NewClient(server.URL, auth)
+    custodia := NewCustodiaAPIv1(client)
+
+    // test CREATE: we submit an empty field list, since the response is mocked
+    // and we will still get a working structure. The purpose here is to test
+    // that the received data are correctly populating the objects
+    structure := []SchemaField{}
+
+    userSchema, err := custodia.CreateUserSchema("unittest", true, structure);
+
+    if err != nil {
+        t.Errorf("unexpected error: %v", err)
+    } else if userSchema != nil {
+        var tests = []struct {
+            want interface{}
+            got interface{}
+        }{
+            {dummyUserSchema.UserSchemaId, userSchema.UserSchemaId},
+            {dummyUserSchema.Description, userSchema.Description},
+            {dummyUserSchema.Groups, userSchema.Groups},
+            {2015, userSchema.InsertDate.Year()},
+            {2015, userSchema.LastUpdate.Year()},
+            {false, userSchema.IsActive},
+        }
+        for _, test := range tests {
+            if !reflect.DeepEqual(test.want, test.got) {
+                t.Errorf("UserSchema CREATE: bad value, got: %v want: %v",
+                    test.got, test.want)
+            }
+        }
+    } else {
+        t.Errorf("unexpected: both userSchema and error are nil!")
+    }
+
+    // test READ
+    userSchema, err = custodia.ReadUserSchema(dummyUserSchema.UserSchemaId)
+    if err != nil {
+        t.Errorf("unexpected error: %v", err)
+    } else if userSchema != nil {
+        var tests = []struct {
+            want interface{}
+            got interface{}
+        }{
+            {dummyUserSchema.UserSchemaId, userSchema.UserSchemaId},
+            {dummyUserSchema.Description, userSchema.Description},
+            {dummyUserSchema.Groups, userSchema.Groups},
+            {2015, userSchema.InsertDate.Year()},
+            {2015, userSchema.LastUpdate.Year()},
+            {false, userSchema.IsActive},
+        }
+        for _, test := range tests {
+            if !reflect.DeepEqual(test.want, test.got) {
+                t.Errorf("UserSchema CREATE: bad value, got: %v want: %v",
+                    test.got, test.want)
+            }
+        }
+    } else {
+        t.Errorf("unexpected: both userSchema and error are nil!")
+    }
+
+    // test UPDATE
+    userSchema, err = custodia.UpdateUserSchema(dummyUserSchema.UserSchemaId,
+        "antani2", true, dummyUserSchema.Structure)
+    if err != nil {
+        t.Errorf("unexpected error: %v", err)
+    } else if userSchema != nil {
+        var tests = []struct {
+            want interface{}
+            got interface{}
+        }{
+            {dummyUserSchema.UserSchemaId, userSchema.UserSchemaId},
+            {dummyUserSchema.Description, userSchema.Description},
+            {dummyUserSchema.Groups, userSchema.Groups},
+            {2015, userSchema.InsertDate.Year()},
+            {2015, userSchema.LastUpdate.Year()},
+            {true, userSchema.IsActive},
+        }
+        for _, test := range tests {
+            if !reflect.DeepEqual(test.want, test.got) {
+                t.Errorf("UserSchema CREATE: bad value, got: %v want: %v",
+                    test.got, test.want)
+            }
+        }
+    } else {
+        t.Errorf("unexpected: both userSchema and error are nil!")
+    }
+
+    // test DELETE
+    err = custodia.DeleteUserSchema(dummyUserSchema.UserSchemaId, false)
+    if err != nil {
+        t.Errorf("error while deleting user schema. Details: %v", err)
+    }
+
+    // test LIST
+    uss, err := custodia.ListUserSchemas()
+    if err != nil {
+        t.Errorf("error while listing user schemas. Details: %v", err)
+    } else if reflect.TypeOf(uss) != reflect.TypeOf([]*UserSchema{}) {
+        t.Errorf("uss is not list of UserSchemas, got: %T want: %T",
+            uss, []*UserSchema{})
+    }
+}
+
+
+func TestUserCRUDL(t *testing.T) {
+    // ResponseInnerUser will be included in responses
+    type ResponseInnerUser struct {
+        UserId string `json:"user_id"`
+        UserSchemaId string `json:"schema_id"`
+        Username string `json:"username"`
+        InsertDate string `json:"insert_date"`
+        LastUpdate string `json:"last_update"`
+        IsActive bool `json:"is_active"`
+        Attributes map[string]interface{} `json:"content,omitempty"`
+        Groups []string `json:"groups"`
+    }
+
+    // UserResponse will be marshalled to create and API-like response
+    type UserResponse struct {
+        User ResponseInnerUser `json:"user"`
+    }
+
+    // UsersResponse will be marshalled to crete an API-like response
+    type UsersResponse struct {
+        Count int `json:"count"`
+        TotalCount int `json:"total_count"`
+        Limit int `json:"limit"`
+        Offset int `json:"offset"`
+        Users []ResponseInnerUser `json:"users"`
+    }
+
+    // init stuff
+    dummyUser := ResponseInnerUser{
+        UserId: uuid.New().String(),
+        UserSchemaId: uuid.New().String(),
+        Username: "unittest",
+        InsertDate: "2015-02-24T21:48:16.332",
+        LastUpdate: "2015-02-24T21:48:16.332",
+        IsActive: false,
+        Groups: []string{},
+    }
+    dummyAttrs := map[string]interface{}{
+        "integerField": 42,
+        "flaotField": 3.14,
+        "stringField": "antani",
+        "textField": "this is not a very long string, but should be",
+        "boolField": true,
+        "dateField": "1970-01-01",
+        "timeField": "00:01:30",
+        "datetimeField": "2001-03-08T23:31:42",
+        "base64Field": "VGhpcyBpcyBhIGJhc2UtNjQgZW5jb2RlZCBzdHJpbmcu",
+        "jsonField": `{"success": true}`,
+        "blobField": uuid.New().String(),
+        "arrayIntegerField": `[0, 1, 1, 2, 3, 5]`,
+        "arrayFloatField": `[1.1, 2.2, 3.3, 4.4]`,
+        "arrayStringField": `["Hello", "world", "!"]`,
+    }
+    dummyUser.Attributes = dummyAttrs
+
+    // shortcuts
+    userSchemaId := dummyUser.UserSchemaId
+    userId := dummyUser.UserId
+
+    writeDocResponse := func(w http.ResponseWriter) {
+        data, _ := json.Marshal(UserResponse{dummyUser})
+        envelope := CustodiaEnvelope{
+            Result: "success",
+            ResultCode: 200,
+            Message: nil,
+            Data: data,
+        }
+        out, _ := json.Marshal(envelope)
+
+        w.WriteHeader(http.StatusOK)
+        w.Write(out)
+    }
+
+    // mock calls
+    mockHandler := func(w http.ResponseWriter, r *http.Request) {
+        if r.URL.Path == fmt.Sprintf("/api/v1/user_schemas/%s/users",
+            userSchemaId) && r.Method == "POST" {
+            // mock CREATE response
+            writeDocResponse(w)
+        } else if r.URL.Path == fmt.Sprintf("/api/v1/users/%s",
+            userId) && r.Method == "GET" {
+            // mock READ response
+            writeDocResponse(w)
+        } else if r.URL.Path == fmt.Sprintf("/api/v1/users/%s",
+            userId) && r.Method == "PUT" {
+            // mock UPDATE response
+            dummyUser.IsActive = true
+            dummyAttrs["stringField"] = "brematurata"
+            writeDocResponse(w)
+        } else if r.URL.Path == fmt.Sprintf("/api/v1/users/%s",
+            userId) && r.Method == "DELETE" {
+            // mock DELETE response
+            envelope := CustodiaEnvelope{Result: "success", ResultCode: 200}
+            out, _ := json.Marshal(envelope)
+            w.WriteHeader(http.StatusOK)
+            w.Write(out)
+        } else if r.URL.Path == fmt.Sprintf("/api/v1/user_schemas/%s/users",
+            userSchemaId) && r.Method == "GET" {
+            // mock LIST response
+            usersResp := UsersResponse{
+                Count: 1,
+                TotalCount: 1,
+                Limit: 100,
+                Offset: 0,
+                Users: []ResponseInnerUser{dummyUser},
+            }
+            data, _ := json.Marshal(usersResp)
+            envelope := CustodiaEnvelope{Result: "success", ResultCode: 200}
+            envelope.Data = data
+            out, _ := json.Marshal(envelope)
+            w.WriteHeader(http.StatusOK)
+            w.Write(out)
+        } else {
+            err := `{"result": "error", "result_code": 404, "data": null, `
+            err += `"message": "Resource not found (you may have a '/' at `
+            err += `the end)"}`
+            fmt.Printf(err)
+            w.WriteHeader(http.StatusNotFound)
+            w.Write([]byte(err))
+        }
+    }
+
+    server := httptest.NewServer(http.HandlerFunc(mockHandler))
+    defer server.Close()
+
+    auth := common.NewClientAuth()  // auth is tested elsewhere
+    client := common.NewClient(server.URL, auth)
+    custodia := NewCustodiaAPIv1(client)
+
+
+    // test CREATE: we submit no content, since the response is mocked
+    // we init instead a UserSchema with just the right ids
+    userSchema := UserSchema{
+        UserSchemaId: dummyUser.UserSchemaId,
+        Description: "unittest",
+        IsActive: true,
+        Structure: []SchemaField{},
+    }
+    attributes := map[string]interface{}{}
+    user, err := custodia.CreateUser(&userSchema, false, attributes)
+
+    if err != nil {
+        t.Errorf("unexpected error: %v", err)
+    } else if user != nil {
+        var tests = []struct {
+            want interface{}
+            got interface{}
+        }{
+            {dummyUser.UserId, user.UserId},
+            {dummyUser.UserSchemaId, userSchema.UserSchemaId},
+            {dummyUser.Username, user.Username},
+            {2015, user.InsertDate.Year()},
+            {2, int(user.LastUpdate.Month())},
+            {false, user.IsActive},
+            {reflect.TypeOf(map[string]interface{}{}), reflect.TypeOf(user.Attributes)},
+            {reflect.TypeOf([]string{}), reflect.TypeOf(user.Groups)},
+        }
+        for _, test := range tests {
+            if !reflect.DeepEqual(test.want, test.got) {
+                t.Errorf("Users CREATE: bad value, got: %v want: %v",
+                    test.got, test.want)
+            }
+        }
+    } else {
+        t.Errorf("unexpected: both user and error are nil!")
+    }
+
+    // test UPDATE
+    user, err = custodia.UpdateUser(dummyUser.UserId, true, attributes)
+
+    if err != nil {
+        t.Errorf("unexpected error: %v", err)
+    } else if user != nil {
+        var tests = []struct {
+            want interface{}
+            got interface{}
+        }{
+            {dummyUser.UserId, user.UserId},
+            {dummyUser.UserSchemaId, userSchema.UserSchemaId},
+            {dummyUser.Username, user.Username},
+            {2015, user.InsertDate.Year()},
+            {2, int(user.LastUpdate.Month())},
+            {true, user.IsActive},
+            {reflect.TypeOf(map[string]interface{}{}), reflect.TypeOf(user.Attributes)},
+            {reflect.TypeOf([]string{}), reflect.TypeOf(user.Groups)},
+        }
+        for _, test := range tests {
+            if !reflect.DeepEqual(test.want, test.got) {
+                t.Errorf("Users CREATE: bad value, got: %v want: %v",
+                    test.got, test.want)
+            }
+        }
+    } else {
+        t.Errorf("unexpected: both user and error are nil!")
+    }
+
+    // test DELETE
+    err = custodia.DeleteUser(dummyUser.UserId, false, false)
+    if err != nil {
+        t.Errorf("error while deleting user. Details: %v", err)
+    }
+
+    // test LIST
+    // test we gave a wrong argument
+    params := map[string]interface{}{"antani": 42}
+    users, err := custodia.ListUsers(dummyUser.UserSchemaId, params)
+    if err == nil {
+        t.Errorf("ListUsers is not giving error with wrong param %v",
+            params)
+    }
+
+    // test that all the other params are accepted instead
+    goodParams := map[string]interface{}{
+        "full_user": true,
+        "is_active": true,
+        "insert_date__gt": time.Time{},
+        "insert_date__lt": time.Time{},
+        "last_update__gt": time.Time{},
+        "last_update__lt": time.Time{},
+    }
+    users, err = custodia.ListUsers(dummyUser.UserSchemaId, goodParams)
+
+    if err != nil {
+        t.Errorf("error while listing users. Details: %v", err)
+    } else if reflect.TypeOf(users) != reflect.TypeOf([]*User{}) {
+        t.Errorf("users is not list of Users, got: %T want: %T",
+            users, []*User{})
+    }
+
 }
