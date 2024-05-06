@@ -1,8 +1,15 @@
+// OAuth is performed against custodia system. Then, it can be used in other
+// packages such as Consenta (that is, you use this API to get the access and
+// refresh tokens, and then you use the `ClientAuth.AuthType=Bearer` with any
+// client).
+
 package custodia
 
 import (
 	"encoding/json"
 	"fmt"
+
+	"github.com/dzanotelli/chino/common"
 )
 
 // Define `grant_type` enum
@@ -214,4 +221,46 @@ func (ca *CustodiaAPIv1) ListApplications() ([]*Application, error) {
 	}
 
 	return result, nil
+}
+
+
+// Login a user
+// clientSecret may be empty if application is public
+func (ca *CustodiaAPIv1) LoginUser(username string, password string,
+	application Application) (common.ClientAuth, error) {
+	url := "/auth/token"
+	auth := *common.NewClientAuth()    // defaults to no auth
+
+	data := map[string]string{
+		"grant_type": GrantPassword.String(),
+		"username": username,
+		"password": password,
+		"client_id": application.Id,
+	}
+	// when client is not public, we need to set the application secret as well
+	if application.ClientType == ClientConfidential {
+		data["client_secret"] = application.Secret
+	}
+
+	payload, err := json.Marshal(data)
+	if err != nil {
+		return auth, err
+	}
+
+	resp, err := ca.Call("POST", url, string(payload))
+	if err != nil {
+		return auth, err
+	}
+
+	// JSON: unmarshal resp content
+	var result map[string]interface{}
+	if err := json.Unmarshal([]byte(resp), &result); err != nil {
+		return auth, err
+	}
+
+
+
+
+
+	return auth, nil
 }
