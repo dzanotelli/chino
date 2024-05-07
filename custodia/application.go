@@ -18,10 +18,11 @@ type GrantType int
 const (
 	GrantAuthorizationCode GrantType = iota + 1
 	GrantPassword
+	GrantRefreshToken
 )
 
 func (gt GrantType) Choices() []string {
-	return []string{"authorization-code", "password"}
+	return []string{"authorization-code", "password", "refresh_token"}
 }
 
 func (gt GrantType) String() string {
@@ -82,6 +83,23 @@ func (ct *ClientType) UnmarshalJSON(data []byte) (err error) {
 
 	*ct = ClientType(intValue)
 	return nil
+}
+
+// helper structs to performs OAuth calls (marshal, unmarshal)
+type oauthRequestData struct {
+	GrantType GrantType `json:"grant_type"`
+	Username string `json:"username,omitempty"`
+	Password string `json:"password,omitempty"`
+	ClientId string `json:"client_id"`
+	ClientSecret string `json:"client_secret,omitempty"`
+	Scope string `json:"scope"`
+}
+type oauthResponseData struct {
+	AccessToken string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+	TokenType string `json:"token_type"`
+	ExpiresIn int `json:"expires_in"`
+	Scope string `json:"scope"`
 }
 
 // Application represent an application stored in Custodia
@@ -225,21 +243,20 @@ func (ca *CustodiaAPIv1) ListApplications() ([]*Application, error) {
 
 
 // Login a user
-// clientSecret may be empty if application is public
 func (ca *CustodiaAPIv1) LoginUser(username string, password string,
 	application Application) (common.ClientAuth, error) {
 	url := "/auth/token"
 	auth := *common.NewClientAuth()    // defaults to no auth
 
-	data := map[string]string{
-		"grant_type": GrantPassword.String(),
-		"username": username,
-		"password": password,
-		"client_id": application.Id,
+	data := oauthRequestData {
+		GrantType: GrantPassword,
+		Username: username,
+		Password: password,
+		ClientId: application.Id,
 	}
 	// when client is not public, we need to set the application secret as well
 	if application.ClientType == ClientConfidential {
-		data["client_secret"] = application.Secret
+		data.ClientSecret = application.Secret
 	}
 
 	payload, err := json.Marshal(data)
@@ -253,14 +270,51 @@ func (ca *CustodiaAPIv1) LoginUser(username string, password string,
 	}
 
 	// JSON: unmarshal resp content
-	var result map[string]interface{}
-	if err := json.Unmarshal([]byte(resp), &result); err != nil {
+	respData := oauthResponseData{}
+	if err := json.Unmarshal([]byte(resp), &respData); err != nil {
 		return auth, err
 	}
 
+	auth.SetOAuth(username, password, respData.AccessToken, respData.ExpiresIn,
+		respData.RefreshToken)
 
+	return auth, nil
+}
 
+// Refresh the access token
+func (ca *CustodiaAPIv1) RefreshToken(auth common.ClientAuth,
+	application Application) (common.ClientAuth, error) {
+	url := "/auth/token"
 
+	data := oauthRequestData {
+		GrantType: GrantRefreshToken,
+		ClientId: application.Id,
+		Scope: "read write",
+	}
+	// when client is not public, we need to set the application secret as well
+	if application.ClientType == ClientConfidential {
+		data.ClientSecret = application.Secret
+	}
+
+	payload, err := json.Marshal(data)
+	if err != nil {
+		return auth, err
+	}
+
+	resp, err := ca.Call("POST", url, string(payload))
+	if err != nil {
+		return auth, err
+	}
+
+	// JSON: unmarshal resp content
+	respData := oauthResponseData{}
+	if err := json.Unmarshal([]byte(resp), &respData); err != nil {
+		return auth, err
+	}
+
+	auth.SetAccessToken(respData.AccessToken)
+	auth.SetAccessTokenExpire(respData.ExpiresIn)
+	auth.SetRefreshToken(respData.RefreshToken)
 
 	return auth, nil
 }

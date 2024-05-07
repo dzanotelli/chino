@@ -18,11 +18,12 @@ const userAgent = "golang/chino-" + Version
 
 // ClientAuth keeps the authentication details - Basic vs Bearer (OAuth)
 type ClientAuth struct {
-	authType string      // basic or bearer
-	username string  
-	password string  
-	token string  		 // only for OAuth
-	refreshToken string  // only for OAuth
+	authType string         // basic or bearer
+	username string
+	password string
+	accessToken string      // only for OAuth
+	accessTokenExpire int   // only for OAuth
+	refreshToken string     // only for OAuth
 }
 
 // Client holds the configuration (url, auth) and wraps http Requests
@@ -44,7 +45,8 @@ func (ca *ClientAuth) SetNoAuth() {
 	ca.authType = NoAuth
 	ca.username = ""
 	ca.password = ""
-	ca.token = ""
+	ca.accessToken = ""
+	ca.accessTokenExpire = 0
 	ca.refreshToken = ""
 }
 
@@ -59,17 +61,19 @@ func (ca *ClientAuth) SetBasicAuth(username, password string) error {
 	ca.authType = BasicAuth
 	ca.username = username
 	ca.password = password
-	ca.token = ""
+	ca.accessToken = ""
+	ca.accessTokenExpire = 0
 	ca.refreshToken = ""
 
 	return nil
 }
 
 // Set ClientAuth authType to OAuth
-func (ca *ClientAuth) SetOAuth(username, password, token, refreshToken string) error {
+func (ca *ClientAuth) SetOAuth(username, password, accessToken string,
+	accessTokenExpire int, refreshToken string) error {
 	username = strings.Trim(username, " ")
 	password = strings.Trim(password, " ")
-	
+
 	if (len(username) == 0) {
 		return errors.New("username cannot be empty")
 	} else if (len(password) == 0) {
@@ -79,7 +83,8 @@ func (ca *ClientAuth) SetOAuth(username, password, token, refreshToken string) e
 	ca.authType = OAuth
 	ca.username = username
 	ca.password = password
-	ca.token = token
+	ca.accessToken = accessToken
+	ca.accessTokenExpire = accessTokenExpire
 	ca.refreshToken = refreshToken
 
 	return nil
@@ -131,7 +136,7 @@ func (ca *ClientAuth) SetPassword(password string) error {
 	return nil
 }
 
-func (ca *ClientAuth) SetToken(token string) error {
+func (ca *ClientAuth) SetAccessToken(token string) error {
 	if (ca.authType != OAuth) {
 		return errors.New("token can be set only to OAuth client")
 	}
@@ -141,12 +146,25 @@ func (ca *ClientAuth) SetToken(token string) error {
 		return errors.New("token cannot be empty")
 	}
 
-	ca.token = token
+	ca.accessToken = token
 	return nil
 }
 
-func (ca *ClientAuth) GetToken() string {
-	return ca.token
+func (ca *ClientAuth) GetAccessToken() string {
+	return ca.accessToken
+}
+
+func (ca *ClientAuth) SetAccessTokenExpire(expire int) error {
+	if (ca.authType != OAuth) {
+		return errors.New("refreshToken can be set only to OAuth client")
+	}
+
+	ca.accessTokenExpire = expire
+	return nil
+}
+
+func (ca *ClientAuth) GetAccessTokenExpire() int {
+	return ca.accessTokenExpire
 }
 
 func (ca *ClientAuth) SetRefreshToken(refreshToken string) error {
@@ -162,6 +180,7 @@ func (ca *ClientAuth) SetRefreshToken(refreshToken string) error {
 	return nil
 }
 
+
 func (ca *ClientAuth) GetRefreshToken() string {
 	return ca.refreshToken
 }
@@ -175,7 +194,7 @@ func NewClient(serverUrl string, auth *ClientAuth) *Client {
 
 	if parsedUrl.Scheme == "" {
 		panic("serverUrl has no schema")
-	} 
+	}
 	// FIXME: anything else to handle?
 
 	return &Client{
@@ -185,7 +204,7 @@ func NewClient(serverUrl string, auth *ClientAuth) *Client {
 }
 
 // Performs a HTTP Call using Client configuration
-func (c *Client) Call(method, path string, data ...string) (*http.Response, 
+func (c *Client) Call(method, path string, data ...string) (*http.Response,
 	error) {
 	url := c.rootUrl.String() + path  //FIXME join strings
 	var req *http.Request
@@ -222,7 +241,7 @@ func (c *Client) Call(method, path string, data ...string) (*http.Response,
 	case BasicAuth:
 		req.SetBasicAuth(c.auth.username, c.auth.password)
 	case OAuth:
-		bearer := "Bearer: " + c.auth.token
+		bearer := "Bearer: " + c.auth.accessToken
 		req.Header.Add("Authorization", bearer)
 	default:
 		panic(fmt.Sprintf("Unsupported auth type %q", c.auth.authType))
