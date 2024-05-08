@@ -7,6 +7,7 @@ package custodia
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/dzanotelli/chino/common"
@@ -259,6 +260,7 @@ func (ca *CustodiaAPIv1) LoginUser(username string, password string,
 		data.ClientSecret = application.Secret
 	}
 
+	// FIXME: this should be multipart/form-data
 	payload, err := json.Marshal(data)
 	if err != nil {
 		return auth, err
@@ -296,6 +298,7 @@ func (ca *CustodiaAPIv1) RefreshToken(auth common.ClientAuth,
 		data.ClientSecret = application.Secret
 	}
 
+	// FIXME: this should be multipart/form-data
 	payload, err := json.Marshal(data)
 	if err != nil {
 		return auth, err
@@ -317,4 +320,82 @@ func (ca *CustodiaAPIv1) RefreshToken(auth common.ClientAuth,
 	auth.SetRefreshToken(respData.RefreshToken)
 
 	return auth, nil
+}
+
+// Revoke an existing token
+func (ca *CustodiaAPIv1) RevokeToken(auth common.ClientAuth,
+	application Application) error {
+	url := "/auth/revoke_token"
+
+	data := map[string]string{
+		"token": auth.GetAccessToken(),
+		"client_id": application.Id,
+		"client_secret": application.Secret,
+	}
+
+	// FIXME: this should be application/form-data
+	payload, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	_, err = ca.Call("POST", url, string(payload))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Introspect token
+// wants Basic auth using application id/secret
+func (ca *CustodiaAPIv1) IntrospectToken(token string) (map[string]interface{},
+	error) {
+	url := "/auth/revoke_token"
+
+	data := map[string]string{
+		"token": token,
+	}
+
+	// FIXME: this should be application/x-www-form-urlencoded
+	payload, err := json.Marshal(data)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := ca.Call("POST", url, string(payload))
+	if err != nil {
+		return nil, err
+	}
+	var respData map[string]interface{}  // FIXME: provide a struct? --> TBD
+	if err := json.Unmarshal([]byte(resp), &respData); err != nil {
+		return nil, err
+	}
+
+	return respData, nil
+}
+
+// User info
+func (ca *CustodiaAPIv1) UserInfo() (*User, error) {
+	url := "/users/me"
+
+	resp, err := ca.Call("GET", url)
+	if err != nil {
+		return nil, err
+	}
+	// JSON: unmarshal resp content
+	docEnvelope := UserEnvelope{}
+	if err := json.Unmarshal([]byte(resp), &docEnvelope); err != nil {
+		return nil, err
+	}
+
+	// convert values to concrete types
+	converted, ee := convertData(docEnvelope.User.Attributes, schema)
+	if len(ee) > 0 {
+		err := fmt.Errorf("conversion errors: %w", errors.Join(ee...))
+		return docEnvelope.User, err
+	}
+
+	// all good, assign the new content to doc and return it
+	docEnvelope.User.Attributes = converted
+	return docEnvelope.User, nil
 }
