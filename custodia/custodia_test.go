@@ -118,9 +118,9 @@ func TestRepositoryCRUDL(t *testing.T) {
     if err != nil {
         t.Errorf("unexpected error: %v", err)
     } else if repo != nil {
-        if (*repo).RepositoryId != dummyRepository.RepositoryId {
+        if (*repo).Id != dummyRepository.RepositoryId {
             t.Errorf("bad RepositoryId, got: %v want: %v",
-                     repo.RepositoryId, dummyRepository.RepositoryId)
+                     repo.Id, dummyRepository.RepositoryId)
         }
         if (*repo).Description != dummyRepository.Description {
             t.Errorf("bad Description, got: %v want: %s",
@@ -147,9 +147,9 @@ func TestRepositoryCRUDL(t *testing.T) {
     if err != nil {
         t.Errorf("unexpected error: %v", err)
     } else if repo != nil {
-        if repo.RepositoryId != dummyRepository.RepositoryId {
+        if repo.Id != dummyRepository.RepositoryId {
             t.Errorf("bad RepositoryId, got: %v want: %v",
-                     repo.RepositoryId, dummyRepository.RepositoryId)
+                     repo.Id, dummyRepository.RepositoryId)
         }
         if repo.Description != dummyRepository.Description {
             t.Errorf("bad Description, got: %v want: %s",
@@ -172,13 +172,13 @@ func TestRepositoryCRUDL(t *testing.T) {
     }
 
     // test UPDATE
-    repo, err = custodia.UpdateRepository(repo.RepositoryId, "changed", false)
+    repo, err = custodia.UpdateRepository(repo.Id, "changed", false)
     if err != nil {
         t.Errorf("unexpected error: %v", err)
     } else if repo != nil {
-        if repo.RepositoryId != dummyRepository.RepositoryId {
+        if repo.Id != dummyRepository.RepositoryId {
             t.Errorf("bad RepositoryId, got: %v want: %v",
-                     repo.RepositoryId, dummyRepository.RepositoryId)
+                     repo.Id, dummyRepository.RepositoryId)
         }
         if repo.Description != dummyRepository.Description {
             t.Errorf("bad Description, got: %v want: %s",
@@ -201,7 +201,7 @@ func TestRepositoryCRUDL(t *testing.T) {
     }
 
     // test DELETE
-    err = custodia.DeleteRepository(repo.RepositoryId, true)
+    err = custodia.DeleteRepository(repo.Id, true)
     if err != nil {
         t.Errorf("error while deleting repository. Details: %v", err)
     }
@@ -214,9 +214,9 @@ func TestRepositoryCRUDL(t *testing.T) {
     if len(repos) != 1 {
         t.Errorf("bad repositories lenght, got: %v want: 1", len(repos))
     }
-    if repos[0].RepositoryId != dummyRepository.RepositoryId {
+    if repos[0].Id != dummyRepository.RepositoryId {
         t.Errorf("bad repository id, got: %v want: %v",
-            dummyRepository.RepositoryId, repos[0].RepositoryId)
+            dummyRepository.RepositoryId, repos[0].Id)
     }
 }
 
@@ -344,7 +344,7 @@ func TestSchemaCRUDL(t *testing.T) {
     // that the received data are correctly populating the objects
     structure := []SchemaField{}
     // we init a Repository with just the right id, don't need other data
-    repo := Repository{RepositoryId: dummySchema.RepositoryId}
+    repo := Repository{Id: dummySchema.RepositoryId}
     schema, err := custodia.CreateSchema(&repo, "unittest", true, structure)
 
     if err != nil {
@@ -354,9 +354,9 @@ func TestSchemaCRUDL(t *testing.T) {
             t.Errorf("bad RepositoryId, got: %v want: %v",
                 schema.RepositoryId, repoId)
         }
-        if schema.SchemaId != dummySchema.SchemaId {
+        if schema.Id != dummySchema.SchemaId {
             t.Errorf("bad SchemaId, got: %v want: %v",
-                schema.SchemaId, dummySchema.SchemaId)
+                schema.Id, dummySchema.SchemaId)
         }
         if schema.Description != dummySchema.Description {
             t.Errorf("bad Description, got: %v want: %s",
@@ -424,7 +424,7 @@ func TestSchemaCRUDL(t *testing.T) {
     }
 
     // test UPDATE
-    schema, err = custodia.UpdateSchema(schema.SchemaId, "changed", true,
+    schema, err = custodia.UpdateSchema(schema.Id, "changed", true,
         structure)
 
     if err != nil {
@@ -463,7 +463,7 @@ func TestSchemaCRUDL(t *testing.T) {
     }
 
     // test DELETE
-    err = custodia.DeleteSchema(schema.SchemaId, true, true)
+    err = custodia.DeleteSchema(schema.Id, true, true)
     if err != nil {
         t.Errorf("error while deleting schema. Details: %v", err)
     }
@@ -476,9 +476,9 @@ func TestSchemaCRUDL(t *testing.T) {
     if len(schemas) != 1 {
         t.Errorf("bad schemas lenght, got: %v want: 1", len(schemas))
     }
-    if schemas[0].SchemaId != dummySchema.SchemaId {
+    if schemas[0].Id != dummySchema.SchemaId {
         t.Errorf("bad schema id, got: %v want: %v",
-        dummySchema.SchemaId, schemas[0].SchemaId)
+        dummySchema.SchemaId, schemas[0].Id)
     }
 }
 
@@ -612,7 +612,7 @@ func TestDocumentCRUDL(t *testing.T) {
     // we init instead a Schema with just the right ids
     schema := Schema{
         RepositoryId: dummyDoc.RepositoryId,
-        SchemaId: dummyDoc.SchemaId,
+        Id: dummyDoc.SchemaId,
         Description: "unittest",
         Structure: []SchemaField{
             {Name: "integerField", Type: "integer"},
@@ -645,9 +645,9 @@ func TestDocumentCRUDL(t *testing.T) {
             t.Errorf("bad SchemaId, got: %v want: %v",
             document.SchemaId, dummyDoc.SchemaId)
         }
-        if (*document).DocumentId != dummyDoc.DocumentId {
+        if (*document).Id != dummyDoc.DocumentId {
             t.Errorf("bad DocumentId, got: %v want: %v",
-            document.DocumentId, dummyDoc.DocumentId)
+            document.Id, dummyDoc.DocumentId)
         }
         if (*document).InsertDate.Year() != 2015 {
             t.Errorf("bad insert_date year, got: %v want: 2015",
@@ -669,8 +669,8 @@ func TestDocumentCRUDL(t *testing.T) {
     if err != nil {
         t.Errorf("unexpected error: %v", err)
     } else if doc != nil {
-        if doc.DocumentId != dummyDoc.DocumentId {
-            t.Errorf("bad DocumentId, got: %v want: %v", doc.DocumentId,
+        if doc.Id != dummyDoc.DocumentId {
+            t.Errorf("bad DocumentId, got: %v want: %v", doc.Id,
                 dummyDoc.DocumentId)
         }
         if doc.SchemaId != dummyDoc.SchemaId {
@@ -816,7 +816,7 @@ func TestDocumentCRUDL(t *testing.T) {
 
     // test UPDATE
     // we still pass empty content, non influential, response is mocked
-    doc, err = custodia.UpdateDocument(doc.DocumentId, true, content)
+    doc, err = custodia.UpdateDocument(doc.Id, true, content)
     if err != nil {
         t.Errorf("unexpected error: %v", err)
     } else if doc != nil {
@@ -832,7 +832,7 @@ func TestDocumentCRUDL(t *testing.T) {
     }
 
     // test DELETE
-    err = custodia.DeleteDocument(doc.DocumentId, true, true)
+    err = custodia.DeleteDocument(doc.Id, true, true)
     if err != nil {
         t.Errorf("error while deleting document. Details: %v", err)
     }
@@ -840,7 +840,7 @@ func TestDocumentCRUDL(t *testing.T) {
     // test LIST
     // test we gave a wrong argument
     params := map[string]interface{}{"antani": 42}
-    _, err = custodia.ListDocuments(schema.SchemaId, params)
+    _, err = custodia.ListDocuments(schema.Id, params)
     if err == nil {
         t.Errorf("ListDocuments is not giving error with wrong param %v",
             params)
@@ -854,7 +854,7 @@ func TestDocumentCRUDL(t *testing.T) {
 		"last_update__gt": time.Time{},
 		"last_update__lt": time.Time{},
 	}
-    documents, err := custodia.ListDocuments(schema.SchemaId, goodParams)
+    documents, err := custodia.ListDocuments(schema.Id, goodParams)
     if err != nil {
         t.Errorf("error while listing documents. Details: %v", err)
     } else if reflect.TypeOf(documents) != reflect.TypeOf([]*Document{}) {
@@ -1182,7 +1182,7 @@ func TestUserSchemaCRUDL(t *testing.T) {
             want interface{}
             got interface{}
         }{
-            {dummyUserSchema.UserSchemaId, userSchema.UserSchemaId},
+            {dummyUserSchema.UserSchemaId, userSchema.Id},
             {dummyUserSchema.Description, userSchema.Description},
             {dummyUserSchema.Groups, userSchema.Groups},
             {2015, userSchema.InsertDate.Year()},
@@ -1208,7 +1208,7 @@ func TestUserSchemaCRUDL(t *testing.T) {
             want interface{}
             got interface{}
         }{
-            {dummyUserSchema.UserSchemaId, userSchema.UserSchemaId},
+            {dummyUserSchema.UserSchemaId, userSchema.Id},
             {dummyUserSchema.Description, userSchema.Description},
             {dummyUserSchema.Groups, userSchema.Groups},
             {2015, userSchema.InsertDate.Year()},
@@ -1235,7 +1235,7 @@ func TestUserSchemaCRUDL(t *testing.T) {
             want interface{}
             got interface{}
         }{
-            {dummyUserSchema.UserSchemaId, userSchema.UserSchemaId},
+            {dummyUserSchema.UserSchemaId, userSchema.Id},
             {dummyUserSchema.Description, userSchema.Description},
             {dummyUserSchema.Groups, userSchema.Groups},
             {2015, userSchema.InsertDate.Year()},
@@ -1402,7 +1402,7 @@ func TestUserCRUDL(t *testing.T) {
     // test CREATE: we submit no content, since the response is mocked
     // we init instead a UserSchema with just the right ids
     userSchema := UserSchema{
-        UserSchemaId: dummyUser.UserSchemaId,
+        Id: dummyUser.UserSchemaId,
         Description: "unittest",
         IsActive: true,
         Structure: []SchemaField{},
@@ -1417,8 +1417,8 @@ func TestUserCRUDL(t *testing.T) {
             want interface{}
             got interface{}
         }{
-            {dummyUser.UserId, user.UserId},
-            {dummyUser.UserSchemaId, userSchema.UserSchemaId},
+            {dummyUser.UserId, user.Id},
+            {dummyUser.UserSchemaId, userSchema.Id},
             {dummyUser.Username, user.Username},
             {2015, user.InsertDate.Year()},
             {2, int(user.LastUpdate.Month())},
@@ -1446,8 +1446,8 @@ func TestUserCRUDL(t *testing.T) {
             want interface{}
             got interface{}
         }{
-            {dummyUser.UserId, user.UserId},
-            {dummyUser.UserSchemaId, userSchema.UserSchemaId},
+            {dummyUser.UserId, user.Id},
+            {dummyUser.UserSchemaId, userSchema.Id},
             {dummyUser.Username, user.Username},
             {2015, user.InsertDate.Year()},
             {2, int(user.LastUpdate.Month())},

@@ -10,7 +10,7 @@ import (
 )
 
 type UserSchema struct {
-	UserSchemaId string `json:"user_schema_id,omitempty"`
+	Id string `json:"user_schema_id,omitempty"`
 	Description string `json:"description"`
 	Groups []string `json:"gropus,omitempty"`
 	InsertDate timeutils.Time `json:"insert_date,omitempty"`

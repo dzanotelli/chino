@@ -13,7 +13,7 @@ import (
 
 
 type Document struct {
-	DocumentId string `json:"document_id,omitempty"`
+	Id string `json:"document_id,omitempty"`
 	SchemaId string `json:"schema_id,omitempty"`
 	RepositoryId string `json:"repository_id,omitempty"`
 	InsertDate timeutils.Time `json:"insert_date,omitempty"`
@@ -33,11 +33,11 @@ type DocumentsEnvelope struct {
 // [C]reate a new document
 func (ca *CustodiaAPIv1) CreateDocument(schema *Schema, isActive bool,
 	content map[string]interface{}) (*Document, error) {
-	if schema.SchemaId == "" {
+	if schema.Id == "" {
 		return nil, fmt.Errorf("schema has no SchemaId, does it exist?")
-	} else if !common.IsValidUUID(schema.SchemaId) {
+	} else if !common.IsValidUUID(schema.Id) {
 		return nil, fmt.Errorf("SchemaId is not a valid UUID: %s (it " +
-			"should not be manually set)", schema.SchemaId)
+			"should not be manually set)", schema.Id)
 	}
 
 	// validate document content
@@ -53,7 +53,7 @@ func (ca *CustodiaAPIv1) CreateDocument(schema *Schema, isActive bool,
 		return nil, err
 	}
 
-	url := fmt.Sprintf("/schemas/%s/documents", schema.SchemaId)
+	url := fmt.Sprintf("/schemas/%s/documents", schema.Id)
 	resp, err := ca.Call("POST", url, string(data))
 	if err != nil {
 		return nil, err
@@ -91,7 +91,7 @@ func (ca *CustodiaAPIv1) ReadDocument(schema Schema, id string) (*Document,
 	}
 
 	// convert values to concrete types
-	converted, ee := convertData(docEnvelope.Document.Content, schema)
+	converted, ee := convertData(docEnvelope.Document.Content, &schema)
 	if len(ee) > 0 {
 		err := fmt.Errorf("conversion errors: %w", errors.Join(ee...))
 		return docEnvelope.Document, err

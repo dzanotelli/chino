@@ -103,6 +103,15 @@ type oauthResponseData struct {
 	Scope string `json:"scope"`
 }
 
+type TokenInfo struct {
+	Active bool
+	Scope string
+	Expiration int `json:"exp"`
+	ApplicationId string `json:"client_id"`
+	Username string
+}
+
+
 // Application represent an application stored in Custodia
 type Application struct {
 	Secret string `json:"app_secret,omitempty"`
@@ -348,8 +357,7 @@ func (ca *CustodiaAPIv1) RevokeToken(auth common.ClientAuth,
 
 // Introspect token
 // wants Basic auth using application id/secret
-func (ca *CustodiaAPIv1) IntrospectToken(token string) (map[string]interface{},
-	error) {
+func (ca *CustodiaAPIv1) IntrospectToken(token string) (*TokenInfo, error) {
 	url := "/auth/revoke_token"
 
 	data := map[string]string{
@@ -366,16 +374,16 @@ func (ca *CustodiaAPIv1) IntrospectToken(token string) (map[string]interface{},
 	if err != nil {
 		return nil, err
 	}
-	var respData map[string]interface{}  // FIXME: provide a struct? --> TBD
-	if err := json.Unmarshal([]byte(resp), &respData); err != nil {
+	tokenInfo := TokenInfo{}
+	if err := json.Unmarshal([]byte(resp), &tokenInfo); err != nil {
 		return nil, err
 	}
 
-	return respData, nil
+	return &tokenInfo, nil
 }
 
 // User info
-func (ca *CustodiaAPIv1) UserInfo() (*User, error) {
+func (ca *CustodiaAPIv1) UserInfo(schema *UserSchema) (*User, error) {
 	url := "/users/me"
 
 	resp, err := ca.Call("GET", url)
@@ -383,19 +391,28 @@ func (ca *CustodiaAPIv1) UserInfo() (*User, error) {
 		return nil, err
 	}
 	// JSON: unmarshal resp content
-	docEnvelope := UserEnvelope{}
-	if err := json.Unmarshal([]byte(resp), &docEnvelope); err != nil {
+	userEnvelope := UserEnvelope{}
+	if err := json.Unmarshal([]byte(resp), &userEnvelope); err != nil {
 		return nil, err
 	}
 
+	if (schema == nil) {
+		// get the user schema
+		userSchema, err := ca.ReadUserSchema(userEnvelope.User.UserSchemaId)
+		if err != nil {
+			return nil, err
+		}
+		schema = userSchema
+	}
+
 	// convert values to concrete types
-	converted, ee := convertData(docEnvelope.User.Attributes, schema)
+	converted, ee := convertData(userEnvelope.User.Attributes, schema)
 	if len(ee) > 0 {
 		err := fmt.Errorf("conversion errors: %w", errors.Join(ee...))
-		return docEnvelope.User, err
+		return userEnvelope.User, err
 	}
 
 	// all good, assign the new content to doc and return it
-	docEnvelope.User.Attributes = converted
-	return docEnvelope.User, nil
+	userEnvelope.User.Attributes = converted
+	return userEnvelope.User, nil
 }

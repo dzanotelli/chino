@@ -19,7 +19,7 @@ type SchemaField struct {
 }
 
 type Schema struct {
-	SchemaId string `json:"schema_id,omitempty"`
+	Id string `json:"schema_id,omitempty"`
 	RepositoryId string `json:"repository_id,omitempty"`
 	Description string `json:"description"`
 	InsertDate timeutils.Time `json:"insert_date,omitempty"`
@@ -61,25 +61,25 @@ func (s *Schema) adjustDefaultTypes() {
 // [C]reate a new schema
 func (ca *CustodiaAPIv1) CreateSchema(repository *Repository,
 	descritpion string, isActive bool, fields []SchemaField) (*Schema, error) {
-	if repository.RepositoryId == "" {
+	if repository.Id == "" {
 		return nil, fmt.Errorf("repository has no RepositoryId, " +
 			"does it exist?")
-	} else if !common.IsValidUUID(repository.RepositoryId) {
+	} else if !common.IsValidUUID(repository.Id) {
 		return nil, fmt.Errorf("RepositoryId is not a valid UUID: %s (it " +
-			"should not be manually set)", repository.RepositoryId)
+			"should not be manually set)", repository.Id)
 	}
 
 	// FIXME: missing field type validation, and indexed property validation
 	//   and insensitive property
 
-	schema := Schema{RepositoryId: repository.RepositoryId,
+	schema := Schema{RepositoryId: repository.Id,
 		Description: descritpion, Structure: fields, IsActive: isActive}
 	data, err := json.Marshal(schema)
 	if err != nil {
 		return nil, err
 	}
 
-	url := fmt.Sprintf("/repositories/%s/schemas", repository.RepositoryId)
+	url := fmt.Sprintf("/repositories/%s/schemas", repository.Id)
 	resp, err := ca.Call("POST", url, string(data))
 	if err != nil {
 		return nil, err

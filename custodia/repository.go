@@ -11,7 +11,7 @@ import (
 
 // Repository represent a repository stored in Custodia
 type Repository struct {
-	RepositoryId string `json:"repository_id,omitempty"`
+	Id string `json:"repository_id,omitempty"`
 	Description string `json:"description"`
 	InsertDate timeutils.Time `json:"insert_date"`
 	LastUpdate timeutils.Time `json:"last_update"`

@@ -292,11 +292,28 @@ func convertField(value interface{}, field SchemaField) (interface{}, error) {
 	return converted, e
 }
 
-func convertData(data map[string]interface{}, schema Schema) (
+type StructureMapper interface {
+	getStructureAsMap() map[string]SchemaField
+}
+
+func convertData(data map[string]interface{}, schema StructureMapper) (
 	map[string]interface{}, []error) {
 	converted := map[string]interface{}{}
 	errors := []error{}
 	structure := schema.getStructureAsMap()
+
+	// get id and description of schema/userschema
+	var id, descr string
+	switch concreteSchema := schema.(type) {
+	case *UserSchema:
+		id = concreteSchema.Id
+		descr = concreteSchema.Description
+	case *Schema:
+		id = concreteSchema.Id
+		descr = concreteSchema.Description
+	default:
+		panic(fmt.Sprintf("unhandled type '%T'", schema))
+	}
 
 	for name, value := range data {
 		var err error
@@ -304,7 +321,7 @@ func convertData(data map[string]interface{}, schema Schema) (
 		field, ok := structure[name]
 		if !ok {
 			e := fmt.Errorf("field '%s': not belonging to schema %s '%s'",
-				name, schema.SchemaId, schema.Description)
+				name, id, descr)
 			errors = append(errors, e)
 			continue
 		}
