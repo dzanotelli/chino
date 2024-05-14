@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/dzanotelli/chino/common"
 )
@@ -254,7 +255,7 @@ func (ca *CustodiaAPIv1) ListApplications() ([]*Application, error) {
 
 // Login a user
 func (ca *CustodiaAPIv1) LoginUser(username string, password string,
-	application Application) (common.ClientAuth, error) {
+	application Application) (*common.ClientAuth, error) {
 	url := "/auth/token"
 	auth := *common.NewClientAuth()    // defaults to no auth
 
@@ -272,24 +273,27 @@ func (ca *CustodiaAPIv1) LoginUser(username string, password string,
 	// FIXME: this should be multipart/form-data
 	payload, err := json.Marshal(data)
 	if err != nil {
-		return auth, err
+		return nil, err
 	}
 
 	resp, err := ca.Call("POST", url, string(payload))
 	if err != nil {
-		return auth, err
+		return nil, err
 	}
 
 	// JSON: unmarshal resp content
 	respData := oauthResponseData{}
 	if err := json.Unmarshal([]byte(resp), &respData); err != nil {
-		return auth, err
+		return nil, err
 	}
 
-	auth.SetOAuth(username, password, respData.AccessToken, respData.ExpiresIn,
+	// compute the unixtime of expiration
+	expiration := int(time.Now().Unix()) + respData.ExpiresIn
+
+	auth.SetOAuth(username, password, respData.AccessToken, expiration,
 		respData.RefreshToken)
 
-	return auth, nil
+	return &auth, nil
 }
 
 // Refresh the access token
@@ -324,8 +328,11 @@ func (ca *CustodiaAPIv1) RefreshToken(auth common.ClientAuth,
 		return auth, err
 	}
 
+	// compute the unixtime of expiration
+	expiration := int(time.Now().Unix()) + respData.ExpiresIn
+
 	auth.SetAccessToken(respData.AccessToken)
-	auth.SetAccessTokenExpire(respData.ExpiresIn)
+	auth.SetAccessTokenExpire(expiration)
 	auth.SetRefreshToken(respData.RefreshToken)
 
 	return auth, nil
