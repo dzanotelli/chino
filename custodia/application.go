@@ -298,10 +298,10 @@ func (ca *CustodiaAPIv1) LoginUser(username string, password string,
 
 // Refresh the access token
 func (ca *CustodiaAPIv1) RefreshToken(auth common.ClientAuth,
-	application Application) (common.ClientAuth, error) {
+	application Application) (*common.ClientAuth, error) {
 	url := "/auth/token"
 
-	data := oauthRequestData {
+	data := oauthRequestData{
 		GrantType: GrantRefreshToken,
 		ClientId: application.Id,
 		Scope: "read write",
@@ -314,18 +314,18 @@ func (ca *CustodiaAPIv1) RefreshToken(auth common.ClientAuth,
 	// FIXME: this should be multipart/form-data
 	payload, err := json.Marshal(data)
 	if err != nil {
-		return auth, err
+		return nil, err
 	}
 
 	resp, err := ca.Call("POST", url, string(payload))
 	if err != nil {
-		return auth, err
+		return nil, err
 	}
 
 	// JSON: unmarshal resp content
 	respData := oauthResponseData{}
 	if err := json.Unmarshal([]byte(resp), &respData); err != nil {
-		return auth, err
+		return nil, err
 	}
 
 	// compute the unixtime of expiration
@@ -335,7 +335,7 @@ func (ca *CustodiaAPIv1) RefreshToken(auth common.ClientAuth,
 	auth.SetAccessTokenExpire(expiration)
 	auth.SetRefreshToken(respData.RefreshToken)
 
-	return auth, nil
+	return &auth, nil
 }
 
 // Revoke an existing token

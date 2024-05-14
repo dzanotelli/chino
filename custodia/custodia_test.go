@@ -1514,9 +1514,23 @@ func TestOAuth(t *testing.T) {
         "refresh_token": "vL0durAhdhNNYFI27F3zGGHXeNLwcO",
         "scope": "read write",
     }
+    responseRefresh := map[string]interface{}{
+        "access_token": "Qg3fv4BpPhWRqXeNLwcOa2fN08sliGpIOLMg3",
+        "token_type": "Bearer",
+        "expires_in": 36000,
+        "refresh_token": "vL0durAhdhNNYFI27F3zGGHXeNLwcO",
+        "scope": "read write",
+    }
+
     mockHandler := func(w http.ResponseWriter, r *http.Request) {
         if r.URL.Path == "/api/v1/auth/token" {
             data, _ := json.Marshal(responseLogin)
+            envelope.Data = data
+            out, _ := json.Marshal(envelope)
+            w.WriteHeader(http.StatusOK)
+            w.Write(out)
+        } else if r.URL.Path == "/api/v1/auth/refresh" {
+            data, _ := json.Marshal(responseRefresh)
             envelope.Data = data
             out, _ := json.Marshal(envelope)
             w.WriteHeader(http.StatusOK)
@@ -1543,7 +1557,6 @@ func TestOAuth(t *testing.T) {
         ClientType: ClientConfidential,
     }
 
-
     // test LOGIN
     auth, err := custodia.LoginUser("test", "test", app)
     if err != nil {
@@ -1562,10 +1575,33 @@ func TestOAuth(t *testing.T) {
 
         for _, test := range tests {
             if !reflect.DeepEqual(test.want, test.got) {
-                t.Errorf("Users LOGIN: bad value, got: %v want: %v",
+                t.Errorf("User Login: bad value, got: %v want: %v",
                     test.got, test.want)
             }
         }
+    }
 
+    // test REFRESH Token
+    auth, err = custodia.RefreshToken(*auth, app)
+    if err != nil {
+        t.Errorf("unexpected error: %v", err)
+    } else if auth != nil {
+        var tests = []struct {
+            want interface{}
+            got interface{}
+        }{
+            {common.OAuth, auth.GetAuthType()},
+            {"Qg3fv4BpPhWRqXeNLwcOa2fN08sliGpIOLMg3", auth.GetAccessToken()},
+            {"vL0durAhdhNNYFI27F3zGGHXeNLwcO", auth.GetRefreshToken()},
+            // Go is super quick, so this should be true
+            {36000, auth.GetAccessTokenExpire() - int(time.Now().Unix())},
+        }
+
+        for _, test := range tests {
+            if !reflect.DeepEqual(test.want, test.got) {
+                t.Errorf("User RefreshToken: bad value, got: %v want: %v",
+                    test.got, test.want)
+            }
+        }
     }
 }
