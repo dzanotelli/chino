@@ -1523,13 +1523,13 @@ func TestOAuth(t *testing.T) {
     }
 
     mockHandler := func(w http.ResponseWriter, r *http.Request) {
-        if r.URL.Path == "/api/v1/auth/token" {
+        if r.URL.Path == "/api/v1/auth/token" && r.Method == "POST" {
             data, _ := json.Marshal(responseLogin)
             envelope.Data = data
             out, _ := json.Marshal(envelope)
             w.WriteHeader(http.StatusOK)
             w.Write(out)
-        } else if r.URL.Path == "/api/v1/auth/refresh" {
+        } else if r.URL.Path == "/api/v1/auth/refresh" && r.Method == "POST" {
             data, _ := json.Marshal(responseRefresh)
             envelope.Data = data
             out, _ := json.Marshal(envelope)

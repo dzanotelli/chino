@@ -87,15 +87,7 @@ func (ct *ClientType) UnmarshalJSON(data []byte) (err error) {
 	return nil
 }
 
-// helper structs to performs OAuth calls (marshal, unmarshal)
-type oauthRequestData struct {
-	GrantType GrantType `json:"grant_type"`
-	Username string `json:"username,omitempty"`
-	Password string `json:"password,omitempty"`
-	ClientId string `json:"client_id"`
-	ClientSecret string `json:"client_secret,omitempty"`
-	Scope string `json:"scope"`
-}
+// helper struct to performs OAuth calls
 type oauthResponseData struct {
 	AccessToken string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
@@ -259,15 +251,16 @@ func (ca *CustodiaAPIv1) LoginUser(username string, password string,
 	url := "/auth/token"
 	auth := *common.NewClientAuth()    // defaults to no auth
 
-	data := oauthRequestData {
-		GrantType: GrantPassword,
-		Username: username,
-		Password: password,
-		ClientId: application.Id,
+	data := map[string]string{
+		"grant_type": GrantPassword.String(),
+		"username": username,
+		"password": password,
+		"client_id": application.Id,
 	}
+
 	// when client is not public, we need to set the application secret as well
 	if application.ClientType == ClientConfidential {
-		data.ClientSecret = application.Secret
+		data["client_secret"] = application.Secret
 	}
 
 	// FIXME: this should be multipart/form-data
@@ -299,16 +292,18 @@ func (ca *CustodiaAPIv1) LoginUser(username string, password string,
 // Refresh the access token
 func (ca *CustodiaAPIv1) RefreshToken(auth common.ClientAuth,
 	application Application) (*common.ClientAuth, error) {
-	url := "/auth/token"
+	url := "/auth/refresh"
 
-	data := oauthRequestData{
-		GrantType: GrantRefreshToken,
-		ClientId: application.Id,
-		Scope: "read write",
+	data := map[string]string{
+		"refresh_token": auth.GetRefreshToken(),
+		"grant_type": GrantRefreshToken.String(),
+		"client_id": application.Id,
+		"scope": "read write",
 	}
+
 	// when client is not public, we need to set the application secret as well
 	if application.ClientType == ClientConfidential {
-		data.ClientSecret = application.Secret
+		data["client_secret"] = application.Secret
 	}
 
 	// FIXME: this should be multipart/form-data
