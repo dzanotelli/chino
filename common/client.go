@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"json"
 	"net/http"
 	"net/url"
 	"strings"
@@ -204,24 +205,60 @@ func NewClient(serverUrl string, auth *ClientAuth) *Client {
 }
 
 // Performs a HTTP Call using Client configuration
-func (c *Client) Call(method, path string, data ...string) (*http.Response,
-	error) {
-	url := c.rootUrl.String() + path  //FIXME join strings
+// `params` map may contain two keys:
+// 	- "content_type" is the content type of the request, it defaults to
+// 	  "application/json"
+//  - "data" is the data to be sent in the request body.
+// 		- For "application/json" content type, data is serialized as JSON
+// 		- For "application/x-www-form-urlencoded" content type, data is
+//  	  serialized as a form
+func (c *Client) Call(method, path string, params map[string]interface{}) (
+	*http.Response,	error) {
+	fullPath := c.rootUrl.String() + path  //FIXME join strings
 	var req *http.Request
 	var err error
 
 	switch method {
 	case "GET", "DELETE":
-		req, err = http.NewRequest(method, url, nil)
+		req, err = http.NewRequest(method, fullPath, nil)
 	case "POST", "PUT", "PATCH":
-		var jsonStr []byte
-		if len(data) > 0 {
-			jsonStr = []byte(data[0])
-		} else {
-			jsonStr = []byte("")
+		contentType, ok := params["content_type"]
+		if !ok {
+			contentType = "application/json"
 		}
-		req, err = http.NewRequest(method, url, bytes.NewBuffer(jsonStr))
-		req.Header.Set("Content-Type", "application/json")
+
+		if contentType == "appliaction/json" {
+			data := params["data"].(map[string]interface{})
+			var dataJson []byte
+			if len(data) > 0 {
+				// Replaces all occurrences of "\u003c" with "<" in dataJson
+				// This is necessary because the json.Marshal function escapes
+				// '<' character as "\u003c", but some backend services (like
+				// Custodia) don't expect this.
+				dataJson = bytes.Replace(dataJson, []byte("\\u003c"),
+					[]byte("<"), -1)
+			} else {
+				dataJson = []byte("")
+			}
+
+			dataJson, err := json.Marshal(data)
+			if err != nil {
+				return nil, err
+			}
+			req, err = http.NewRequest(method, fullPath, bytes.NewBuffer(dataJson))
+			req.Header.Set("Content-Type", "application/json")
+		} else if contentType == "application/x-www-form-urlencoded" {
+			values := url.Values{}
+			formData := params["data"].(map[string]string)
+			for key, value := range formData {
+				values.Add(key, value)
+			}
+			req, err = http.NewRequest("POST", fullPath,
+				strings.NewReader(values.Encode()))
+			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		} else {
+			panic(fmt.Sprintf("unsupported content type %q", contentType))
+		}
 	default:
 		err = fmt.Errorf("unsupported HTTP method %q", method)
 	}
