@@ -142,11 +142,8 @@ func (ca *CustodiaAPIv1) CreateApplication(name string, grantType GrantType,
 		RedirectUrl: redirectUrl,
 	}
 	url := "/auth/applications"
-	data, err := json.Marshal(application)
-	if err != nil {
-		return nil, err
-	}
-	resp, err := ca.Call("POST", url, string(data))
+	params := map[string]interface{}{"data": application}
+	resp, err := ca.Call("POST", url, params)
 	if err != nil {
 		return nil, err
 	}
@@ -163,7 +160,7 @@ func (ca *CustodiaAPIv1) CreateApplication(name string, grantType GrantType,
 // [R]ead an existent application
 func (ca *CustodiaAPIv1) ReadApplication(id string) (*Application, error) {
 	url := fmt.Sprintf("/auth/applications/%s", id)
-	resp, err := ca.Call("GET", url)
+	resp, err := ca.Call("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -194,11 +191,8 @@ func (ca *CustodiaAPIv1) UpdateApplication(id string, name string,
 		RedirectUrl: redirectUrl,
 	}
 	url := fmt.Sprintf("/auth/applications/%s", id)
-	data, err := json.Marshal(application)
-	if err != nil {
-		return nil, err
-	}
-	resp, err := ca.Call("PUT", url, string(data))
+	params := map[string]interface{}{"data": application}
+	resp, err := ca.Call("PUT", url, params)
 	if err != nil {
 		return nil, err
 	}
@@ -215,7 +209,7 @@ func (ca *CustodiaAPIv1) UpdateApplication(id string, name string,
 // [D]elete an existent application
 func (ca *CustodiaAPIv1) DeleteApplication(id string) (error) {
 	url := fmt.Sprintf("/auth/applications/%s", id)
-	_, err := ca.Call("DELETE", url)
+	_, err := ca.Call("DELETE", url, nil)
 	if err != nil {
 		return err
 	}
@@ -225,7 +219,7 @@ func (ca *CustodiaAPIv1) DeleteApplication(id string) (error) {
 // [L]ist all the applications
 func (ca *CustodiaAPIv1) ListApplications() ([]*Application, error) {
 	url := "/auth/applications"
-	resp, err := ca.Call("GET", url)
+	resp, err := ca.Call("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -263,13 +257,11 @@ func (ca *CustodiaAPIv1) LoginUser(username string, password string,
 		data["client_secret"] = application.Secret
 	}
 
-	// FIXME: this should be multipart/form-data
-	payload, err := json.Marshal(data)
-	if err != nil {
-		return nil, err
+	params := map[string]interface{}{
+		"data": data,
+		"contentType": "application/form-data",
 	}
-
-	resp, err := ca.Call("POST", url, string(payload))
+	resp, err := ca.Call("POST", url, params)
 	if err != nil {
 		return nil, err
 	}
@@ -306,13 +298,12 @@ func (ca *CustodiaAPIv1) RefreshToken(auth common.ClientAuth,
 		data["client_secret"] = application.Secret
 	}
 
-	// FIXME: this should be multipart/form-data
-	payload, err := json.Marshal(data)
-	if err != nil {
-		return nil, err
+	params := map[string]interface{}{
+		"data": data,
+		"contentType": "application/form-data",
 	}
 
-	resp, err := ca.Call("POST", url, string(payload))
+	resp, err := ca.Call("POST", url, params)
 	if err != nil {
 		return nil, err
 	}
@@ -344,12 +335,11 @@ func (ca *CustodiaAPIv1) RevokeToken(auth common.ClientAuth,
 		"client_secret": application.Secret,
 	}
 
-	// FIXME: this should be application/form-data
-	payload, err := json.Marshal(data)
-	if err != nil {
-		return err
+	params := map[string]interface{}{
+		"data": data,
+		"contentType": "application/form-data",
 	}
-	_, err = ca.Call("POST", url, string(payload))
+	_, err := ca.Call("POST", url, params)
 	if err != nil {
 		return err
 	}
@@ -366,13 +356,11 @@ func (ca *CustodiaAPIv1) IntrospectToken(token string) (*TokenInfo, error) {
 		"token": token,
 	}
 
-	// FIXME: this should be application/x-www-form-urlencoded
-	payload, err := json.Marshal(data)
-	if err != nil {
-		return nil, err
+	params := map[string]interface{}{
+		"data": data,
+		"contentType": "application/x-www-form-urlencoded",
 	}
-
-	resp, err := ca.Call("POST", url, string(payload))
+	resp, err := ca.Call("POST", url, params)
 	if err != nil {
 		return nil, err
 	}
@@ -388,7 +376,7 @@ func (ca *CustodiaAPIv1) IntrospectToken(token string) (*TokenInfo, error) {
 func (ca *CustodiaAPIv1) UserInfo(schema *UserSchema) (*User, error) {
 	url := "/users/me"
 
-	resp, err := ca.Call("GET", url)
+	resp, err := ca.Call("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}

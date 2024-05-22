@@ -4,9 +4,9 @@ package common
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
-	"json"
 	"net/http"
 	"net/url"
 	"strings"
@@ -222,32 +222,24 @@ func (c *Client) Call(method, path string, params map[string]interface{}) (
 	case "GET", "DELETE":
 		req, err = http.NewRequest(method, fullPath, nil)
 	case "POST", "PUT", "PATCH":
-		contentType, ok := params["content_type"]
+		contentType, ok := params["contentType"].(string)
 		if !ok {
 			contentType = "application/json"
 		}
 
-		if contentType == "appliaction/json" {
+		switch contentType {
+		case "application/json":
 			data := params["data"].(map[string]interface{})
-			var dataJson []byte
-			if len(data) > 0 {
-				// Replaces all occurrences of "\u003c" with "<" in dataJson
-				// This is necessary because the json.Marshal function escapes
-				// '<' character as "\u003c", but some backend services (like
-				// Custodia) don't expect this.
-				dataJson = bytes.Replace(dataJson, []byte("\\u003c"),
-					[]byte("<"), -1)
-			} else {
-				dataJson = []byte("")
-			}
-
-			dataJson, err := json.Marshal(data)
+			jsonData, err := json.Marshal(data)
 			if err != nil {
 				return nil, err
 			}
-			req, err = http.NewRequest(method, fullPath, bytes.NewBuffer(dataJson))
-			req.Header.Set("Content-Type", "application/json")
-		} else if contentType == "application/x-www-form-urlencoded" {
+			req, err = http.NewRequest(method, fullPath,
+				bytes.NewBuffer(jsonData))
+			if err != nil {
+				return nil, err
+			}
+		case "application/x-www-form-urlencoded", "multipart/form-data":
 			values := url.Values{}
 			formData := params["data"].(map[string]string)
 			for key, value := range formData {
@@ -255,10 +247,14 @@ func (c *Client) Call(method, path string, params map[string]interface{}) (
 			}
 			req, err = http.NewRequest("POST", fullPath,
 				strings.NewReader(values.Encode()))
-			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-		} else {
+
+			// FIXME: this may be needed by form-urlencoded
+			// req.Header.Set("Content-Length", strconv.Itoa(len(params["data"].(string))))
+
+		default:
 			panic(fmt.Sprintf("unsupported content type %q", contentType))
 		}
+		req.Header.Set("Content-Type", contentType)
 	default:
 		err = fmt.Errorf("unsupported HTTP method %q", method)
 	}
@@ -296,25 +292,28 @@ func (c *Client) Call(method, path string, params map[string]interface{}) (
 
 // Get wraps call to perform a HTTP GET call
 func (c *Client) Get(path string) (*http.Response, error) {
-	return c.Call("GET", path)
+	return c.Call("GET", path, nil)
 }
 
 // Post wraps call to perform a HTTP POST call
-func (c *Client) Post(path, payload string) (*http.Response, error) {
-	return c.Call("POST", path, payload)
+func (c *Client) Post(path string, params map[string]interface{}) (
+	*http.Response, error) {
+	return c.Call("POST", path, params)
 }
 
 // Put wraps call to perform a HTTP PUT call
-func (c *Client) Put(path, payload string) (*http.Response, error) {
-	return c.Call("PUT", path, payload)
+func (c *Client) Put(path string, params map[string]interface{}) (
+	*http.Response, error) {
+	return c.Call("PUT", path, params)
 }
 
 // Patch wraps call to perform a HTTP PATCH call
-func (c *Client) Patch(path, payload string) (*http.Response, error) {
-	return c.Call("PATCH", path, payload)
+func (c *Client) Patch(path string, params map[string]interface{}) (
+	*http.Response, error) {
+	return c.Call("PATCH", path, params)
 }
 
 // Delete wraps call to perform a HTTP DELETE call
 func (c *Client) Delete(path string) (*http.Response, error) {
-	return c.Call("DELETE", path)
+	return c.Call("DELETE", path, nil)
 }
