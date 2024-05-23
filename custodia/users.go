@@ -51,13 +51,9 @@ func (ca *CustodiaAPIv1) CreateUser(userSchema *UserSchema, isActive bool,
 	}
 
 	doc := User{IsActive: isActive, Attributes: attributes}
-	data, err := json.Marshal(doc)
-	if err != nil {
-		return nil, err
-	}
-
 	url := fmt.Sprintf("/user_schemas/%s/users", userSchema.Id)
-	resp, err := ca.Call("POST", url, string(data))
+	params := map[string]interface{}{"data": doc}
+	resp, err := ca.Call("POST", url, params)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +78,7 @@ func (ca *CustodiaAPIv1) ReadUser(schema UserSchema, id string) (*User,
 	}
 
 	url := fmt.Sprintf("/users/%s", id)
-	resp, err := ca.Call("GET", url)
+	resp, err := ca.Call("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -116,11 +112,8 @@ func (ca *CustodiaAPIv1) UpdateUser(id string , isActive bool,
 
 	// create a doc with just the values we can send, and marshal it
 	doc := User{IsActive: isActive, Attributes: content}
-	data, err := json.Marshal(doc)
-	if err != nil {
-		return nil, err
-	}
-	resp, err := ca.Call("PUT", url, string(data))
+	params := map[string]interface{}{"data": doc}
+	resp, err := ca.Call("PUT", url, params)
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +136,7 @@ func (ca *CustodiaAPIv1) DeleteUser(id string, force, consistent bool) (
 	url := fmt.Sprintf("/users/%s", id)
 	url += fmt.Sprintf("?force=%v&consistent=%v", force, consistent)
 
-	_, err := ca.Call("DELETE", url)
+	_, err := ca.Call("DELETE", url, nil)
 	if err != nil {
 		return err
 	}
@@ -211,7 +204,7 @@ func (ca *CustodiaAPIv1) ListUsers(userSchemaId string,
 	}
 
 	url = strings.TrimRight(url, "&")
-	resp, err := ca.Call("GET", url)
+	resp, err := ca.Call("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}

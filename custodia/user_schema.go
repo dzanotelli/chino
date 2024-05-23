@@ -42,13 +42,9 @@ func (ca *CustodiaAPIv1) CreateUserSchema(descritpion string, isActive bool,
 
 	user_schema := UserSchema{Description: descritpion, Structure: fields,
 		 IsActive: isActive}
-	data, err := json.Marshal(user_schema)
-	if err != nil {
-		return nil, err
-	}
-
 	url := "/user_schemas"
-	resp, err := ca.Call("POST", url, string(data))
+	params := map[string]interface{}{"data": user_schema}
+	resp, err := ca.Call("POST", url, params)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +66,7 @@ func (ca *CustodiaAPIv1) ReadUserSchema(id string) (*UserSchema, error) {
 	}
 
 	url := fmt.Sprintf("/user_schemas/%s", id)
-	resp, err := ca.Call("GET", url)
+	resp, err := ca.Call("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -97,11 +93,8 @@ func (ca *CustodiaAPIv1) UpdateUserSchema(id string, description string,
 			IsActive: isActive,
 			Structure: structure,
 		}
-		data, err := json.Marshal(schema)
-		if err != nil {
-			return nil, err
-		}
-		resp, err := ca.Call("PUT", url, string(data))
+		params := map[string]interface{}{"data": schema}
+		resp, err := ca.Call("PUT", url, params)
 		if err != nil {
 			return nil, err
 		}
@@ -125,7 +118,7 @@ func (ca *CustodiaAPIv1) DeleteUserSchema(id string, force bool) (
 		url += "?force=true"
 	}
 
-	_, err := ca.Call("DELETE", url)
+	_, err := ca.Call("DELETE", url, nil)
 	if err != nil {
 		return err
 	}
@@ -135,7 +128,7 @@ func (ca *CustodiaAPIv1) DeleteUserSchema(id string, force bool) (
 // [L]ist all the user schemas
 func (ca *CustodiaAPIv1) ListUserSchemas() ([]*UserSchema, error) {
 	url := "/user_schemas"
-	resp, err := ca.Call("GET", url)
+	resp, err := ca.Call("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}

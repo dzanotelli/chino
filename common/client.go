@@ -229,7 +229,7 @@ func (c *Client) Call(method, path string, params map[string]interface{}) (
 
 		switch contentType {
 		case "application/json":
-			data := params["data"].(map[string]interface{})
+			data := params["data"]
 			jsonData, err := json.Marshal(data)
 			if err != nil {
 				return nil, err

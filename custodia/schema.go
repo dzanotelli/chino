@@ -74,13 +74,10 @@ func (ca *CustodiaAPIv1) CreateSchema(repository *Repository,
 
 	schema := Schema{RepositoryId: repository.Id,
 		Description: descritpion, Structure: fields, IsActive: isActive}
-	data, err := json.Marshal(schema)
-	if err != nil {
-		return nil, err
-	}
 
 	url := fmt.Sprintf("/repositories/%s/schemas", repository.Id)
-	resp, err := ca.Call("POST", url, string(data))
+	params := map[string]interface{}{"data": schema}
+	resp, err := ca.Call("POST", url, params)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +99,7 @@ func (ca *CustodiaAPIv1) ReadSchema(id string) (*Schema, error) {
 	}
 
 	url := fmt.Sprintf("/schemas/%s", id)
-	resp, err := ca.Call("GET", url)
+	resp, err := ca.Call("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -129,11 +126,8 @@ func (ca *CustodiaAPIv1) UpdateSchema(id string, description string,
 			IsActive: isActive,
 			Structure: structure,
 		}
-		data, err := json.Marshal(schema)
-		if err != nil {
-			return nil, err
-		}
-		resp, err := ca.Call("PUT", url, string(data))
+		params := map[string]interface{}{"data": schema}
+		resp, err := ca.Call("PUT", url, params)
 		if err != nil {
 			return nil, err
 		}
@@ -163,7 +157,7 @@ func (ca *CustodiaAPIv1) DeleteSchema(id string, force, allContent bool) (
 		url += "?force=true"
 	}
 
-	_, err := ca.Call("DELETE", url)
+	_, err := ca.Call("DELETE", url, nil)
 	if err != nil {
 		return err
 	}
@@ -177,7 +171,7 @@ func (ca *CustodiaAPIv1) ListSchemas(repositoryId string) ([]*Schema, error) {
 		return nil, err
 	}
 	url := fmt.Sprintf("/repositories/%s/schemas", repositoryId)
-	resp, err := ca.Call("GET", url)
+	resp, err := ca.Call("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}

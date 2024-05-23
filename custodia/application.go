@@ -259,7 +259,7 @@ func (ca *CustodiaAPIv1) LoginUser(username string, password string,
 
 	params := map[string]interface{}{
 		"data": data,
-		"contentType": "application/form-data",
+		"contentType": "multipart/form-data",
 	}
 	resp, err := ca.Call("POST", url, params)
 	if err != nil {
@@ -300,7 +300,7 @@ func (ca *CustodiaAPIv1) RefreshToken(auth common.ClientAuth,
 
 	params := map[string]interface{}{
 		"data": data,
-		"contentType": "application/form-data",
+		"contentType": "multipart/form-data",
 	}
 
 	resp, err := ca.Call("POST", url, params)
@@ -337,7 +337,7 @@ func (ca *CustodiaAPIv1) RevokeToken(auth common.ClientAuth,
 
 	params := map[string]interface{}{
 		"data": data,
-		"contentType": "application/form-data",
+		"contentType": "multipart/form-data",
 	}
 	_, err := ca.Call("POST", url, params)
 	if err != nil {
