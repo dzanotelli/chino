@@ -12,178 +12,167 @@ import (
 	"strings"
 )
 
-const NoAuth = "No Auth"
-const BasicAuth = "Basic"
-const OAuth = "Bearer"
 const userAgent = "golang/chino-" + Version
+
+type AuthType int
+const (
+	NoAuth AuthType = iota + 1
+	CustomerAuth
+	UserAuth
+	ApplicationAuth
+)
+func (at AuthType) Choices() []string {
+	return []string{"Customer", "User", "Application"}
+}
+
+func (at AuthType) String() string {
+	return at.Choices()[at-1]
+}
 
 // ClientAuth keeps the authentication details - Basic vs Bearer (OAuth)
 type ClientAuth struct {
-	authType string         // basic or bearer
-	username string
-	password string
-	accessToken string      // only for OAuth
-	accessTokenExpire int   // only for OAuth
-	refreshToken string     // only for OAuth
+	currentAuthType AuthType
+	prevAuthType AuthType
+	customerId string          // only for Customer auth
+	customerKey string		   // only for Customer auth
+	accessToken string         // only for OAuth
+	accessTokenExpire int      // only for OAuth
+	refreshToken string        // only for OAuth
+	applicationId string       // only for Application auth
+	applicationSecret string   // only for Application auth
 }
 
 // Client holds the configuration (url, auth) and wraps http Requests
 type Client struct {
 	rootUrl *url.URL
 	auth *ClientAuth
-	userAgent string
 }
 
 // NewClientAuth returns a new ClientAuth with auth set to NoAuth
-func NewClientAuth() *ClientAuth {
+func NewClientAuth(data map[string]interface{}) *ClientAuth {
 	ca := &ClientAuth{}
 	ca.SetNoAuth()
+	ca.Update(data)
 	return ca
 }
 
 // Set ClientAuth authType to NoAuth removing other attributes
 func (ca *ClientAuth) SetNoAuth() {
-	ca.authType = NoAuth
-	ca.username = ""
-	ca.password = ""
+	ca.currentAuthType = NoAuth
+	ca.prevAuthType = NoAuth
+	ca.customerId = ""
+	ca.customerKey = ""
 	ca.accessToken = ""
 	ca.accessTokenExpire = 0
 	ca.refreshToken = ""
+	ca.applicationId = ""
+	ca.applicationSecret = ""
+}
+
+func (ca *ClientAuth) SwitchAuthTo(authType AuthType) error {
+	ca.prevAuthType = ca.currentAuthType
+	ca.currentAuthType = authType
+}
+
+func (ca *ClientAuth) SeitchAuthBack() {
+	ca.currentAuthType, ca.prevAuthType = ca.prevAuthType, ca.currentAuthType
+}
+
+
+func (ca *ClientAuth) Update(data map[string]interface{}) error {
+	for key, value := range data {
+		switch key {
+		case "customerId":
+			if customerId, ok := value.(string); ok { //FIXME: use UUID type
+				if !IsValidUUID(customerId) {
+					return errors.New("customerId must be a valid UUID")
+				}
+				ca.customerId = customerId
+			}
+		case "customerKey":
+			if customerKey, ok := value.(string); ok { //FIXME: use UUID type
+				if !IsValidUUID(customerKey) {
+					return errors.New("customerKey must be a valid UUID")
+				}
+				ca.customerKey = customerKey
+			}
+		case "accessToken":
+			if accessToken, ok := value.(string); ok {
+				ca.accessToken = accessToken
+			}
+		case "accessTokenExpire":
+			if accessTokenExpire, ok := value.(int); ok {
+				ca.accessTokenExpire = accessTokenExpire
+			}
+		case "refreshToken":
+			if refreshToken, ok := value.(string); ok {
+				ca.refreshToken = refreshToken
+			}
+		case "applicationId":
+			if applicationId, ok := value.(string); ok {
+				ca.applicationId = applicationId
+			}
+		case "applicationSecret":
+			if applicationSecret, ok := value.(string); ok {
+				ca.applicationSecret = applicationSecret
+			}
+		default:
+			return errors.New("unknown attribute: " + key)
+		}
+	}
+	return nil
 }
 
 // Set ClientAuth authType to BasicAuth removing tokens
-func (ca *ClientAuth) SetBasicAuth(username, password string) error {
-	if !IsValidUUID(username) {
-		return errors.New("username must be a valid UUID")
-	} else if !IsValidUUID(password) {
-		return errors.New("password must be a valid UUID")
+func (ca *ClientAuth) SetCustomerAuth(id, key string) error {
+	if !IsValidUUID(id) {
+		return errors.New("customerId must be a valid UUID")
+	} else if !IsValidUUID(key) {
+		return errors.New("customerKey must be a valid UUID")
 	}
 
-	ca.authType = BasicAuth
-	ca.username = username
-	ca.password = password
-	ca.accessToken = ""
-	ca.accessTokenExpire = 0
-	ca.refreshToken = ""
-
+	ca.customerId = id
+	ca.customerKey = key
 	return nil
 }
 
-// Set ClientAuth authType to OAuth
-func (ca *ClientAuth) SetOAuth(username, password, accessToken string,
-	accessTokenExpire int, refreshToken string) error {
-	username = strings.Trim(username, " ")
-	password = strings.Trim(password, " ")
-
-	if (len(username) == 0) {
-		return errors.New("username cannot be empty")
-	} else if (len(password) == 0) {
-		return errors.New("password cannot be empty")
-	}
-
-	ca.authType = OAuth
-	ca.username = username
-	ca.password = password
+func (ca *ClientAuth) SetUserAuth(accessToken string, tokenExpire int,
+	refreshToken string) error {
 	ca.accessToken = accessToken
-	ca.accessTokenExpire = accessTokenExpire
+	ca.accessTokenExpire = tokenExpire
 	ca.refreshToken = refreshToken
-
 	return nil
 }
 
-func (ca *ClientAuth) GetAuthType() string {
-	return ca.authType
-}
-
-func (ca *ClientAuth) SetUsername(username string) error {
-	switch ca.authType {
-	case NoAuth:
-		return errors.New("cannot set username to NoAuth client")
-	case BasicAuth:
-		if !IsValidUUID(username) {
-			return errors.New("username must be a valid UUID")
-		}
-	case OAuth:
-		username = strings.Trim(username, " ")
-		if (len(username) == 0) {
-			return errors.New("username cannot be empty")
-		}
-	}
-
-	ca.username = username
+func (ca *ClientAuth) SetApplicationAuth(id, secret string) error {
+	ca.applicationId = id
+	ca.applicationSecret = secret
 	return nil
 }
 
-func (ca *ClientAuth) GetUsername() string {
-	return ca.username
+
+func (ca *ClientAuth) GetAuthType() AuthType {
+	return ca.currentAuthType
 }
 
-func (ca *ClientAuth) SetPassword(password string) error {
-	switch ca.authType {
-	case NoAuth:
-		return errors.New("cannot set password to NoAuth client")
-	case BasicAuth:
-		if !IsValidUUID(password) {
-			return errors.New("password must be a valid UUID")
-		}
-	case OAuth:
-		password = strings.Trim(password, " ")
-		if (len(password) == 0) {
-			return errors.New("password cannot be empty")
-		}
-	}
-
-	ca.password = password
-	return nil
-}
-
-func (ca *ClientAuth) SetAccessToken(token string) error {
-	if (ca.authType != OAuth) {
-		return errors.New("token can be set only to OAuth client")
-	}
-
-	token = strings.Trim(token, " ")
-	if (len(token) == 0) {
-		return errors.New("token cannot be empty")
-	}
-
-	ca.accessToken = token
-	return nil
+func (ca *ClientAuth) GetCustomerId() string {
+	return ca.customerId
 }
 
 func (ca *ClientAuth) GetAccessToken() string {
 	return ca.accessToken
 }
 
-func (ca *ClientAuth) SetAccessTokenExpire(expire int) error {
-	if (ca.authType != OAuth) {
-		return errors.New("refreshToken can be set only to OAuth client")
-	}
-
-	ca.accessTokenExpire = expire
-	return nil
-}
-
 func (ca *ClientAuth) GetAccessTokenExpire() int {
 	return ca.accessTokenExpire
 }
 
-func (ca *ClientAuth) SetRefreshToken(refreshToken string) error {
-	if (ca.authType != OAuth) {
-		return errors.New("refreshToken can be set only to OAuth client")
-	}
-
-	refreshToken = strings.Trim(refreshToken, " ")
-	if (len(refreshToken) == 0) {
-		return errors.New("refreshToken cannot be empty")
-	}
-	ca.refreshToken = refreshToken
-	return nil
-}
-
-
 func (ca *ClientAuth) GetRefreshToken() string {
 	return ca.refreshToken
+}
+
+func (ca *ClientAuth) GetApplicationId() string {
+	return ca.applicationId
 }
 
 // NewClient configures and returns a new Client
@@ -239,7 +228,7 @@ func (c *Client) Call(method, path string, params map[string]interface{}) (
 			if err != nil {
 				return nil, err
 			}
-		case "application/x-www-form-urlencoded", "multipart/form-data":
+		case "application/x-www-form-urlencoded":
 			values := url.Values{}
 			formData := params["data"].(map[string]string)
 			for key, value := range formData {
@@ -247,10 +236,9 @@ func (c *Client) Call(method, path string, params map[string]interface{}) (
 			}
 			req, err = http.NewRequest("POST", fullPath,
 				strings.NewReader(values.Encode()))
-
-			// FIXME: this may be needed by form-urlencoded
-			// req.Header.Set("Content-Length", strconv.Itoa(len(params["data"].(string))))
-
+		case "multipart/form-data":
+			// FIXME: implement multipart/form-data
+			err = fmt.Errorf("not implemented yet: %q", method)
 		default:
 			panic(fmt.Sprintf("unsupported content type %q", contentType))
 		}
@@ -268,16 +256,18 @@ func (c *Client) Call(method, path string, params map[string]interface{}) (
 	req.Header.Add("Accept", "application/json")
 
 	// handle auth
-	switch c.auth.authType {
+	switch c.auth.currentAuthType {
 	case NoAuth:
 		// do nothing
-	case BasicAuth:
-		req.SetBasicAuth(c.auth.username, c.auth.password)
-	case OAuth:
+	case CustomerAuth:
+		req.SetBasicAuth(c.auth.customerId, c.auth.customerKey)
+	case UserAuth:
 		bearer := "Bearer: " + c.auth.accessToken
 		req.Header.Add("Authorization", bearer)
+	case ApplicationAuth:
+		req.SetBasicAuth(c.auth.applicationId, c.auth.applicationSecret)
 	default:
-		panic(fmt.Sprintf("Unsupported auth type %q", c.auth.authType))
+		panic(fmt.Sprintf("Unsupported auth type %q", c.auth.currentAuthType))
 	}
 
 	// perform the call

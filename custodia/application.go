@@ -240,6 +240,8 @@ func (ca *CustodiaAPIv1) ListApplications() ([]*Application, error) {
 
 
 // Login a user
+// This is the oauth flow of type "password" where via api call a client
+// immediately get access_token and refresh token
 func (ca *CustodiaAPIv1) LoginUser(username string, password string,
 	application Application) (*common.ClientAuth, error) {
 	url := "/auth/token"
@@ -275,8 +277,49 @@ func (ca *CustodiaAPIv1) LoginUser(username string, password string,
 	// compute the unixtime of expiration
 	expiration := int(time.Now().Unix()) + respData.ExpiresIn
 
-	auth.SetOAuth(username, password, respData.AccessToken, expiration,
-		respData.RefreshToken)
+	auth.SetOAuth(respData.AccessToken, expiration, respData.RefreshToken)
+
+	return &auth, nil
+}
+
+// LoginCode
+// Get the access_token and refresh_token using the authorization code
+// retrieved in the previous steps of the authorization code flow.
+func (ca *CustodiaAPIv1) LoginAuthCode(code string,
+	application Application) (*common.ClientAuth, error) {
+	url := "/auth/token"
+	auth := *common.NewClientAuth()    // defaults to no auth
+
+	data := map[string]string{
+		"grant_type": GrantAuthorizationCode.String(),
+		"code": code,
+		"redirect_uri": application.RedirectUrl,
+		"client_id": application.Id,
+		"scope": "read write",
+	}
+	if application.ClientType == ClientConfidential {
+		data["client_secret"] = application.Secret
+	}
+
+	params := map[string]interface{}{
+		"data": data,
+		"contentType": "multipart/form-data",
+	}
+	resp, err := ca.Call("POST", url, params)
+	if err != nil {
+		return nil, err
+	}
+
+	// JSON: unmarshal resp content
+	respData := oauthResponseData{}
+	if err := json.Unmarshal([]byte(resp), &respData); err != nil {
+		return nil, err
+	}
+
+	// compute the unixtime of expiration
+	expiration := int(time.Now().Unix()) + respData.ExpiresIn
+
+	auth.SetOAuth(respData.AccessToken, expiration, respData.RefreshToken)
 
 	return &auth, nil
 }
