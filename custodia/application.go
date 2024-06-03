@@ -242,10 +242,10 @@ func (ca *CustodiaAPIv1) ListApplications() ([]*Application, error) {
 // Login a user
 // This is the oauth flow of type "password" where via api call a client
 // immediately get access_token and refresh token
+// Switches client auth conf to UserAuth
 func (ca *CustodiaAPIv1) LoginUser(username string, password string,
-	application Application) (*common.ClientAuth, error) {
+	application Application) (error) {
 	url := "/auth/token"
-	auth := *common.NewClientAuth()    // defaults to no auth
 
 	data := map[string]string{
 		"grant_type": GrantPassword.String(),
@@ -265,30 +265,32 @@ func (ca *CustodiaAPIv1) LoginUser(username string, password string,
 	}
 	resp, err := ca.Call("POST", url, params)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// JSON: unmarshal resp content
 	respData := oauthResponseData{}
 	if err := json.Unmarshal([]byte(resp), &respData); err != nil {
-		return nil, err
+		return err
 	}
 
-	// compute the unixtime of expiration
+	// compute the unixtime of expiration and set auth values
 	expiration := int(time.Now().Unix()) + respData.ExpiresIn
+	ca.client.GetAuth().SetUserAuth(respData.AccessToken, expiration,
+		 respData.RefreshToken)
 
-	auth.SetOAuth(respData.AccessToken, expiration, respData.RefreshToken)
+	// switch client auth to UserAuth
+	ca.client.GetAuth().SwitchAuthTo(common.UserAuth)
 
-	return &auth, nil
+	return nil
 }
 
 // LoginCode
 // Get the access_token and refresh_token using the authorization code
 // retrieved in the previous steps of the authorization code flow.
 func (ca *CustodiaAPIv1) LoginAuthCode(code string,
-	application Application) (*common.ClientAuth, error) {
+	application Application) (error) {
 	url := "/auth/token"
-	auth := *common.NewClientAuth()    // defaults to no auth
 
 	data := map[string]string{
 		"grant_type": GrantAuthorizationCode.String(),
@@ -307,30 +309,32 @@ func (ca *CustodiaAPIv1) LoginAuthCode(code string,
 	}
 	resp, err := ca.Call("POST", url, params)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// JSON: unmarshal resp content
 	respData := oauthResponseData{}
 	if err := json.Unmarshal([]byte(resp), &respData); err != nil {
-		return nil, err
+		return err
 	}
 
 	// compute the unixtime of expiration
 	expiration := int(time.Now().Unix()) + respData.ExpiresIn
+	ca.client.GetAuth().SetUserAuth(respData.AccessToken, expiration,
+		respData.RefreshToken)
 
-	auth.SetOAuth(respData.AccessToken, expiration, respData.RefreshToken)
+	// switch client auth to UserAuth
+	ca.client.GetAuth().SwitchAuthTo(common.UserAuth)
 
-	return &auth, nil
+	return nil
 }
 
 // Refresh the access token
-func (ca *CustodiaAPIv1) RefreshToken(auth common.ClientAuth,
-	application Application) (*common.ClientAuth, error) {
+func (ca *CustodiaAPIv1) RefreshToken(application Application) (error) {
 	url := "/auth/refresh"
 
 	data := map[string]string{
-		"refresh_token": auth.GetRefreshToken(),
+		"refresh_token": ca.client.GetAuth().GetRefreshToken(),
 		"grant_type": GrantRefreshToken.String(),
 		"client_id": application.Id,
 		"scope": "read write",
@@ -348,23 +352,30 @@ func (ca *CustodiaAPIv1) RefreshToken(auth common.ClientAuth,
 
 	resp, err := ca.Call("POST", url, params)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// JSON: unmarshal resp content
 	respData := oauthResponseData{}
 	if err := json.Unmarshal([]byte(resp), &respData); err != nil {
-		return nil, err
+		return err
 	}
 
 	// compute the unixtime of expiration
 	expiration := int(time.Now().Unix()) + respData.ExpiresIn
 
-	auth.SetAccessToken(respData.AccessToken)
-	auth.SetAccessTokenExpire(expiration)
-	auth.SetRefreshToken(respData.RefreshToken)
+	err = ca.client.GetAuth().Update(
+		map[string]interface{}{
+			"accessToken": respData.AccessToken,
+			"refreshToken": respData.RefreshToken,
+			"accessTokenExpire": expiration,
+		},
+	)
+	if err != nil {
+		return err
+	}
 
-	return &auth, nil
+	return nil
 }
 
 // Revoke an existing token

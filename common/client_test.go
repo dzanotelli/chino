@@ -10,7 +10,7 @@ func TestCallUrl(t *testing.T) {
 	mockHandler := func(w http.ResponseWriter, r *http.Request) {
 		// accept: json header needed
 		if r.Header.Get("Accept") != "application/json" {
-			t.Errorf("Accept header, got: %v want: application/json", 
+			t.Errorf("Accept header, got: %v want: application/json",
 					 r.Header.Get("Accept"))
 		}
 
@@ -27,8 +27,7 @@ func TestCallUrl(t *testing.T) {
 	defer server.Close()
 
 
-	chinoAuth := NewClientAuth()
-	chinoClient := NewClient(server.URL, chinoAuth)
+	chinoClient := NewClient(server.URL, GetFakeAuth())
 
 	// test good URL
 	resp, err := chinoClient.Get("/my/client/test")

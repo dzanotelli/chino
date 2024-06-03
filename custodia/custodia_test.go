@@ -109,8 +109,7 @@ func TestRepositoryCRUDL(t *testing.T) {
     server := httptest.NewServer(http.HandlerFunc(mockHandler))
     defer server.Close()
 
-    auth := common.NewClientAuth()  // auth is tested elsewhere
-    client := common.NewClient(server.URL, auth)
+    client := common.NewClient(server.URL, common.GetFakeAuth())
     custodia := NewCustodiaAPIv1(client)
 
     // test CREATE
@@ -335,8 +334,7 @@ func TestSchemaCRUDL(t *testing.T) {
     server := httptest.NewServer(http.HandlerFunc(mockHandler))
     defer server.Close()
 
-    auth := common.NewClientAuth()  // auth is tested elsewhere
-    client := common.NewClient(server.URL, auth)
+    client := common.NewClient(server.URL, common.GetFakeAuth())
     custodia := NewCustodiaAPIv1(client)
 
     // test CREATE: we submit an empty field list, since the response is mocked
@@ -604,8 +602,7 @@ func TestDocumentCRUDL(t *testing.T) {
     server := httptest.NewServer(http.HandlerFunc(mockHandler))
     defer server.Close()
 
-    auth := common.NewClientAuth()  // auth is tested elsewhere
-    client := common.NewClient(server.URL, auth)
+    client := common.NewClient(server.URL, common.GetFakeAuth())
     custodia := NewCustodiaAPIv1(client)
 
     // test CREATE: we submit no content, since the response is mocked
@@ -962,8 +959,7 @@ func TestApplicationCRULD(t *testing.T) {
     server := httptest.NewServer(http.HandlerFunc(mockHandler))
     defer server.Close()
 
-    auth := common.NewClientAuth()  // auth is tested elsewhere
-    client := common.NewClient(server.URL, auth)
+    client := common.NewClient(server.URL, common.GetFakeAuth())
     custodia := NewCustodiaAPIv1(client)
 
     // test CREATE
@@ -1164,8 +1160,7 @@ func TestUserSchemaCRUDL(t *testing.T) {
     server := httptest.NewServer(http.HandlerFunc(mockHandler))
     defer server.Close()
 
-    auth := common.NewClientAuth()  // auth is tested elsewhere
-    client := common.NewClient(server.URL, auth)
+    client := common.NewClient(server.URL, common.GetFakeAuth())
     custodia := NewCustodiaAPIv1(client)
 
     // test CREATE: we submit an empty field list, since the response is mocked
@@ -1385,7 +1380,7 @@ func TestUserCRUDL(t *testing.T) {
             err := `{"result": "error", "result_code": 404, "data": null, `
             err += `"message": "Resource not found (you may have a '/' at `
             err += `the end)"}`
-            fmt.Printf(err)
+            fmt.Print(err)
             w.WriteHeader(http.StatusNotFound)
             w.Write([]byte(err))
         }
@@ -1394,8 +1389,7 @@ func TestUserCRUDL(t *testing.T) {
     server := httptest.NewServer(http.HandlerFunc(mockHandler))
     defer server.Close()
 
-    auth := common.NewClientAuth()  // auth is tested elsewhere
-    client := common.NewClient(server.URL, auth)
+    client := common.NewClient(server.URL, common.GetFakeAuth())
     custodia := NewCustodiaAPIv1(client)
 
 
@@ -1474,7 +1468,7 @@ func TestUserCRUDL(t *testing.T) {
     // test LIST
     // test we gave a wrong argument
     params := map[string]interface{}{"antani": 42}
-    users, err := custodia.ListUsers(dummyUser.UserSchemaId, params)
+    _, err = custodia.ListUsers(dummyUser.UserSchemaId, params)
     if err == nil {
         t.Errorf("ListUsers is not giving error with wrong param %v",
             params)
@@ -1489,7 +1483,7 @@ func TestUserCRUDL(t *testing.T) {
         "last_update__gt": time.Time{},
         "last_update__lt": time.Time{},
     }
-    users, err = custodia.ListUsers(dummyUser.UserSchemaId, goodParams)
+    users, err := custodia.ListUsers(dummyUser.UserSchemaId, goodParams)
 
     if err != nil {
         t.Errorf("error while listing users. Details: %v", err)
@@ -1549,7 +1543,7 @@ func TestOAuth(t *testing.T) {
     server := httptest.NewServer(http.HandlerFunc(mockHandler))
     defer server.Close()
 
-    client := common.NewClient(server.URL, common.NewClientAuth())
+    client := common.NewClient(server.URL, common.GetFakeAuth())
     custodia := NewCustodiaAPIv1(client)
     app := Application{
         Id: "test",
@@ -1558,15 +1552,16 @@ func TestOAuth(t *testing.T) {
     }
 
     // test LOGIN
-    auth, err := custodia.LoginUser("test", "test", app)
+    err := custodia.LoginUser("test", "test", app)
+    auth := custodia.client.GetAuth()
     if err != nil {
         t.Errorf("unexpected error: %v", err)
-    } else if auth != nil {
+    } else {
         var tests = []struct {
             want interface{}
             got interface{}
         }{
-            {common.OAuth, auth.GetAuthType()},
+            {common.UserAuth, auth.GetAuthType()},
             {"ans2fN08sliGpIOLMGg3fv4BpPhWRq", auth.GetAccessToken()},
             {"vL0durAhdhNNYFI27F3zGGHXeNLwcO", auth.GetRefreshToken()},
             // Go is super quick, so this should be true
@@ -1582,7 +1577,7 @@ func TestOAuth(t *testing.T) {
     }
 
     // test REFRESH Token
-    auth, err = custodia.RefreshToken(*auth, app)
+    err = custodia.RefreshToken(app)
     if err != nil {
         t.Errorf("unexpected error: %v", err)
     } else if auth != nil {
@@ -1590,7 +1585,6 @@ func TestOAuth(t *testing.T) {
             want interface{}
             got interface{}
         }{
-            {common.OAuth, auth.GetAuthType()},
             {"Qg3fv4BpPhWRqXeNLwcOa2fN08sliGpIOLMg3", auth.GetAccessToken()},
             {"vL0durAhdhNNYFI27F3zGGHXeNLwcO", auth.GetRefreshToken()},
             // Go is super quick, so this should be true

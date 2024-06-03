@@ -69,7 +69,7 @@ func (ca *ClientAuth) SetNoAuth() {
 	ca.applicationSecret = ""
 }
 
-func (ca *ClientAuth) SwitchAuthTo(authType AuthType) error {
+func (ca *ClientAuth) SwitchAuthTo(authType AuthType) {
 	ca.prevAuthType = ca.currentAuthType
 	ca.currentAuthType = authType
 }
@@ -185,12 +185,19 @@ func NewClient(serverUrl string, auth *ClientAuth) *Client {
 	if parsedUrl.Scheme == "" {
 		panic("serverUrl has no schema")
 	}
-	// FIXME: anything else to handle?
+
+	if auth == nil {
+		auth = &ClientAuth{}
+	}
 
 	return &Client{
 		rootUrl: parsedUrl,
 		auth: auth,
 	}
+}
+
+func (c *Client) GetAuth() *ClientAuth {
+	return c.auth
 }
 
 // Performs a HTTP Call using Client configuration
