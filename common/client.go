@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 	"strings"
@@ -210,7 +212,9 @@ func (c *Client) GetAuth() *ClientAuth {
 //  	  serialized as a form
 func (c *Client) Call(method, path string, params map[string]interface{}) (
 	*http.Response,	error) {
-	fullPath := c.rootUrl.String() + path  //FIXME join strings
+	fullPath := strings.TrimRight(c.rootUrl.String(), "/")
+	fullPath += "/" + strings.TrimLeft(path, "/")
+
 	var req *http.Request
 	var err error
 
@@ -237,18 +241,42 @@ func (c *Client) Call(method, path string, params map[string]interface{}) (
 			}
 		case "application/x-www-form-urlencoded":
 			values := url.Values{}
-			formData := params["data"].(map[string]string)
+			formData, ok := params["data"].(map[string]string)
+			if !ok {
+				return nil, errors.New("data must be a map[string]string")
+			}
 			for key, value := range formData {
 				values.Add(key, value)
 			}
 			req, err = http.NewRequest("POST", fullPath,
 				strings.NewReader(values.Encode()))
 		case "multipart/form-data":
-			// FIXME: implement multipart/form-data
-			err = fmt.Errorf("not implemented yet: %q", method)
+			data, ok := params["data"].(map[string]string)
+			if !ok {
+				return nil, errors.New("data must be a map[string]string")
+			}
+			body := &bytes.Buffer{}
+			w := multipart.NewWriter(body)
+			for key, value := range data {
+				fw, err := w.CreateFormField(key)
+				if err != nil {
+					return nil, err
+				}
+				_, err = io.WriteString(fw, value)
+				if err != nil {
+					return nil, err
+				}
+			}
+			w.Close()
+			req, err = http.NewRequest(method, fullPath, body)
+			if err != nil {
+				return nil, err
+			}
 		default:
 			panic(fmt.Sprintf("unsupported content type %q", contentType))
 		}
+
+		// set the header once
 		req.Header.Set("Content-Type", contentType)
 	default:
 		err = fmt.Errorf("unsupported HTTP method %q", method)
