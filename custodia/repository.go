@@ -11,7 +11,7 @@ import (
 
 // Repository represent a repository stored in Custodia
 type Repository struct {
-	RepositoryId string `json:"repository_id,omitempty"`
+	Id string `json:"repository_id,omitempty"`
 	Description string `json:"description"`
 	InsertDate timeutils.Time `json:"insert_date"`
 	LastUpdate timeutils.Time `json:"last_update"`
@@ -32,11 +32,8 @@ func (ca *CustodiaAPIv1) CreateRepository(description string, isActive bool) (
 	*Repository, error) {
 	repository := Repository{Description: description, IsActive: isActive}
 	url := "/repositories"
-	data, err := json.Marshal(repository)
-	if err != nil {
-		return nil, err
-	}
-	resp, err := ca.Call("POST", url, string(data))
+	params := map[string]interface{}{"data": repository}
+	resp, err := ca.Call("POST", url, params)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +54,7 @@ func (ca *CustodiaAPIv1) ReadRepository(id string) (*Repository, error) {
 	}
 
 	url := fmt.Sprintf("/repositories/%s", id)
-	resp, err := ca.Call("GET", url)
+	resp, err := ca.Call("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -77,11 +74,8 @@ func (ca *CustodiaAPIv1) UpdateRepository(id string, description string,
 
 	// Repository with just the data to send, so we can easily marshal it
 	repo := Repository{Description: description, IsActive: isActive}
-	data, err := json.Marshal(repo)
-	if err != nil {
-		return nil, err
-	}
-	resp, err := ca.Call("PUT", url, string(data))
+	params := map[string]interface{}{"data": repo}
+	resp, err := ca.Call("PUT", url, params)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +96,7 @@ func (ca *CustodiaAPIv1) DeleteRepository(id string, force bool) (
 	url := fmt.Sprintf("/repositories/%s", id)
 	url += fmt.Sprintf("?force=%v", force)
 
-	_, err := ca.Call("DELETE", url)
+	_, err := ca.Call("DELETE", url, nil)
 	if err != nil {
 		return err
 	}
@@ -111,7 +105,7 @@ func (ca *CustodiaAPIv1) DeleteRepository(id string, force bool) (
 
 // [L]ist all the repositories
 func (ca *CustodiaAPIv1) ListRepositories() ([]*Repository, error) {
-	resp, err := ca.Call("GET", "/repositories")
+	resp, err := ca.Call("GET", "/repositories", nil)
 	if err != nil {
 		return nil, err
 	}

@@ -13,7 +13,7 @@ import (
 
 
 type User struct {
-	UserId string `json:"user_id,omitempty"`
+	Id string `json:"user_id,omitempty"`
 	UserSchemaId string `json:"schema_id,omitempty"`
 	Username string `json:"username"`
 	Password string `json:"password,omitempty"`
@@ -35,12 +35,12 @@ type UsersEnvelope struct {
 // [C]reate a new user
 func (ca *CustodiaAPIv1) CreateUser(userSchema *UserSchema, isActive bool,
 	attributes map[string]interface{}) (*User, error) {
-	if userSchema.UserSchemaId == "" {
+	if userSchema.Id == "" {
 		return nil, fmt.Errorf("user schema has no UserSchemaId, " +
 			"does it exist?")
-	} else if !common.IsValidUUID(userSchema.UserSchemaId) {
+	} else if !common.IsValidUUID(userSchema.Id) {
 		return nil, fmt.Errorf("SchemaId is not a valid UUID: %s (it " +
-			"should not be manually set)", userSchema.UserSchemaId)
+			"should not be manually set)", userSchema.Id)
 	}
 
 	// validate user content
@@ -51,13 +51,9 @@ func (ca *CustodiaAPIv1) CreateUser(userSchema *UserSchema, isActive bool,
 	}
 
 	doc := User{IsActive: isActive, Attributes: attributes}
-	data, err := json.Marshal(doc)
-	if err != nil {
-		return nil, err
-	}
-
-	url := fmt.Sprintf("/user_schemas/%s/users", userSchema.UserSchemaId)
-	resp, err := ca.Call("POST", url, string(data))
+	url := fmt.Sprintf("/user_schemas/%s/users", userSchema.Id)
+	params := map[string]interface{}{"data": doc}
+	resp, err := ca.Call("POST", url, params)
 	if err != nil {
 		return nil, err
 	}
@@ -75,34 +71,34 @@ func (ca *CustodiaAPIv1) CreateUser(userSchema *UserSchema, isActive bool,
 }
 
 // [R]ead an existent user
-func (ca *CustodiaAPIv1) ReadUser(schema Schema, id string) (*User,
+func (ca *CustodiaAPIv1) ReadUser(schema UserSchema, id string) (*User,
 	 error) {
 	if !common.IsValidUUID(id) {
 		return nil, errors.New("id is not a valid UUID: " + id)
 	}
 
 	url := fmt.Sprintf("/users/%s", id)
-	resp, err := ca.Call("GET", url)
+	resp, err := ca.Call("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	// JSON: unmarshal resp content
-	docEnvelope := UserEnvelope{}
-	if err := json.Unmarshal([]byte(resp), &docEnvelope); err != nil {
+	userEnvelope := UserEnvelope{}
+	if err := json.Unmarshal([]byte(resp), &userEnvelope); err != nil {
 		return nil, err
 	}
 
 	// convert values to concrete types
-	converted, ee := convertData(docEnvelope.User.Attributes, schema)
+	converted, ee := convertData(userEnvelope.User.Attributes, &schema)
 	if len(ee) > 0 {
 		err := fmt.Errorf("conversion errors: %w", errors.Join(ee...))
-		return docEnvelope.User, err
+		return userEnvelope.User, err
 	}
 
 	// all good, assign the new content to doc and return it
-	docEnvelope.User.Attributes = converted
-	return docEnvelope.User, nil
+	userEnvelope.User.Attributes = converted
+	return userEnvelope.User, nil
 }
 
 // [U]pdate an existent user
@@ -116,11 +112,8 @@ func (ca *CustodiaAPIv1) UpdateUser(id string , isActive bool,
 
 	// create a doc with just the values we can send, and marshal it
 	doc := User{IsActive: isActive, Attributes: content}
-	data, err := json.Marshal(doc)
-	if err != nil {
-		return nil, err
-	}
-	resp, err := ca.Call("PUT", url, string(data))
+	params := map[string]interface{}{"data": doc}
+	resp, err := ca.Call("PUT", url, params)
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +136,7 @@ func (ca *CustodiaAPIv1) DeleteUser(id string, force, consistent bool) (
 	url := fmt.Sprintf("/users/%s", id)
 	url += fmt.Sprintf("?force=%v&consistent=%v", force, consistent)
 
-	_, err := ca.Call("DELETE", url)
+	_, err := ca.Call("DELETE", url, nil)
 	if err != nil {
 		return err
 	}
@@ -158,13 +151,14 @@ func (ca *CustodiaAPIv1) DeleteUser(id string, force, consistent bool) (
 //   insert_date__lt: time.Time
 //   last_update__gt: time.Time
 //   last_update__lt: time.Time
-func (ca *CustodiaAPIv1) ListUsers(schemaId string,
+func (ca *CustodiaAPIv1) ListUsers(userSchemaId string,
 	params map[string]interface{}) ([]*User, error) {
-	if !common.IsValidUUID(schemaId) {
-		return nil, fmt.Errorf("schemaId is not a valid UUID: %s", schemaId)
+	if !common.IsValidUUID(userSchemaId) {
+		return nil, fmt.Errorf("schemaId is not a valid UUID: %s",
+			userSchemaId)
 	}
 
-	url := fmt.Sprintf("/user_schemas/%s/users", schemaId)
+	url := fmt.Sprintf("/user_schemas/%s/users", userSchemaId)
 	if len(params) > 0 {
 		url += "?"
 	}
@@ -210,7 +204,7 @@ func (ca *CustodiaAPIv1) ListUsers(schemaId string,
 	}
 
 	url = strings.TrimRight(url, "&")
-	resp, err := ca.Call("GET", url)
+	resp, err := ca.Call("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}

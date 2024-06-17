@@ -14,3 +14,4 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - custodia userschema API
 - custodia application API
 - custodia user API
+- custodia OAuth API

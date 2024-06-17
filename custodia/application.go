@@ -1,8 +1,17 @@
+// OAuth is performed against custodia system. Then, it can be used in other
+// packages such as Consenta (that is, you use this API to get the access and
+// refresh tokens, and then you use the `ClientAuth.AuthType=Bearer` with any
+// client).
+
 package custodia
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"time"
+
+	"github.com/dzanotelli/chino/common"
 )
 
 // Define `grant_type` enum
@@ -11,10 +20,11 @@ type GrantType int
 const (
 	GrantAuthorizationCode GrantType = iota + 1
 	GrantPassword
+	GrantRefreshToken
 )
 
 func (gt GrantType) Choices() []string {
-	return []string{"authorization-code", "password"}
+	return []string{"authorization-code", "password", "refresh_token"}
 }
 
 func (gt GrantType) String() string {
@@ -77,6 +87,24 @@ func (ct *ClientType) UnmarshalJSON(data []byte) (err error) {
 	return nil
 }
 
+// helper struct to performs OAuth calls
+type oauthResponseData struct {
+	AccessToken string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+	TokenType string `json:"token_type"`
+	ExpiresIn int `json:"expires_in"`
+	Scope string `json:"scope"`
+}
+
+type TokenInfo struct {
+	Active bool
+	Scope string
+	Expiration int `json:"exp"`
+	ApplicationId string `json:"client_id"`
+	Username string
+}
+
+
 // Application represent an application stored in Custodia
 type Application struct {
 	Secret string `json:"app_secret,omitempty"`
@@ -114,11 +142,8 @@ func (ca *CustodiaAPIv1) CreateApplication(name string, grantType GrantType,
 		RedirectUrl: redirectUrl,
 	}
 	url := "/auth/applications"
-	data, err := json.Marshal(application)
-	if err != nil {
-		return nil, err
-	}
-	resp, err := ca.Call("POST", url, string(data))
+	params := map[string]interface{}{"data": application}
+	resp, err := ca.Call("POST", url, params)
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +160,7 @@ func (ca *CustodiaAPIv1) CreateApplication(name string, grantType GrantType,
 // [R]ead an existent application
 func (ca *CustodiaAPIv1) ReadApplication(id string) (*Application, error) {
 	url := fmt.Sprintf("/auth/applications/%s", id)
-	resp, err := ca.Call("GET", url)
+	resp, err := ca.Call("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -166,11 +191,8 @@ func (ca *CustodiaAPIv1) UpdateApplication(id string, name string,
 		RedirectUrl: redirectUrl,
 	}
 	url := fmt.Sprintf("/auth/applications/%s", id)
-	data, err := json.Marshal(application)
-	if err != nil {
-		return nil, err
-	}
-	resp, err := ca.Call("PUT", url, string(data))
+	params := map[string]interface{}{"data": application}
+	resp, err := ca.Call("PUT", url, params)
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +209,7 @@ func (ca *CustodiaAPIv1) UpdateApplication(id string, name string,
 // [D]elete an existent application
 func (ca *CustodiaAPIv1) DeleteApplication(id string) (error) {
 	url := fmt.Sprintf("/auth/applications/%s", id)
-	_, err := ca.Call("DELETE", url)
+	_, err := ca.Call("DELETE", url, nil)
 	if err != nil {
 		return err
 	}
@@ -197,7 +219,7 @@ func (ca *CustodiaAPIv1) DeleteApplication(id string) (error) {
 // [L]ist all the applications
 func (ca *CustodiaAPIv1) ListApplications() ([]*Application, error) {
 	url := "/auth/applications"
-	resp, err := ca.Call("GET", url)
+	resp, err := ca.Call("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -214,4 +236,228 @@ func (ca *CustodiaAPIv1) ListApplications() ([]*Application, error) {
 	}
 
 	return result, nil
+}
+
+
+// Login a user
+// This is the oauth flow of type "password" where via api call a client
+// immediately get access_token and refresh token
+// Switches client auth conf to UserAuth
+func (ca *CustodiaAPIv1) LoginUser(username string, password string,
+	application Application) (error) {
+	url := "/auth/token"
+
+	data := map[string]string{
+		"grant_type": GrantPassword.String(),
+		"username": username,
+		"password": password,
+		"client_id": application.Id,
+	}
+
+	// when client is not public, we need to set the application secret as well
+	if application.ClientType == ClientConfidential {
+		data["client_secret"] = application.Secret
+	}
+
+	params := map[string]interface{}{
+		"data": data,
+		"contentType": "multipart/form-data",
+	}
+	resp, err := ca.Call("POST", url, params)
+	if err != nil {
+		return err
+	}
+
+	// JSON: unmarshal resp content
+	respData := oauthResponseData{}
+	if err := json.Unmarshal([]byte(resp), &respData); err != nil {
+		return err
+	}
+
+	// compute the unixtime of expiration and set auth values
+	expiration := int(time.Now().Unix()) + respData.ExpiresIn
+	ca.client.GetAuth().SetUserAuth(respData.AccessToken, expiration,
+		 respData.RefreshToken)
+
+	// switch client auth to UserAuth
+	ca.client.GetAuth().SwitchTo(common.UserAuth)
+
+	return nil
+}
+
+// LoginCode
+// Get the access_token and refresh_token using the authorization code
+// retrieved in the previous steps of the authorization code flow.
+func (ca *CustodiaAPIv1) LoginAuthCode(code string,
+	application Application) (error) {
+	url := "/auth/token"
+
+	data := map[string]string{
+		"grant_type": GrantAuthorizationCode.String(),
+		"code": code,
+		"redirect_uri": application.RedirectUrl,
+		"client_id": application.Id,
+		"scope": "read write",
+	}
+	if application.ClientType == ClientConfidential {
+		data["client_secret"] = application.Secret
+	}
+
+	params := map[string]interface{}{
+		"data": data,
+		"contentType": "multipart/form-data",
+	}
+	resp, err := ca.Call("POST", url, params)
+	if err != nil {
+		return err
+	}
+
+	// JSON: unmarshal resp content
+	respData := oauthResponseData{}
+	if err := json.Unmarshal([]byte(resp), &respData); err != nil {
+		return err
+	}
+
+	// compute the unixtime of expiration
+	expiration := int(time.Now().Unix()) + respData.ExpiresIn
+	ca.client.GetAuth().SetUserAuth(respData.AccessToken, expiration,
+		respData.RefreshToken)
+
+	// switch client auth to UserAuth
+	ca.client.GetAuth().SwitchTo(common.UserAuth)
+
+	return nil
+}
+
+// Refresh the access token
+func (ca *CustodiaAPIv1) RefreshToken(application Application) (error) {
+	url := "/auth/refresh"
+
+	data := map[string]string{
+		"refresh_token": ca.client.GetAuth().GetRefreshToken(),
+		"grant_type": GrantRefreshToken.String(),
+		"client_id": application.Id,
+		"scope": "read write",
+	}
+
+	// when client is not public, we need to set the application secret as well
+	if application.ClientType == ClientConfidential {
+		data["client_secret"] = application.Secret
+	}
+
+	params := map[string]interface{}{
+		"data": data,
+		"contentType": "multipart/form-data",
+	}
+
+	resp, err := ca.Call("POST", url, params)
+	if err != nil {
+		return err
+	}
+
+	// JSON: unmarshal resp content
+	respData := oauthResponseData{}
+	if err := json.Unmarshal([]byte(resp), &respData); err != nil {
+		return err
+	}
+
+	// compute the unixtime of expiration
+	expiration := int(time.Now().Unix()) + respData.ExpiresIn
+
+	err = ca.client.GetAuth().Update(
+		map[string]interface{}{
+			"accessToken": respData.AccessToken,
+			"refreshToken": respData.RefreshToken,
+			"accessTokenExpire": expiration,
+		},
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Revoke an existing token
+func (ca *CustodiaAPIv1) RevokeToken(auth common.ClientAuth,
+	application Application) error {
+	url := "/auth/revoke_token"
+
+	data := map[string]string{
+		"token": auth.GetAccessToken(),
+		"client_id": application.Id,
+		"client_secret": application.Secret,
+	}
+
+	params := map[string]interface{}{
+		"data": data,
+		"contentType": "multipart/form-data",
+	}
+	_, err := ca.Call("POST", url, params)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Introspect token
+// wants Basic auth using application id/secret
+func (ca *CustodiaAPIv1) IntrospectToken(token string) (*TokenInfo, error) {
+	url := "/auth/revoke_token"
+
+	data := map[string]string{
+		"token": token,
+	}
+
+	params := map[string]interface{}{
+		"data": data,
+		"contentType": "application/x-www-form-urlencoded",
+	}
+	resp, err := ca.Call("POST", url, params)
+	if err != nil {
+		return nil, err
+	}
+	tokenInfo := TokenInfo{}
+	if err := json.Unmarshal([]byte(resp), &tokenInfo); err != nil {
+		return nil, err
+	}
+
+	return &tokenInfo, nil
+}
+
+// User info
+func (ca *CustodiaAPIv1) UserInfo(schema *UserSchema) (*User, error) {
+	url := "/users/me"
+
+	resp, err := ca.Call("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// JSON: unmarshal resp content
+	userEnvelope := UserEnvelope{}
+	if err := json.Unmarshal([]byte(resp), &userEnvelope); err != nil {
+		return nil, err
+	}
+
+	if (schema == nil) {
+		// get the user schema
+		userSchema, err := ca.ReadUserSchema(userEnvelope.User.UserSchemaId)
+		if err != nil {
+			return nil, err
+		}
+		schema = userSchema
+	}
+
+	// convert values to concrete types
+	converted, ee := convertData(userEnvelope.User.Attributes, schema)
+	if len(ee) > 0 {
+		err := fmt.Errorf("conversion errors: %w", errors.Join(ee...))
+		return userEnvelope.User, err
+	}
+
+	// all good, assign the new content to doc and return it
+	userEnvelope.User.Attributes = converted
+	return userEnvelope.User, nil
 }

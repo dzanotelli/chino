@@ -29,10 +29,10 @@ func NewCustodiaAPIv1(client *common.Client) *CustodiaAPIv1 {
 	return capi
 }
 
-func (ca *CustodiaAPIv1) Call(method, path string, data ...string) (
-	string, error) {
+func (ca *CustodiaAPIv1) Call(method, path string,
+	params map[string]interface{}) (string, error) {
 
-	httpResp, err := ca.client.Call(method, "/api/v1" + path, data...)
+	httpResp, err := ca.client.Call(method, "/api/v1" + path, params)
 
 	// save the response for further inspection on need
 	ca.RawResponse = httpResp

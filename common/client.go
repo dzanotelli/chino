@@ -4,166 +4,177 @@ package common
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 	"strings"
 )
 
-const NoAuth = "No Auth"
-const BasicAuth = "Basic"
-const OAuth = "Bearer"
 const userAgent = "golang/chino-" + Version
+
+type AuthType int
+const (
+	NoAuth AuthType = iota + 1
+	CustomerAuth
+	UserAuth
+	ApplicationAuth
+)
+func (at AuthType) Choices() []string {
+	return []string{"Customer", "User", "Application"}
+}
+
+func (at AuthType) String() string {
+	return at.Choices()[at-1]
+}
 
 // ClientAuth keeps the authentication details - Basic vs Bearer (OAuth)
 type ClientAuth struct {
-	authType string      // basic or bearer
-	username string  
-	password string  
-	token string  		 // only for OAuth
-	refreshToken string  // only for OAuth
+	currentAuthType AuthType
+	prevAuthType AuthType
+	customerId string          // only for Customer auth
+	customerKey string		   // only for Customer auth
+	accessToken string         // only for OAuth
+	accessTokenExpire int      // only for OAuth
+	refreshToken string        // only for OAuth
+	applicationId string       // only for Application auth
+	applicationSecret string   // only for Application auth
 }
 
 // Client holds the configuration (url, auth) and wraps http Requests
 type Client struct {
 	rootUrl *url.URL
 	auth *ClientAuth
-	userAgent string
 }
 
 // NewClientAuth returns a new ClientAuth with auth set to NoAuth
-func NewClientAuth() *ClientAuth {
+func NewClientAuth(data map[string]interface{}) *ClientAuth {
 	ca := &ClientAuth{}
 	ca.SetNoAuth()
+	ca.Update(data)
 	return ca
 }
 
 // Set ClientAuth authType to NoAuth removing other attributes
 func (ca *ClientAuth) SetNoAuth() {
-	ca.authType = NoAuth
-	ca.username = ""
-	ca.password = ""
-	ca.token = ""
+	ca.currentAuthType = NoAuth
+	ca.prevAuthType = NoAuth
+	ca.customerId = ""
+	ca.customerKey = ""
+	ca.accessToken = ""
+	ca.accessTokenExpire = 0
 	ca.refreshToken = ""
+	ca.applicationId = ""
+	ca.applicationSecret = ""
+}
+
+func (ca *ClientAuth) SwitchTo(authType AuthType) {
+	ca.prevAuthType = ca.currentAuthType
+	ca.currentAuthType = authType
+}
+
+func (ca *ClientAuth) SwitchBack() {
+	ca.currentAuthType, ca.prevAuthType = ca.prevAuthType, ca.currentAuthType
+}
+
+
+func (ca *ClientAuth) Update(data map[string]interface{}) error {
+	for key, value := range data {
+		switch key {
+		case "customerId":
+			if customerId, ok := value.(string); ok { //FIXME: use UUID type
+				if !IsValidUUID(customerId) {
+					return errors.New("customerId must be a valid UUID")
+				}
+				ca.customerId = customerId
+			}
+		case "customerKey":
+			if customerKey, ok := value.(string); ok { //FIXME: use UUID type
+				if !IsValidUUID(customerKey) {
+					return errors.New("customerKey must be a valid UUID")
+				}
+				ca.customerKey = customerKey
+			}
+		case "accessToken":
+			if accessToken, ok := value.(string); ok {
+				ca.accessToken = accessToken
+			}
+		case "accessTokenExpire":
+			if accessTokenExpire, ok := value.(int); ok {
+				ca.accessTokenExpire = accessTokenExpire
+			}
+		case "refreshToken":
+			if refreshToken, ok := value.(string); ok {
+				ca.refreshToken = refreshToken
+			}
+		case "applicationId":
+			if applicationId, ok := value.(string); ok {
+				ca.applicationId = applicationId
+			}
+		case "applicationSecret":
+			if applicationSecret, ok := value.(string); ok {
+				ca.applicationSecret = applicationSecret
+			}
+		default:
+			return errors.New("unknown attribute: " + key)
+		}
+	}
+	return nil
 }
 
 // Set ClientAuth authType to BasicAuth removing tokens
-func (ca *ClientAuth) SetBasicAuth(username, password string) error {
-	if !IsValidUUID(username) {
-		return errors.New("username must be a valid UUID")
-	} else if !IsValidUUID(password) {
-		return errors.New("password must be a valid UUID")
+func (ca *ClientAuth) SetCustomerAuth(id, key string) error {
+	if !IsValidUUID(id) {
+		return errors.New("customerId must be a valid UUID")
+	} else if !IsValidUUID(key) {
+		return errors.New("customerKey must be a valid UUID")
 	}
 
-	ca.authType = BasicAuth
-	ca.username = username
-	ca.password = password
-	ca.token = ""
-	ca.refreshToken = ""
-
+	ca.customerId = id
+	ca.customerKey = key
 	return nil
 }
 
-// Set ClientAuth authType to OAuth
-func (ca *ClientAuth) SetOAuth(username, password, token, refreshToken string) error {
-	username = strings.Trim(username, " ")
-	password = strings.Trim(password, " ")
-	
-	if (len(username) == 0) {
-		return errors.New("username cannot be empty")
-	} else if (len(password) == 0) {
-		return errors.New("password cannot be empty")
-	}
-
-	ca.authType = OAuth
-	ca.username = username
-	ca.password = password
-	ca.token = token
-	ca.refreshToken = refreshToken
-
-	return nil
-}
-
-func (ca *ClientAuth) GetAuthType() string {
-	return ca.authType
-}
-
-func (ca *ClientAuth) SetUsername(username string) error {
-	switch ca.authType {
-	case NoAuth:
-		return errors.New("cannot set username to NoAuth client")
-	case BasicAuth:
-		if !IsValidUUID(username) {
-			return errors.New("username must be a valid UUID")
-		}
-	case OAuth:
-		username = strings.Trim(username, " ")
-		if (len(username) == 0) {
-			return errors.New("username cannot be empty")
-		}
-	}
-
-	ca.username = username
-	return nil
-}
-
-func (ca *ClientAuth) GetUsername() string {
-	return ca.username
-}
-
-func (ca *ClientAuth) SetPassword(password string) error {
-	switch ca.authType {
-	case NoAuth:
-		return errors.New("cannot set password to NoAuth client")
-	case BasicAuth:
-		if !IsValidUUID(password) {
-			return errors.New("password must be a valid UUID")
-		}
-	case OAuth:
-		password = strings.Trim(password, " ")
-		if (len(password) == 0) {
-			return errors.New("password cannot be empty")
-		}
-	}
-
-	ca.password = password
-	return nil
-}
-
-func (ca *ClientAuth) SetToken(token string) error {
-	if (ca.authType != OAuth) {
-		return errors.New("token can be set only to OAuth client")
-	}
-
-	token = strings.Trim(token, " ")
-	if (len(token) == 0) {
-		return errors.New("token cannot be empty")
-	}
-
-	ca.token = token
-	return nil
-}
-
-func (ca *ClientAuth) GetToken() string {
-	return ca.token
-}
-
-func (ca *ClientAuth) SetRefreshToken(refreshToken string) error {
-	if (ca.authType != OAuth) {
-		return errors.New("refreshToken can be set only to OAuth client")
-	}
-
-	refreshToken = strings.Trim(refreshToken, " ")
-	if (len(refreshToken) == 0) {
-		return errors.New("refreshToken cannot be empty")
-	}
+func (ca *ClientAuth) SetUserAuth(accessToken string, tokenExpire int,
+	refreshToken string) error {
+	ca.accessToken = accessToken
+	ca.accessTokenExpire = tokenExpire
 	ca.refreshToken = refreshToken
 	return nil
+}
+
+func (ca *ClientAuth) SetApplicationAuth(id, secret string) error {
+	ca.applicationId = id
+	ca.applicationSecret = secret
+	return nil
+}
+
+
+func (ca *ClientAuth) GetAuthType() AuthType {
+	return ca.currentAuthType
+}
+
+func (ca *ClientAuth) GetCustomerId() string {
+	return ca.customerId
+}
+
+func (ca *ClientAuth) GetAccessToken() string {
+	return ca.accessToken
+}
+
+func (ca *ClientAuth) GetAccessTokenExpire() int {
+	return ca.accessTokenExpire
 }
 
 func (ca *ClientAuth) GetRefreshToken() string {
 	return ca.refreshToken
+}
+
+func (ca *ClientAuth) GetApplicationId() string {
+	return ca.applicationId
 }
 
 // NewClient configures and returns a new Client
@@ -175,8 +186,11 @@ func NewClient(serverUrl string, auth *ClientAuth) *Client {
 
 	if parsedUrl.Scheme == "" {
 		panic("serverUrl has no schema")
-	} 
-	// FIXME: anything else to handle?
+	}
+
+	if auth == nil {
+		auth = &ClientAuth{}
+	}
 
 	return &Client{
 		rootUrl: parsedUrl,
@@ -184,25 +198,86 @@ func NewClient(serverUrl string, auth *ClientAuth) *Client {
 	}
 }
 
+func (c *Client) GetAuth() *ClientAuth {
+	return c.auth
+}
+
 // Performs a HTTP Call using Client configuration
-func (c *Client) Call(method, path string, data ...string) (*http.Response, 
-	error) {
-	url := c.rootUrl.String() + path  //FIXME join strings
+// `params` map may contain two keys:
+// 	- "content_type" is the content type of the request, it defaults to
+// 	  "application/json"
+//  - "data" is the data to be sent in the request body.
+// 		- For "application/json" content type, data is serialized as JSON
+// 		- For "application/x-www-form-urlencoded" content type, data is
+//  	  serialized as a form
+func (c *Client) Call(method, path string, params map[string]interface{}) (
+	*http.Response,	error) {
+	fullPath := strings.TrimRight(c.rootUrl.String(), "/")
+	fullPath += "/" + strings.TrimLeft(path, "/")
+
 	var req *http.Request
 	var err error
 
 	switch method {
 	case "GET", "DELETE":
-		req, err = http.NewRequest(method, url, nil)
+		req, err = http.NewRequest(method, fullPath, nil)
 	case "POST", "PUT", "PATCH":
-		var jsonStr []byte
-		if len(data) > 0 {
-			jsonStr = []byte(data[0])
-		} else {
-			jsonStr = []byte("")
+		contentType, ok := params["contentType"].(string)
+		if !ok {
+			contentType = "application/json"
 		}
-		req, err = http.NewRequest(method, url, bytes.NewBuffer(jsonStr))
-		req.Header.Set("Content-Type", "application/json")
+
+		switch contentType {
+		case "application/json":
+			data := params["data"]
+			jsonData, err := json.Marshal(data)
+			if err != nil {
+				return nil, err
+			}
+			req, err = http.NewRequest(method, fullPath,
+				bytes.NewBuffer(jsonData))
+			if err != nil {
+				return nil, err
+			}
+		case "application/x-www-form-urlencoded":
+			values := url.Values{}
+			formData, ok := params["data"].(map[string]string)
+			if !ok {
+				return nil, errors.New("data must be a map[string]string")
+			}
+			for key, value := range formData {
+				values.Add(key, value)
+			}
+			req, err = http.NewRequest("POST", fullPath,
+				strings.NewReader(values.Encode()))
+		case "multipart/form-data":
+			data, ok := params["data"].(map[string]string)
+			if !ok {
+				return nil, errors.New("data must be a map[string]string")
+			}
+			body := &bytes.Buffer{}
+			w := multipart.NewWriter(body)
+			for key, value := range data {
+				fw, err := w.CreateFormField(key)
+				if err != nil {
+					return nil, err
+				}
+				_, err = io.WriteString(fw, value)
+				if err != nil {
+					return nil, err
+				}
+			}
+			w.Close()
+			req, err = http.NewRequest(method, fullPath, body)
+			if err != nil {
+				return nil, err
+			}
+		default:
+			panic(fmt.Sprintf("unsupported content type %q", contentType))
+		}
+
+		// set the header once
+		req.Header.Set("Content-Type", contentType)
 	default:
 		err = fmt.Errorf("unsupported HTTP method %q", method)
 	}
@@ -216,16 +291,18 @@ func (c *Client) Call(method, path string, data ...string) (*http.Response,
 	req.Header.Add("Accept", "application/json")
 
 	// handle auth
-	switch c.auth.authType {
+	switch c.auth.currentAuthType {
 	case NoAuth:
 		// do nothing
-	case BasicAuth:
-		req.SetBasicAuth(c.auth.username, c.auth.password)
-	case OAuth:
-		bearer := "Bearer: " + c.auth.token
+	case CustomerAuth:
+		req.SetBasicAuth(c.auth.customerId, c.auth.customerKey)
+	case UserAuth:
+		bearer := "Bearer: " + c.auth.accessToken
 		req.Header.Add("Authorization", bearer)
+	case ApplicationAuth:
+		req.SetBasicAuth(c.auth.applicationId, c.auth.applicationSecret)
 	default:
-		panic(fmt.Sprintf("Unsupported auth type %q", c.auth.authType))
+		panic(fmt.Sprintf("Unsupported auth type %q", c.auth.currentAuthType))
 	}
 
 	// perform the call
@@ -240,25 +317,28 @@ func (c *Client) Call(method, path string, data ...string) (*http.Response,
 
 // Get wraps call to perform a HTTP GET call
 func (c *Client) Get(path string) (*http.Response, error) {
-	return c.Call("GET", path)
+	return c.Call("GET", path, nil)
 }
 
 // Post wraps call to perform a HTTP POST call
-func (c *Client) Post(path, payload string) (*http.Response, error) {
-	return c.Call("POST", path, payload)
+func (c *Client) Post(path string, params map[string]interface{}) (
+	*http.Response, error) {
+	return c.Call("POST", path, params)
 }
 
 // Put wraps call to perform a HTTP PUT call
-func (c *Client) Put(path, payload string) (*http.Response, error) {
-	return c.Call("PUT", path, payload)
+func (c *Client) Put(path string, params map[string]interface{}) (
+	*http.Response, error) {
+	return c.Call("PUT", path, params)
 }
 
 // Patch wraps call to perform a HTTP PATCH call
-func (c *Client) Patch(path, payload string) (*http.Response, error) {
-	return c.Call("PATCH", path, payload)
+func (c *Client) Patch(path string, params map[string]interface{}) (
+	*http.Response, error) {
+	return c.Call("PATCH", path, params)
 }
 
 // Delete wraps call to perform a HTTP DELETE call
 func (c *Client) Delete(path string) (*http.Response, error) {
-	return c.Call("DELETE", path)
+	return c.Call("DELETE", path, nil)
 }

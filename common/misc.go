@@ -9,3 +9,15 @@ func IsValidUUID(u string) bool {
     _, err := uuid.Parse(u)
     return err == nil
  }
+
+
+
+func GetFakeAuth() *ClientAuth {
+	fakeAuth := NewClientAuth(map[string]interface{}{
+		"customerId": "00000000-0000-0000-0000-000000000000",
+		"customerKey": "00000000-0000-0000-0000-000000000000",
+	})
+	fakeAuth.SwitchTo(CustomerAuth)
+
+	return fakeAuth
+}
