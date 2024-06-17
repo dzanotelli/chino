@@ -280,7 +280,7 @@ func (ca *CustodiaAPIv1) LoginUser(username string, password string,
 		 respData.RefreshToken)
 
 	// switch client auth to UserAuth
-	ca.client.GetAuth().SwitchAuthTo(common.UserAuth)
+	ca.client.GetAuth().SwitchTo(common.UserAuth)
 
 	return nil
 }
@@ -324,7 +324,7 @@ func (ca *CustodiaAPIv1) LoginAuthCode(code string,
 		respData.RefreshToken)
 
 	// switch client auth to UserAuth
-	ca.client.GetAuth().SwitchAuthTo(common.UserAuth)
+	ca.client.GetAuth().SwitchTo(common.UserAuth)
 
 	return nil
 }
@@ -434,6 +434,7 @@ func (ca *CustodiaAPIv1) UserInfo(schema *UserSchema) (*User, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	// JSON: unmarshal resp content
 	userEnvelope := UserEnvelope{}
 	if err := json.Unmarshal([]byte(resp), &userEnvelope); err != nil {

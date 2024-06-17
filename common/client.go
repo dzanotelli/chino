@@ -71,12 +71,12 @@ func (ca *ClientAuth) SetNoAuth() {
 	ca.applicationSecret = ""
 }
 
-func (ca *ClientAuth) SwitchAuthTo(authType AuthType) {
+func (ca *ClientAuth) SwitchTo(authType AuthType) {
 	ca.prevAuthType = ca.currentAuthType
 	ca.currentAuthType = authType
 }
 
-func (ca *ClientAuth) SeitchAuthBack() {
+func (ca *ClientAuth) SwitchBack() {
 	ca.currentAuthType, ca.prevAuthType = ca.prevAuthType, ca.currentAuthType
 }
 

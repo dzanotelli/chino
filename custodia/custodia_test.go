@@ -1263,7 +1263,6 @@ func TestUserSchemaCRUDL(t *testing.T) {
     }
 }
 
-
 func TestUserCRUDL(t *testing.T) {
     // ResponseInnerUser will be included in responses
     type ResponseInnerUser struct {
@@ -1493,7 +1492,6 @@ func TestUserCRUDL(t *testing.T) {
     }
 
 }
-
 
 func TestOAuth(t *testing.T) {
     envelope := CustodiaEnvelope{

@@ -17,7 +17,7 @@ func GetFakeAuth() *ClientAuth {
 		"customerId": "00000000-0000-0000-0000-000000000000",
 		"customerKey": "00000000-0000-0000-0000-000000000000",
 	})
-	fakeAuth.SwitchAuthTo(CustomerAuth)
+	fakeAuth.SwitchTo(CustomerAuth)
 
 	return fakeAuth
 }
