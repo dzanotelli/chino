@@ -1597,3 +1597,95 @@ func TestOAuth(t *testing.T) {
         }
     }
 }
+
+func TestGroupCRUDL(t *testing.T) {
+    envelope := CustodiaEnvelope{
+        Result: "success",
+        ResultCode: 200,
+        Message: nil,
+    }
+
+    responseGroup := map[string]interface{}{
+        "group_id": uuid.New().String(),
+        "group_name": "unittest",
+        "attributes": map[string]interface{}{"antani": 42},
+        "is_active": true,
+        "insert_date": "2015-02-07T12:14:46.754",
+        "last_update": "2015-03-13T18:06:21.242",
+    }
+    gid, _ := responseGroup["group_id"].(string)
+
+    mockHandler := func(w http.ResponseWriter, r *http.Request) {
+        if r.URL.Path == "/api/v1/groups" && r.Method == "POST" {
+            data, _ := json.Marshal(responseGroup)
+            envelope.Data = data
+            out, _ := json.Marshal(envelope)
+            w.WriteHeader(http.StatusOK)
+            w.Write(out)
+        } else if r.URL.Path == fmt.Sprintf("/api/v1/groups/%s", gid) &&
+            r.Method == "GET" {
+            data, _ := json.Marshal(responseGroup)
+            envelope.Data = data
+            out, _ := json.Marshal(envelope)
+            w.WriteHeader(http.StatusOK)
+            w.Write(out)
+        } else if r.URL.Path == fmt.Sprintf("/api/v1/groups/%s", gid ) &&
+            r.Method == "PUT" {
+            responseGroup["group_name"] = "changed"
+            data, _ := json.Marshal(envelope)
+            w.WriteHeader(http.StatusOK)
+            w.Write(data)
+        } else if r.URL.Path == fmt.Sprintf("/api/v1/groups/%s", gid) &&
+            r.Method == "DELETE" {
+            data, _ := json.Marshal(envelope)
+            w.WriteHeader(http.StatusOK)
+            w.Write(data)
+        } else if r.URL.Path == fmt.Sprintf("/api/v1/groups/%s", gid) +
+            "?force=true" && r.Method == "DELETE" {
+            data, _ := json.Marshal(envelope)
+            w.WriteHeader(http.StatusOK)
+            w.Write(data)
+        } else {
+            err := `{"result": "error", "result_code": 404, "data": null, `
+            err += `"message": "Resource not found (you may have a '/' at `
+            err += `the end)"}`
+            fmt.Print(err)
+            w.WriteHeader(http.StatusNotFound)
+            w.Write([]byte(err))
+        }
+    }
+
+    server := httptest.NewServer(http.HandlerFunc(mockHandler))
+    defer server.Close()
+
+    // init stuff
+    client := common.NewClient(server.URL, common.GetFakeAuth())
+    custodia := NewCustodiaAPIv1(client)
+
+    // test CREATE
+    group, err := custodia.CreateGroup("unittest", true,
+        map[string]interface{}{})
+    if err != nil {
+        t.Errorf("unexpected error: %v", err)
+    } else {
+        var tests = []struct {
+            want interface{}
+            got interface{}
+        }{
+            {gid, group.Id},
+            {"unittest", group.Name},
+            {map[string]interface{}{"antani": 42}, group.Attributes},
+            {true, group.IsActive},
+            // {responseGroup["insert_date"], },
+            // {responseGroup["last_update"], },
+        }
+
+        for _, test := range tests {
+            if !reflect.DeepEqual(test.want, test.got) {
+                t.Errorf("Group Create: bad value, got: %v want: %v",
+                    test.got, test.want)
+            }
+        }
+    }
+
+}
