@@ -15,7 +15,7 @@ type Group struct {
 	InsertDate timeutils.Time `json:"insert_date,omitempty"`
 	LastUpdate timeutils.Time `json:"last_update,omitempty"`
 	IsActive bool `json:"is_active"`
-	Attributes map[string]interface{} `json:"content,omitempty"`
+	Attributes map[string]interface{} `json:"attributes,omitempty"`
 }
 
 type GroupEnvelope struct {
@@ -69,9 +69,9 @@ func (ca *CustodiaAPIv1) UpdateGroup(id string, name string, isActive bool,
 	if !common.IsValidUUID(id) {
 		return nil, errors.New("id is not a valid UUID: " + id)
 	}
-	doc := Group{Name: name, IsActive: isActive, Attributes: attributes}
+	group := Group{Name: name, IsActive: isActive, Attributes: attributes}
 	url := fmt.Sprintf("/groups/%s", id)
-	params := map[string]interface{}{"data": doc}
+	params := map[string]interface{}{"data": group}
 	resp, err := ca.Call("PUT", url, params)
 	if err != nil {
 		return nil, err

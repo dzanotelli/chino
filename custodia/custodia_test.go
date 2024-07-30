@@ -1391,7 +1391,6 @@ func TestUserCRUDL(t *testing.T) {
     client := common.NewClient(server.URL, common.GetFakeAuth())
     custodia := NewCustodiaAPIv1(client)
 
-
     // test CREATE: we submit no content, since the response is mocked
     // we init instead a UserSchema with just the right ids
     userSchema := UserSchema{
@@ -1605,20 +1604,23 @@ func TestGroupCRUDL(t *testing.T) {
         Message: nil,
     }
 
-    responseGroup := map[string]interface{}{
+    dummyGroup := map[string]interface{}{
         "group_id": uuid.New().String(),
         "group_name": "unittest",
-        "attributes": map[string]interface{}{"antani": 42},
+        "attributes": map[string]interface{}{"antani": 3.14},
         "is_active": true,
         "insert_date": "2015-02-07T12:14:46.754",
         "last_update": "2015-03-13T18:06:21.242",
     }
-    gid, _ := responseGroup["group_id"].(string)
+    gid, _ := dummyGroup["group_id"].(string)
+
+    responseGroup := map[string]interface{}{
+        "group": dummyGroup,
+    }
 
     mockHandler := func(w http.ResponseWriter, r *http.Request) {
         if r.URL.Path == "/api/v1/groups" && r.Method == "POST" {
-            data, _ := json.Marshal(responseGroup)
-            envelope.Data = data
+            envelope.Data, _ = json.Marshal(responseGroup)
             out, _ := json.Marshal(envelope)
             w.WriteHeader(http.StatusOK)
             w.Write(out)
@@ -1631,10 +1633,14 @@ func TestGroupCRUDL(t *testing.T) {
             w.Write(out)
         } else if r.URL.Path == fmt.Sprintf("/api/v1/groups/%s", gid ) &&
             r.Method == "PUT" {
-            responseGroup["group_name"] = "changed"
-            data, _ := json.Marshal(envelope)
+            dummyGroup["group_name"] = "changed"
+            dummyGroup["is_active"] = false
+            dummyGroup["attributes"] = map[string]interface{}{
+                "antani": 3.14, "something": "else"}
+            envelope.Data, _ = json.Marshal(responseGroup)
+            out, _ := json.Marshal(envelope)
             w.WriteHeader(http.StatusOK)
-            w.Write(data)
+            w.Write(out)
         } else if r.URL.Path == fmt.Sprintf("/api/v1/groups/%s", gid) &&
             r.Method == "DELETE" {
             data, _ := json.Marshal(envelope)
@@ -1674,15 +1680,63 @@ func TestGroupCRUDL(t *testing.T) {
         }{
             {gid, group.Id},
             {"unittest", group.Name},
-            {map[string]interface{}{"antani": 42}, group.Attributes},
+            {map[string]interface{}{"antani": 3.14}, group.Attributes},
             {true, group.IsActive},
-            // {responseGroup["insert_date"], },
-            // {responseGroup["last_update"], },
+            {2015, group.InsertDate.Year()},
+            {2, int(group.InsertDate.Month())},
+            {7, int(group.InsertDate.Day())},
+            {12, int(group.InsertDate.Hour())},
+            {14, int(group.InsertDate.Minute())},
+            {46, int(group.InsertDate.Second())},
+            {2015, group.LastUpdate.Year()},
+            {3, int(group.LastUpdate.Month())},
+            {13, int(group.LastUpdate.Day())},
+            {18, int(group.LastUpdate.Hour())},
+            {6, int(group.LastUpdate.Minute())},
+            {21, int(group.LastUpdate.Second())},
         }
 
         for _, test := range tests {
             if !reflect.DeepEqual(test.want, test.got) {
                 t.Errorf("Group Create: bad value, got: %v want: %v",
+                    test.got, test.want)
+            }
+        }
+    }
+
+    // test UPDATE
+    // response is mocked, so we don't need to pass the right data
+    group, err = custodia.UpdateGroup(gid, "changed", false,
+        map[string]interface{}{})
+    if err != nil {
+        t.Errorf("unexpected error: %v", err)
+    } else {
+        var tests = []struct {
+            want interface{}
+            got interface{}
+        }{
+            {gid, group.Id},
+            {"changed", group.Name},
+            {false, group.IsActive},
+            {map[string]interface{}{"antani": 3.14, "something": "else"},
+                group.Attributes},
+            {2015, group.InsertDate.Year()},
+            {2, int(group.InsertDate.Month())},
+            {7, int(group.InsertDate.Day())},
+            {12, int(group.InsertDate.Hour())},
+            {14, int(group.InsertDate.Minute())},
+            {46, int(group.InsertDate.Second())},
+            {2015, group.LastUpdate.Year()},
+            {3, int(group.LastUpdate.Month())},
+            {13, int(group.LastUpdate.Day())},
+            {18, int(group.LastUpdate.Hour())},
+            {6, int(group.LastUpdate.Minute())},
+            {21, int(group.LastUpdate.Second())},
+        }
+
+        for _, test := range tests {
+            if !reflect.DeepEqual(test.want, test.got) {
+                t.Errorf("Group Update: bad value, got: %v want: %v",
                     test.got, test.want)
             }
         }
