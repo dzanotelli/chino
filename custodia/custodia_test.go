@@ -1484,12 +1484,11 @@ func TestUserCRUDL(t *testing.T) {
     users, err := custodia.ListUsers(dummyUser.UserSchemaId, goodParams)
 
     if err != nil {
-        t.Errorf("error while listing users. Details: %v", err)
+        t.Errorf("error while listing users: %v", err)
     } else if reflect.TypeOf(users) != reflect.TypeOf([]*User{}) {
         t.Errorf("users is not list of Users, got: %T want: %T",
             users, []*User{})
     }
-
 }
 
 func TestOAuth(t *testing.T) {
@@ -1620,11 +1619,13 @@ func TestGroupCRUDL(t *testing.T) {
 
     mockHandler := func(w http.ResponseWriter, r *http.Request) {
         if r.URL.Path == "/api/v1/groups" && r.Method == "POST" {
+            // mock CREATE response
             envelope.Data, _ = json.Marshal(responseGroup)
             out, _ := json.Marshal(envelope)
             w.WriteHeader(http.StatusOK)
             w.Write(out)
         } else if r.URL.Path == fmt.Sprintf("/api/v1/groups/%s", gid) &&
+            // mock READ response
             r.Method == "GET" {
             data, _ := json.Marshal(responseGroup)
             envelope.Data = data
@@ -1633,6 +1634,7 @@ func TestGroupCRUDL(t *testing.T) {
             w.Write(out)
         } else if r.URL.Path == fmt.Sprintf("/api/v1/groups/%s", gid ) &&
             r.Method == "PUT" {
+            // mock UPDATE response
             dummyGroup["group_name"] = "changed"
             dummyGroup["is_active"] = false
             dummyGroup["attributes"] = map[string]interface{}{
@@ -1643,14 +1645,31 @@ func TestGroupCRUDL(t *testing.T) {
             w.Write(out)
         } else if r.URL.Path == fmt.Sprintf("/api/v1/groups/%s", gid) &&
             r.Method == "DELETE" {
+            // mock DELETE response: deactivation
             data, _ := json.Marshal(envelope)
             w.WriteHeader(http.StatusOK)
             w.Write(data)
         } else if r.URL.Path == fmt.Sprintf("/api/v1/groups/%s", gid) +
             "?force=true" && r.Method == "DELETE" {
+            // mock DELETE response: actual deletion
             data, _ := json.Marshal(envelope)
             w.WriteHeader(http.StatusOK)
             w.Write(data)
+        } else if r.URL.Path == "/api/v1/groups" && r.Method == "GET" {
+            // mock LIST response
+            groupsResp := map[string]interface{}{
+                "count": 1,
+                "total_count": 1,
+                "limit": 1,
+                "offset": 0,
+                "groups": []map[string]interface{}{dummyGroup},
+            }
+            data, _ := json.Marshal(groupsResp)
+            envelope := CustodiaEnvelope{Result: "success", ResultCode: 200}
+            envelope.Data = data
+            out, _ := json.Marshal(envelope)
+            w.WriteHeader(http.StatusOK)
+            w.Write(out)
         } else {
             err := `{"result": "error", "result_code": 404, "data": null, `
             err += `"message": "Resource not found (you may have a '/' at `
@@ -1742,4 +1761,18 @@ func TestGroupCRUDL(t *testing.T) {
         }
     }
 
+    // test DELETE
+    err = custodia.DeleteGroup(gid)
+    if err != nil {
+        t.Errorf("error while deleting group: %v", err)
+    }
+
+    // test LIST
+    groups, err := custodia.ListGroups()
+    if err != nil {
+        t.Errorf("error while listing groups: %v", err)
+    } else if reflect.TypeOf(groups) != reflect.TypeOf([]Group{}) {
+        t.Errorf("groups is not list of Groups, got: %T want: %T",
+            groups, []*Group{})
+    }
 }

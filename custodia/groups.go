@@ -86,6 +86,7 @@ func (ca *CustodiaAPIv1) UpdateGroup(id string, name string, isActive bool,
 
 // [D]elete an existent group
 func (ca *CustodiaAPIv1) DeleteGroup(id string) error {
+	// FIXME: missing support for ?force=true
 	if !common.IsValidUUID(id) {
 		return errors.New("id is not a valid UUID: " + id)
 	}
