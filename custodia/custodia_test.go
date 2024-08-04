@@ -1643,15 +1643,9 @@ func TestGroupCRUDL(t *testing.T) {
             out, _ := json.Marshal(envelope)
             w.WriteHeader(http.StatusOK)
             w.Write(out)
-        } else if r.URL.Path == fmt.Sprintf("/api/v1/groups/%s", gid) &&
-            r.Method == "DELETE" {
-            // mock DELETE response: deactivation
-            data, _ := json.Marshal(envelope)
-            w.WriteHeader(http.StatusOK)
-            w.Write(data)
-        } else if r.URL.Path == fmt.Sprintf("/api/v1/groups/%s", gid) +
-            "?force=true" && r.Method == "DELETE" {
-            // mock DELETE response: actual deletion
+        } else if r.URL.Path == fmt.Sprintf("/api/v1/groups/%s",
+            gid) && r.Method == "DELETE" {
+            // mock DELETE response
             data, _ := json.Marshal(envelope)
             w.WriteHeader(http.StatusOK)
             w.Write(data)
@@ -1662,7 +1656,7 @@ func TestGroupCRUDL(t *testing.T) {
                 "total_count": 1,
                 "limit": 1,
                 "offset": 0,
-                "groups": []map[string]interface{}{dummyGroup},
+                "groups": []interface{}{dummyGroup},
             }
             data, _ := json.Marshal(groupsResp)
             envelope := CustodiaEnvelope{Result: "success", ResultCode: 200}
@@ -1762,7 +1756,11 @@ func TestGroupCRUDL(t *testing.T) {
     }
 
     // test DELETE
-    err = custodia.DeleteGroup(gid)
+    err = custodia.DeleteGroup(gid, false)
+    if err != nil {
+        t.Errorf("error while deleting group: %v", err)
+    }
+    err = custodia.DeleteGroup(gid, true)
     if err != nil {
         t.Errorf("error while deleting group: %v", err)
     }

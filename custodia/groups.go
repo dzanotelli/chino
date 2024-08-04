@@ -85,12 +85,11 @@ func (ca *CustodiaAPIv1) UpdateGroup(id string, name string, isActive bool,
 }
 
 // [D]elete an existent group
-func (ca *CustodiaAPIv1) DeleteGroup(id string) error {
-	// FIXME: missing support for ?force=true
+func (ca *CustodiaAPIv1) DeleteGroup(id string, force bool) error {
 	if !common.IsValidUUID(id) {
 		return errors.New("id is not a valid UUID: " + id)
 	}
-	url := fmt.Sprintf("/groups/%s", id)
+	url := fmt.Sprintf("/groups/%s?force=%v", id, force)
 	_, err := ca.Call("DELETE", url, nil)
 	return err
 }
