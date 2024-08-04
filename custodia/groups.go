@@ -108,3 +108,24 @@ func (ca *CustodiaAPIv1) ListGroups() ([]Group, error) {
 	}
 	return groupsEnvelope.Groups, nil
 }
+
+// Group Members
+
+// [L]ist group members
+func (ca *CustodiaAPIv1) ListGroupMembers(groupId string) ([]User, error) {
+	if !common.IsValidUUID(groupId) {
+		return nil, errors.New("groupId is not a valid UUID: " + groupId)
+	}
+
+	url := fmt.Sprintf("/groups/%s/members", groupId)
+	resp, err := ca.Call("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	// JSON: unmarshal resp content
+	usersEnvelope := UsersEnvelope{}
+	if err := json.Unmarshal([]byte(resp), &usersEnvelope); err != nil {
+		return nil, err
+	}
+	return usersEnvelope.Users, nil
+}
