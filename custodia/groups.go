@@ -111,13 +111,13 @@ func (ca *CustodiaAPIv1) ListGroups() ([]Group, error) {
 
 // Group Members
 
-// [L]ist group members
-func (ca *CustodiaAPIv1) ListGroupMembers(groupId string) ([]User, error) {
+// [L]ist group's users
+func (ca *CustodiaAPIv1) ListGroupUsers(groupId string) ([]User, error) {
 	if !common.IsValidUUID(groupId) {
 		return nil, errors.New("groupId is not a valid UUID: " + groupId)
 	}
 
-	url := fmt.Sprintf("/groups/%s/members", groupId)
+	url := fmt.Sprintf("/groups/%s/users", groupId)
 	resp, err := ca.Call("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -128,4 +128,78 @@ func (ca *CustodiaAPIv1) ListGroupMembers(groupId string) ([]User, error) {
 		return nil, err
 	}
 	return usersEnvelope.Users, nil
+}
+
+// [C] Add a user to the group
+func (ca *CustodiaAPIv1) AddUserToGroup(userId string, groupId string) (
+	error) {
+	if !common.IsValidUUID(userId) {
+		return errors.New("userId is not a valid UUID: " + userId)
+	}
+	if !common.IsValidUUID(groupId) {
+		return errors.New("groupId is not a valid UUID: " + groupId)
+	}
+
+	url := fmt.Sprintf("/groups/%s/users/%s", groupId, userId)
+	_, err := ca.Call("POST", url, nil)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// [C] Add all users of a UserSchema to the group
+func (ca *CustodiaAPIv1) AddUsersFromUserSchemaToGroup(
+    userSchemaId string, groupId string) error {
+    if !common.IsValidUUID(userSchemaId) {
+        return errors.New("userSchemaId is not a valid UUID: " +
+            userSchemaId)
+    }
+    if !common.IsValidUUID(groupId) {
+        return errors.New("groupId is not a valid UUID: " + groupId)
+    }
+
+    url := fmt.Sprintf("/groups/%s/user_schemas/%s", groupId, userSchemaId)
+    _, err := ca.Call("POST", url, nil)
+    if err != nil {
+        return err
+    }
+    return nil
+}
+
+// [D] Remove a user from the group
+func (ca *CustodiaAPIv1) RemoveUserFromGroup(userId string, groupId string) (
+    error) {
+    if !common.IsValidUUID(userId) {
+        return errors.New("userId is not a valid UUID: " + userId)
+    }
+    if !common.IsValidUUID(groupId) {
+        return errors.New("groupId is not a valid UUID: " + groupId)
+    }
+
+    url := fmt.Sprintf("/groups/%s/users/%s", groupId, userId)
+    _, err := ca.Call("DELETE", url, nil)
+    if err != nil {
+        return err
+    }
+    return nil
+}
+
+// [D] Remove all users of a UserSchema from the group
+func (ca *CustodiaAPIv1) RemoveUsersFromUserSchemaFromGroup(
+    userSchemaId string, groupId string) error {
+    if !common.IsValidUUID(userSchemaId) {
+        return errors.New("userSchemaId is not a valid UUID: " +
+            userSchemaId)
+    }
+    if !common.IsValidUUID(groupId) {
+        return errors.New("groupId is not a valid UUID: " + groupId)
+    }
+
+    url := fmt.Sprintf("/groups/%s/user_schemas/%s", groupId, userSchemaId)
+    _, err := ca.Call("DELETE", url, nil)
+    if err != nil {
+        return err
+    }
+    return nil
 }
