@@ -1612,6 +1612,8 @@ func TestGroupCRUDL(t *testing.T) {
         "last_update": "2015-03-13T18:06:21.242",
     }
     gid, _ := dummyGroup["group_id"].(string)
+    uid := uuid.New().String()
+    userSchemaId := uuid.New().String()
 
     responseGroup := map[string]interface{}{
         "group": dummyGroup,
@@ -1664,6 +1666,25 @@ func TestGroupCRUDL(t *testing.T) {
             out, _ := json.Marshal(envelope)
             w.WriteHeader(http.StatusOK)
             w.Write(out)
+        } else if r.URL.Path == fmt.Sprintf("/api/v1/groups/%s/users", gid) &&
+            r.Method == "GET" {
+            data, _ := json.Marshal(envelope)
+            w.WriteHeader(http.StatusOK)
+            w.Write(data)
+        } else if r.URL.Path == fmt.Sprintf("/api/v1/groups/%s/users/%s", gid,
+            uid) {
+            // we don't care the method. GET, POST or DELETE, they always
+            // return just 200 success with empty message
+            data, _ := json.Marshal(envelope)
+            w.WriteHeader(http.StatusOK)
+            w.Write(data)
+        } else if r.URL.Path == fmt.Sprintf(
+            "/api/v1/groups/%s/user_schemas/%s", gid, userSchemaId) {
+            // we don't care the method. GET, POST or DELETE, they always
+            // return just 200 success with empty message
+            data, _ := json.Marshal(envelope)
+            w.WriteHeader(http.StatusOK)
+            w.Write(data)
         } else {
             err := `{"result": "error", "result_code": 404, "data": null, `
             err += `"message": "Resource not found (you may have a '/' at `
@@ -1773,4 +1794,32 @@ func TestGroupCRUDL(t *testing.T) {
         t.Errorf("groups is not list of Groups, got: %T want: %T",
             groups, []*Group{})
     }
+
+    // Group members tests
+    // FIXME: missing list
+
+    // Add user to group
+    err = custodia.AddUserToGroup(uid, gid)
+    if err!= nil {
+        t.Errorf("error while adding user to group: %v", err)
+    }
+
+    // Remove user from group
+    err = custodia.RemoveUserFromGroup(uid, gid)
+    if err!= nil {
+        t.Errorf("error while removing user from group: %v", err)
+    }
+
+    // Add all users of schema to group
+    err = custodia.AddUsersFromUserSchemaToGroup(userSchemaId, gid)
+    if err!= nil {
+        t.Errorf("error while adding users to group from schema: %v", err)
+    }
+
+    // Remove all users of schema from group
+    err = custodia.RemoveUsersFromUserSchemaFromGroup(userSchemaId, gid)
+    if err!= nil {
+        t.Errorf("error while removing users from group from schema: %v", err)
+    }
+
 }
