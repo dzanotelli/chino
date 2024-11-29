@@ -1612,8 +1612,19 @@ func TestGroupCRUDL(t *testing.T) {
         "last_update": "2015-03-13T18:06:21.242",
     }
     gid, _ := dummyGroup["group_id"].(string)
-    uid := uuid.New().String()
+
     userSchemaId := uuid.New().String()
+    dummyUser := map[string]interface{}{
+        "username": "unittest",
+        "schemas_id": userSchemaId,
+        "user_id": uuid.New().String(),
+        "insert_date": "2015-02-07T12:14:46.754",
+        "last_update": "2015-03-13T18:06:21.242",
+        "is_active": true,
+        "attributes": map[string]interface{}{"antani": 3.14},
+        "groups": []string{gid},
+    }
+    uid, _ := dummyUser["user_id"].(string)
 
     responseGroup := map[string]interface{}{
         "group": dummyGroup,
@@ -1668,9 +1679,19 @@ func TestGroupCRUDL(t *testing.T) {
             w.Write(out)
         } else if r.URL.Path == fmt.Sprintf("/api/v1/groups/%s/users", gid) &&
             r.Method == "GET" {
-            data, _ := json.Marshal(envelope)
+            listResp := map[string]interface{}{
+                "count": 1,
+                "total_count": 1,
+                "limit": 1,
+                "offset": 0,
+                "users": []map[string]interface{}{dummyUser},
+            }
+            data, _ := json.Marshal(listResp)
+            envelope := CustodiaEnvelope{Result: "success", ResultCode: 200}
+            envelope.Data = data
+            out, _ := json.Marshal(envelope)
             w.WriteHeader(http.StatusOK)
-            w.Write(data)
+            w.Write(out)
         } else if r.URL.Path == fmt.Sprintf("/api/v1/groups/%s/users/%s", gid,
             uid) {
             // we don't care the method. GET, POST or DELETE, they always
@@ -1796,7 +1817,34 @@ func TestGroupCRUDL(t *testing.T) {
     }
 
     // Group members tests
-    // FIXME: missing list
+    users, err := custodia.ListGroupUsers(gid)
+    if err!= nil {
+        t.Errorf("error while listing users in group: %v", err)
+    } else {
+        var tests = []struct {
+            want interface{}
+            got interface{}
+        }{
+            {uid, users[0].Id},
+            {"unittest", users[0].Username},
+            {2015, int(users[0].InsertDate.Year())},
+            {2, int(users[0].InsertDate.Month())},
+            {7, int(users[0].InsertDate.Day())},
+            {12, int(users[0].InsertDate.Hour())},
+            {14, int(users[0].InsertDate.Minute())},
+            {46, int(users[0].InsertDate.Second())},
+            {2015, users[0].LastUpdate.Year()},
+            {3, int(users[0].LastUpdate.Month())},
+            {13, int(users[0].LastUpdate.Day())},
+        }
+
+        for _, test := range tests {
+            if !reflect.DeepEqual(test.want, test.got) {
+                t.Errorf("Group Create: bad value, got: %v want: %v",
+                    test.got, test.want)
+            }
+        }
+    }
 
     // Add user to group
     err = custodia.AddUserToGroup(uid, gid)
