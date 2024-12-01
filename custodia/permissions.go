@@ -178,3 +178,123 @@ func (ca *CustodiaAPIv1) PermissionOnResource(action PermissionAction,
     return nil
 }
 
+// Grant or Revoke permissions over all the children of a specific resource.
+// It can be used only on resources that have a parent-child relationship.
+func (ca *CustodiaAPIv1) PermissionOnResourceChildren(action PermissionAction,
+    resourceType ResourceType, resourceId string,
+	resourceChildType ResourceType, subjectType ResourceType,
+	subjectId string, permissions map[PermissionAction][]PermissionType) (
+	error) {
+	if !common.IsValidUUID(resourceId) {
+		return errors.New("resourceId is not a valid UUID: " + resourceId)
+	}
+	if !common.IsValidUUID(subjectId) {
+		return errors.New("subjectId is not a valid UUID: " + subjectId)
+	}
+
+	url := fmt.Sprintf("/perms/%s/%s/%s/%s/%s/%s", action, resourceType,
+	resourceId, resourceChildType, subjectType, subjectId)
+	params := map[string]interface{}{"data": permissions}
+	_, err := ca.Call("POST", url, params)
+	if err!= nil {
+		return err
+	}
+	return nil
+}
+
+// Read permissions on all resources
+func (ca *CustodiaAPIv1) ReadAllPermissions() ([]Resource, error) {
+	url := "/perms"
+    resp, err := ca.Call("GET", url, nil)
+    if err!= nil {
+        return nil, err
+    }
+
+    // JSON: unmarshal resp content
+    resourcesEnvelope := map[string][]Resource{}
+    if err := json.Unmarshal([]byte(resp), &resourcesEnvelope); err!= nil {
+        return nil, err
+    }
+
+	permissions, ok := resourcesEnvelope["permissions"]
+	if !ok {
+		return nil, fmt.Errorf("missing 'permissions' key in response")
+	}
+    return permissions, nil
+}
+
+// Read permissions over a document
+func (ca *CustodiaAPIv1) ReadPermissionsOnDocument(documentId string) (
+    []Resource, error) {
+	if !common.IsValidUUID(documentId) {
+		return nil, errors.New("documentId is not a valid UUID: " + documentId)
+	}
+
+	url := fmt.Sprintf("/perms/documents/%s", documentId)
+	resp, err := ca.Call("GET", url, nil)
+	if err!= nil {
+        return nil, err
+    }
+	// JSON: unmarshal resp content
+	resourcesEnvelope := map[string][]Resource{}
+    if err := json.Unmarshal([]byte(resp), &resourcesEnvelope); err!= nil {
+        return nil, err
+    }
+
+    permissions, ok := resourcesEnvelope["permissions"]
+    if!ok {
+        return nil, fmt.Errorf("missing 'permissions' key in response")
+    }
+    return permissions, nil
+}
+
+// Read permissions over a user.
+// List all the permissions that the user has on Resources.
+func (ca *CustodiaAPIv1) ReadPermissionsOnUser(userId string) ([]Resource,
+	error) {
+    if !common.IsValidUUID(userId) {
+        return nil, errors.New("userId is not a valid UUID: " + userId)
+    }
+
+    url := fmt.Sprintf("/perms/users/%s", userId)
+    resp, err := ca.Call("GET", url, nil)
+    if err!= nil {
+        return nil, err
+    }
+    // JSON: unmarshal resp content
+    resourcesEnvelope := map[string][]Resource{}
+    if err := json.Unmarshal([]byte(resp), &resourcesEnvelope); err!= nil {
+        return nil, err
+    }
+
+    permissions, ok := resourcesEnvelope["permissions"]
+    if !ok {
+        return nil, fmt.Errorf("missing 'permissions' key in response")
+    }
+    return permissions, nil
+}
+
+// Read permissions over a group.
+func (ca *CustodiaAPIv1) ReadPermissionsOnGroup(groupId string) ([]Resource,
+	error) {
+	if!common.IsValidUUID(groupId) {
+        return nil, errors.New("groupId is not a valid UUID: " + groupId)
+    }
+
+    url := fmt.Sprintf("/perms/groups/%s", groupId)
+    resp, err := ca.Call("GET", url, nil)
+    if err!= nil {
+        return nil, err
+    }
+    // JSON: unmarshal resp content
+    resourcesEnvelope := map[string][]Resource{}
+    if err := json.Unmarshal([]byte(resp), &resourcesEnvelope); err!= nil {
+        return nil, err
+    }
+
+    permissions, ok := resourcesEnvelope["permissions"]
+    if!ok {
+        return nil, fmt.Errorf("missing 'permissions' key in response")
+    }
+    return permissions, nil
+}
