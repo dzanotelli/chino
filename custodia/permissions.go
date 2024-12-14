@@ -8,17 +8,54 @@ import (
 	"github.com/dzanotelli/chino/common"
 )
 
+// Define PermissionContext
+type PermissionScope int
+
+const (
+    PermissionScopeManage PermissionScope = iota + 1
+    PermissionScopeAuthorize
+)
+
+
+func (ps PermissionScope) Choices() []string {
+    return []string{"manage", "authorize"}
+}
+
+func (ps PermissionScope) String() string {
+    return ps.Choices()[ps-1]
+}
+
+func (ps PermissionScope) MarshalJSON() ([]byte, error) {
+    return json.Marshal(ps.String())
+}
+
+func (ps* PermissionScope) UnmarshalJSON(data []byte) error {
+    var value string
+    err := json.Unmarshal(data, &value)
+    if err!= nil {
+        return err
+    }
+    intValue := indexOf(value, ps.Choices()) + 1  // enum starts from 1
+    if intValue < 1 {
+        return fmt.Errorf("PermissionScope: received unknown value '%v'",
+            value)
+    }
+
+    *ps = PermissionScope(intValue)
+    return nil
+}
+
 // Define PermissionType
 type PermissionType int
 
 const (
-    PermissionCreate PermissionType = iota + 1
-	PermissionRead
-    PermissionUpdate
-    PermissionDelete
-	PermissionList
-    PermissionSearch
-    PermissionAuthorize
+    PermissionActionCreate PermissionType = iota + 1
+	PermissionActionRead
+    PermissionActionUpdate
+    PermissionActionDelete
+	PermissionActionList
+    PermissionActionSearch
+    PermissionActionAuthorize
 )
 
 func (pt PermissionType) Choices() []string {
@@ -85,7 +122,7 @@ func (pa* PermissionAction) UnmarshalJSON(data []byte) error {
 type ResourceType int
 
 const (
-	ResourceRepository ResourceType = iota
+	ResourceRepository ResourceType = iota + 1
 	ResourceSchema
 	ResourceDocument
 	ResourceUserSchema
@@ -132,21 +169,21 @@ type Resource struct {
 	Type ResourceType `json:"resource_type"`
 	OwnerId string `json:"owner_id,omitempty"`
 	OwnerType ResourceType `json:"owner_type,omitempty"`
-	Permission map[PermissionAction][]PermissionType `json:"permission"`
+	Permission map[PermissionScope][]PermissionType `json:"permission"`
 }
 
 // Grant or revoke permissions over resources of a specific type.
 // It can be used only on Top Level resources.
 func (ca *CustodiaAPIv1) PermissionOnResources(action PermissionAction,
 	resourceType ResourceType, subjectType ResourceType, subjectId string,
-	permissions map[PermissionAction][]PermissionType) (
+	permissions map[PermissionScope][]PermissionType) (
 	error) {
 	if !common.IsValidUUID(subjectId) {
 		return errors.New("subjectId is not a valid UUID: " + subjectId)
     }
 
-	url := fmt.Sprintf("/perms/%s/%s/%s/%s", action, resourceType, subjectType,
-		subjectId)
+	url := fmt.Sprintf("/perms/%s/%s/%s/%s", action.String(),
+        resourceType.String(), subjectType.String(), subjectId)
 	params := map[string]interface{}{"data": permissions}
 	_, err := ca.Call("POST", url, params)
     if err!= nil {
@@ -159,7 +196,7 @@ func (ca *CustodiaAPIv1) PermissionOnResources(action PermissionAction,
 // It can be called on all resources.
 func (ca *CustodiaAPIv1) PermissionOnResource(action PermissionAction,
     resourceType ResourceType, resourceId string, subjectType ResourceType,
-	subjectId string, permissions map[PermissionAction][]PermissionType) (
+	subjectId string, permissions map[PermissionScope][]PermissionType) (
     error) {
 	if !common.IsValidUUID(resourceId) {
         return errors.New("resourceId is not a valid UUID: " + resourceId)
@@ -183,7 +220,7 @@ func (ca *CustodiaAPIv1) PermissionOnResource(action PermissionAction,
 func (ca *CustodiaAPIv1) PermissionOnResourceChildren(action PermissionAction,
     resourceType ResourceType, resourceId string,
 	resourceChildType ResourceType, subjectType ResourceType,
-	subjectId string, permissions map[PermissionAction][]PermissionType) (
+	subjectId string, permissions map[PermissionScope][]PermissionType) (
 	error) {
 	if !common.IsValidUUID(resourceId) {
 		return errors.New("resourceId is not a valid UUID: " + resourceId)

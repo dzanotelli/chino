@@ -1869,5 +1869,50 @@ func TestGroupCRUDL(t *testing.T) {
     if err!= nil {
         t.Errorf("error while removing users from group from schema: %v", err)
     }
+}
+
+func TestPermissions(t *testing.T) {
+    envelope := CustodiaEnvelope{
+        Result: "success",
+        ResultCode: 200,
+        Message: nil,
+    }
+
+    dummyUUID := uuid.New().String()
+
+    mockHandler := func(w http.ResponseWriter, r *http.Request) {
+        if r.URL.Path == fmt.Sprintf(
+            "/api/v1/perms/grant/repositories/users/%s", dummyUUID) &&
+            r.Method == "POST" {
+            out, _ := json.Marshal(envelope)
+            w.WriteHeader(http.StatusOK)
+            w.Write(out)
+        } else {
+            err := `{"result": "error", "result_code": 404, "data": null, `
+            err += `"message": "Resource not found (you may have a '/' at `
+            err += `the end)"}`
+            fmt.Print(err)
+            w.WriteHeader(http.StatusNotFound)
+            w.Write([]byte(err))
+        }
+    }
+
+    server := httptest.NewServer(http.HandlerFunc(mockHandler))
+    defer server.Close()
+
+    client := common.NewClient(server.URL, common.GetFakeAuth())
+    custodia := NewCustodiaAPIv1(client)
+
+    // Test Permission on Resources
+    perms := map[PermissionScope][]PermissionType{
+        PermissionScopeManage: {PermissionActionCreate, PermissionActionList,
+            PermissionActionRead,},
+        PermissionScopeAuthorize: {},
+    }
+    err := custodia.PermissionOnResources(Grant, ResourceRepository,
+        ResourceUser, dummyUUID, perms)
+    if err != nil {
+        t.Errorf("unexpected error: %v", err)
+    }
 
 }

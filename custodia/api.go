@@ -11,7 +11,7 @@ import (
 // CustodiaEnvelope is the enveloped response, with data in subobject "data"
 type CustodiaEnvelope struct {
 	Result string `json:"result"`
-	ResultCode uint8 `json:"result_code"`
+	ResultCode uint64 `json:"result_code"`
 	Message json.RawMessage `json:"message"`
 	Data json.RawMessage `json:"data"`
 }
