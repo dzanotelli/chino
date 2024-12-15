@@ -1887,6 +1887,18 @@ func TestPermissions(t *testing.T) {
             out, _ := json.Marshal(envelope)
             w.WriteHeader(http.StatusOK)
             w.Write(out)
+        } else if r.URL.Path == fmt.Sprintf(
+            "/api/v1/perms/grant/repositories/%s/groups/%s", dummyUUID,
+            dummyUUID) && r.Method == "POST" {
+            out, _ := json.Marshal(envelope)
+            w.WriteHeader(http.StatusOK)
+            w.Write(out)
+        } else if r.URL.Path == fmt.Sprintf(
+            "/api/v1/perms/revoke/repositories/%s/schemas/groups/%s",
+            dummyUUID, dummyUUID) && r.Method == "POST" {
+            out, _ := json.Marshal(envelope)
+            w.WriteHeader(http.StatusOK)
+            w.Write(out)
         } else {
             err := `{"result": "error", "result_code": 404, "data": null, `
             err += `"message": "Resource not found (you may have a '/' at `
@@ -1903,16 +1915,30 @@ func TestPermissions(t *testing.T) {
     client := common.NewClient(server.URL, common.GetFakeAuth())
     custodia := NewCustodiaAPIv1(client)
 
-    // Test Permission on Resources
+    // Test Permission on Resources (multiple)
     perms := map[PermissionScope][]PermissionType{
-        PermissionScopeManage: {PermissionActionCreate, PermissionActionList,
-            PermissionActionRead,},
+        PermissionScopeManage: {PermissionTypeCreate, PermissionTypeList,
+            PermissionTypeRead,},
         PermissionScopeAuthorize: {},
     }
-    err := custodia.PermissionOnResources(Grant, ResourceRepository,
-        ResourceUser, dummyUUID, perms)
+    err := custodia.PermissionOnResources(PermissionActionGrant,
+        ResourceRepository, ResourceUser, dummyUUID, perms)
     if err != nil {
         t.Errorf("unexpected error: %v", err)
     }
 
+    // Test Permission on Resource (single)
+    err = custodia.PermissionOnResource(PermissionActionGrant,
+        ResourceRepository, dummyUUID, ResourceGroup, dummyUUID, perms)
+    if err!= nil {
+        t.Errorf("unexpected error: %v", err)
+    }
+
+    // Test Permission on Resource children
+    err = custodia.PermissionOnResourceChildren(PermissionActionRevoke,
+        ResourceRepository, dummyUUID, ResourceSchema, ResourceGroup,
+        dummyUUID, perms)
+    if err!= nil {
+        t.Errorf("unexpected error: %v", err)
+    }
 }

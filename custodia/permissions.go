@@ -49,13 +49,13 @@ func (ps* PermissionScope) UnmarshalJSON(data []byte) error {
 type PermissionType int
 
 const (
-    PermissionActionCreate PermissionType = iota + 1
-	PermissionActionRead
-    PermissionActionUpdate
-    PermissionActionDelete
-	PermissionActionList
-    PermissionActionSearch
-    PermissionActionAuthorize
+    PermissionTypeCreate PermissionType = iota + 1
+	PermissionTypeRead
+    PermissionTypeUpdate
+    PermissionTypeDelete
+	PermissionTypeList
+    PermissionTypeSearch
+    PermissionTypeAuthorize
 )
 
 func (pt PermissionType) Choices() []string {
@@ -88,8 +88,8 @@ func (pt* PermissionType) UnmarshalJSON(data []byte) error {
 type PermissionAction int
 
 const (
-	Grant PermissionAction = iota +1
-	Revoke
+	PermissionActionGrant PermissionAction = iota +1
+	PermissionActionRevoke
 )
 
 func (pa PermissionAction) Choices() []string {
@@ -205,8 +205,8 @@ func (ca *CustodiaAPIv1) PermissionOnResource(action PermissionAction,
 		return errors.New("subjectId is not a valid UUID: " + subjectId)
 	}
 
-    url := fmt.Sprintf("/perms/%s/%s/%s/%s/%s", action, resourceType,
-		resourceId, subjectType, subjectId)
+    url := fmt.Sprintf("/perms/%s/%s/%s/%s/%s", action.String(),
+        resourceType.String(), resourceId, subjectType.String(), subjectId)
     params := map[string]interface{}{"data": permissions}
     _, err := ca.Call("POST", url, params)
     if err!= nil {
