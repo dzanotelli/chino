@@ -1889,7 +1889,7 @@ func TestPermissions(t *testing.T) {
             "owner_id": dummyUUID,
             "owner_type": "users",
             "permission": map[string][]string{
-                "Manage": []string{
+                "Manage": {
                   "R",
                 },
             },
@@ -1901,10 +1901,10 @@ func TestPermissions(t *testing.T) {
             "owner_id": dummyUUID,
             "owner_type": "users",
             "permission": map[string][]string{
-                "Authorize": []string{
+                "Authorize": {
                   "A",
                 },
-                "Manage": []string{
+                "Manage": {
                   "R",
                   "U",
                   "L",
@@ -1932,9 +1932,13 @@ func TestPermissions(t *testing.T) {
             out, _ := json.Marshal(envelope)
             w.WriteHeader(http.StatusOK)
             w.Write(out)
-        } else if r.URL.Path == fmt.Sprintf("/apit/v1/perms") &&
-            r.Method == "GET" {
-
+        } else if r.URL.Path == "/api/v1/perms" && r.Method == "GET" {
+            data := make(map[string]interface{})
+            data["permissions"] = allPermissions
+            envelope.Data, _ = json.Marshal(data)
+            out, _ := json.Marshal(envelope)
+            w.WriteHeader(http.StatusOK)
+            w.Write(out)
         } else {
             err := `{"result": "error", "result_code": 404, "data": null, `
             err += `"message": "Resource not found (you may have a '/' at `
@@ -1986,7 +1990,7 @@ func TestPermissions(t *testing.T) {
             want interface{}
             got interface{}
         }{
-
+            {"Structure", allPerms[0].Access},
         }
         for _, test := range tests {
             if !reflect.DeepEqual(test.want, test.got) {

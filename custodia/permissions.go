@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/dzanotelli/chino/common"
+	"golang.org/x/exp/slices"
 )
 
 // Define PermissionContext
@@ -31,7 +33,13 @@ func (ps PermissionScope) MarshalJSON() ([]byte, error) {
 
 func (ps* PermissionScope) UnmarshalJSON(data []byte) error {
     var value string
-    err := json.Unmarshal(data, &value)
+
+    // NOTE: the API is inconsistent, sometimes returns a camel-cased string
+    //   sometimes just all lower. We need to lowerize our value always.
+    rawValue := strings.Trim(string(data), "\"")
+    byteValue := []byte(fmt.Sprintf(`"%s"`, strings.ToLower(rawValue)))
+
+    err := json.Unmarshal(byteValue, &value)
     if err!= nil {
         return err
     }
@@ -133,32 +141,67 @@ const (
 
 
 func (rt ResourceType) Choices() []string {
-    return []string{"repositories", "schemas", "documents", "user_schemas",
-        "users", "groups", "collections"}
+    return []string{"Repository", "Schema", "Document", "UserSchema",
+        "User", "Group", "Collection"}
+
 }
 
 func (rt ResourceType) String() string {
     return rt.Choices()[rt-1]
 }
 
+func (rt ResourceType) UrlChoices() []string {
+    return []string{"repositories", "schemas", "documents", "user_schemas",
+        "users", "groups", "collections"}
+}
+
+func (rt ResourceType) UrlString() string {
+    return rt.UrlChoices()[rt-1]
+}
 
 func (rt ResourceType) MarshalJSON() ([]byte, error) {
     return json.Marshal(rt.String())
 }
 
 func (rt* ResourceType) UnmarshalJSON(data []byte) error {
-	var value string
-    err := json.Unmarshal(data, &value)
-    if err!= nil {
-        return err
+    // NOTE: the API is not consistent. Sometimes returns the singular
+    //   camel-case version of the resource type, sometimes the lower plural
+    //   we need to handle both cases.
+    rawValue := strings.Trim(string(data), "\"")
+
+    // single camle-case format
+    choices := rt.Choices()
+    if slices.Contains(choices, rawValue) {
+        val := slices.Index(choices, rawValue)
+        if val != -1 {
+            *rt = ResourceType(val+1)
+        }
+        return nil
     }
-    intValue := indexOf(value, rt.Choices()) + 1  // enum starts from 1
-    if intValue < 1 {
-        return fmt.Errorf("ResourceType: received unknown value '%v'", value)
+    // plural format
+    choices = rt.UrlChoices()
+    if slices.Contains(choices, rawValue) {
+        val := slices.Index(choices, rawValue) + 1
+        if val != -1 {
+            *rt = ResourceType(val+1)
+        }
+        return nil
     }
 
-    *rt = ResourceType(intValue)
-    return nil
+    return fmt.Errorf("ResourceType: received unknown value '%v'", rawValue)
+
+	// var value string
+    // err := json.Unmarshal(data, &value)
+    // if err!= nil {
+    //     return err
+    // }
+    // intValue := indexOf(value, rt.Choices()) + 1  // enum starts from 1
+    // if intValue < 1 {
+    //     return fmt.Errorf("ResourceType: received unknown value '%v'", value)
+    // }
+
+    // *rt = ResourceType(intValue)
+    // return nil
 }
 
 
@@ -182,8 +225,8 @@ func (ca *CustodiaAPIv1) PermissionOnResources(action PermissionAction,
 		return errors.New("subjectId is not a valid UUID: " + subjectId)
     }
 
-	url := fmt.Sprintf("/perms/%s/%s/%s/%s", action, resourceType, subjectType,
-        subjectId)
+	url := fmt.Sprintf("/perms/%s/%s/%s/%s", action, resourceType.UrlString(),
+        subjectType.UrlString(), subjectId)
 	params := map[string]interface{}{"data": permissions}
 	_, err := ca.Call("POST", url, params)
     if err!= nil {
@@ -205,8 +248,9 @@ func (ca *CustodiaAPIv1) PermissionOnResource(action PermissionAction,
 		return errors.New("subjectId is not a valid UUID: " + subjectId)
 	}
 
-    url := fmt.Sprintf("/perms/%s/%s/%s/%s/%s", action, resourceType,
-        resourceId, subjectType, subjectId)
+    url := fmt.Sprintf("/perms/%s/%s/%s/%s/%s", action,
+        resourceType.UrlString(), resourceId, subjectType.UrlString(),
+        subjectId)
     params := map[string]interface{}{"data": permissions}
     _, err := ca.Call("POST", url, params)
     if err!= nil {
@@ -229,8 +273,9 @@ func (ca *CustodiaAPIv1) PermissionOnResourceChildren(action PermissionAction,
 		return errors.New("subjectId is not a valid UUID: " + subjectId)
 	}
 
-	url := fmt.Sprintf("/perms/%s/%s/%s/%s/%s/%s", action, resourceType,
-	    resourceId, resourceChildType, subjectType, subjectId)
+	url := fmt.Sprintf("/perms/%s/%s/%s/%s/%s/%s", action,
+        resourceType.UrlString(), resourceId, resourceChildType.UrlString(),
+        subjectType.UrlString(), subjectId)
 	params := map[string]interface{}{"data": permissions}
 	_, err := ca.Call("POST", url, params)
 	if err!= nil {
