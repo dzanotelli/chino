@@ -182,8 +182,8 @@ func (ca *CustodiaAPIv1) PermissionOnResources(action PermissionAction,
 		return errors.New("subjectId is not a valid UUID: " + subjectId)
     }
 
-	url := fmt.Sprintf("/perms/%s/%s/%s/%s", action.String(),
-        resourceType.String(), subjectType.String(), subjectId)
+	url := fmt.Sprintf("/perms/%s/%s/%s/%s", action, resourceType, subjectType,
+        subjectId)
 	params := map[string]interface{}{"data": permissions}
 	_, err := ca.Call("POST", url, params)
     if err!= nil {
@@ -205,8 +205,8 @@ func (ca *CustodiaAPIv1) PermissionOnResource(action PermissionAction,
 		return errors.New("subjectId is not a valid UUID: " + subjectId)
 	}
 
-    url := fmt.Sprintf("/perms/%s/%s/%s/%s/%s", action.String(),
-        resourceType.String(), resourceId, subjectType.String(), subjectId)
+    url := fmt.Sprintf("/perms/%s/%s/%s/%s/%s", action, resourceType,
+        resourceId, subjectType, subjectId)
     params := map[string]interface{}{"data": permissions}
     _, err := ca.Call("POST", url, params)
     if err!= nil {
@@ -230,7 +230,7 @@ func (ca *CustodiaAPIv1) PermissionOnResourceChildren(action PermissionAction,
 	}
 
 	url := fmt.Sprintf("/perms/%s/%s/%s/%s/%s/%s", action, resourceType,
-	resourceId, resourceChildType, subjectType, subjectId)
+	    resourceId, resourceChildType, subjectType, subjectId)
 	params := map[string]interface{}{"data": permissions}
 	_, err := ca.Call("POST", url, params)
 	if err!= nil {
