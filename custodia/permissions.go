@@ -216,8 +216,9 @@ type Resource struct {
 }
 
 func (r* Resource) UnmarshalJSON(data []byte) error {
-
-	type Alias Resource
+    // create an alias of Resource in order to transform the map Permission
+    // with string keys
+	type Alias Resource   // inherits from Resource
 	aux := struct {
 		Permission map[string][]PermissionType `json:"permission"`
 		*Alias
@@ -225,7 +226,7 @@ func (r* Resource) UnmarshalJSON(data []byte) error {
 		Alias: (*Alias)(r),
 	}
 
-	// Decodifica JSON in aux
+    // unmarshal using the alias, all resource rules are preserved
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return err
 	}
