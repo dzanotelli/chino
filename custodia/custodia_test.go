@@ -1982,6 +1982,7 @@ func TestPermissions(t *testing.T) {
         t.Errorf("unexpected error: %v", err)
     }
 
+    // test ReadAllPermissions
     allPerms, err := custodia.ReadAllPermissions()
     if err != nil {
         t.Errorf("unexpected error: %v", err)

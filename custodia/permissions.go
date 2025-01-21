@@ -215,6 +215,30 @@ type Resource struct {
 	Permission map[PermissionScope][]PermissionType `json:"permission"`
 }
 
+func (r* Resource) UnmarshalJSON(data []byte) error {
+
+	type Alias Resource
+	aux := struct {
+		Permission map[string][]PermissionType `json:"permission"`
+		*Alias
+	}{
+		Alias: (*Alias)(r),
+	}
+
+	// Decodifica JSON in aux
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+    r.Permission = make(map[PermissionScope][]PermissionType)
+    for scope, types := range aux.Permission {
+        found := indexOf(strings.ToLower(scope), PermissionScope(1).Choices())
+        ps := PermissionScope(found + 1)
+        r.Permission[ps] = types
+    }
+    return nil
+}
+
 // Grant or revoke permissions over resources of a specific type.
 // It can be used only on Top Level resources.
 func (ca *CustodiaAPIv1) PermissionOnResources(action PermissionAction,
