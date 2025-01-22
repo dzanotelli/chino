@@ -181,7 +181,7 @@ func (rt* ResourceType) UnmarshalJSON(data []byte) error {
     // plural format
     choices = rt.UrlChoices()
     if slices.Contains(choices, rawValue) {
-        val := slices.Index(choices, rawValue) + 1
+        val := slices.Index(choices, rawValue)
         if val != -1 {
             *rt = ResourceType(val+1)
         }
