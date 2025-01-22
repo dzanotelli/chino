@@ -1912,6 +1912,34 @@ func TestPermissions(t *testing.T) {
             },
         },
     }
+    userPermissions := []map[string]interface{}{
+        {
+            "access": "Structure",
+            "parent_id": nil,
+            "resource_type": "Repository",
+            "owner_id": dummyUUID,
+            "owner_type": "users",
+            "permission": map[string][]string{
+                "Manage": {
+                  "R", "U",
+                },
+            },
+        },
+    }
+    groupPermissions := []map[string]interface{}{
+        {
+            "access": "Structure",
+            "parent_id": nil,
+            "resource_type": "Repository",
+            "owner_id": dummyUUID,
+            "owner_type": "groups",
+            "permission": map[string][]string{
+                "Manage": {
+                  "L", "R",
+                },
+            },
+        },
+    }
 
     mockHandler := func(w http.ResponseWriter, r *http.Request) {
         if r.URL.Path == fmt.Sprintf(
@@ -1941,12 +1969,28 @@ func TestPermissions(t *testing.T) {
             w.Write(out)
         } else if r.URL.Path == fmt.Sprintf("/api/v1/perms/documents/%s",
             dummyUUID) && r.Method == "GET" {
-                data := make(map[string]interface{})
-                data["permissions"] = allPermissions
-                envelope.Data, _ = json.Marshal(data)
-                out, _ := json.Marshal(envelope)
-                w.WriteHeader(http.StatusOK)
-                w.Write(out)
+            data := make(map[string]interface{})
+            data["permissions"] = allPermissions  // reusing allPermissions
+            envelope.Data, _ = json.Marshal(data)
+            out, _ := json.Marshal(envelope)
+            w.WriteHeader(http.StatusOK)
+            w.Write(out)
+        } else if r.URL.Path == fmt.Sprintf("/api/v1/perms/users/%s",
+            dummyUUID) && r.Method == "GET" {
+            data := make(map[string]interface{})
+            data["permissions"] = userPermissions
+            envelope.Data, _ = json.Marshal(data)
+            out, _ := json.Marshal(envelope)
+            w.WriteHeader(http.StatusOK)
+            w.Write(out)
+        } else if r.URL.Path == fmt.Sprintf("/api/v1/perms/groups/%s",
+            dummyUUID) && r.Method == "GET" {
+            data := make(map[string]interface{})
+            data["permissions"] = groupPermissions
+            envelope.Data, _ = json.Marshal(data)
+            out, _ := json.Marshal(envelope)
+            w.WriteHeader(http.StatusOK)
+            w.Write(out)
         } else {
             err := `{"result": "error", "result_code": 404, "data": null, `
             err += `"message": "Resource not found (you may have a '/' at `
@@ -2026,7 +2070,7 @@ func TestPermissions(t *testing.T) {
         }
     }
 
-    // Test Permissions on Document
+    // Test ReadPermissionsOnDocument
     resources, err := custodia.ReadPermissionsOnDocument(dummyUUID)
     if err != nil {
         t.Errorf("unexpected error: %v", err)
@@ -2062,5 +2106,55 @@ func TestPermissions(t *testing.T) {
         }
     }
 
+    // Test ReadPermissionsOnUser
+    resources, err = custodia.ReadPermissionsOnUser(dummyUUID)
+    if err != nil {
+        t.Errorf("unexpected error: %v", err)
+    } else {
+        var tests = []struct {
+            want interface{}
+            got interface{}
+        }{
+            {"Structure", resources[0].Access},
+            {ResourceUser, resources[0].OwnerType},
+            {dummyUUID, resources[0].OwnerId},
+            {"", resources[0].ParentId},
+            {map[PermissionScope][]PermissionType{
+                PermissionScopeManage: {PermissionTypeRead,
+                    PermissionTypeUpdate}},
+                resources[0].Permission},
+        }
+        for i, test := range tests {
+            if !reflect.DeepEqual(test.want, test.got) {
+                t.Errorf("ReadPermissionsOnUser %d: bad value, got: " +
+                    "%v want: %v", i, test.got, test.want)
+            }
+        }
+    }
 
+    // Test ReadPermissionsOnGroup
+    resources, err = custodia.ReadPermissionsOnGroup(dummyUUID)
+    if err != nil {
+        t.Errorf("unexpected error: %v", err)
+    } else {
+        var tests = []struct {
+            want interface{}
+            got interface{}
+        }{
+            {"Structure", resources[0].Access},
+            {ResourceGroup, resources[0].OwnerType},
+            {dummyUUID, resources[0].OwnerId},
+            {"", resources[0].ParentId},
+            {map[PermissionScope][]PermissionType{
+                PermissionScopeManage: {PermissionTypeList,
+                    PermissionTypeRead}},
+                resources[0].Permission},
+        }
+        for i, test := range tests {
+            if !reflect.DeepEqual(test.want, test.got) {
+                t.Errorf("ReadPermissionsOnGroup %d: bad value, got: " +
+                    "%v want: %v", i, test.got, test.want)
+            }
+        }
+    }
 }
