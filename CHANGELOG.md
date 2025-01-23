@@ -7,11 +7,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased] - yyyy-mm-dd
 
 ### Added
-- base client (with tests)
-- custodia repository API
-- custodia schema API
-- custodia document API
-- custodia userschema API
-- custodia application API
-- custodia user API
-- custodia OAuth API
+- base client (with tests) (#2)
+- custodia repository API (#3)
+- custodia schema API (#4)
+- custodia document API (#5)
+- custodia userschema API (#7)
+- custodia application API (#7)
+- custodia user API (#7)
+- custodia OAuth API (#8)
+- custodia groups API (#9)
+- custodia permissions API (#9)

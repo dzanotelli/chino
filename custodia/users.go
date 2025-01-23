@@ -110,9 +110,9 @@ func (ca *CustodiaAPIv1) UpdateUser(id string , isActive bool,
 
 	url := fmt.Sprintf("/users/%s", id)
 
-	// create a doc with just the values we can send, and marshal it
-	doc := User{IsActive: isActive, Attributes: content}
-	params := map[string]interface{}{"data": doc}
+	// create a user with just the values we can send, and marshal it
+	user := User{IsActive: isActive, Attributes: content}
+	params := map[string]interface{}{"data": user}
 	resp, err := ca.Call("PUT", url, params)
 	if err != nil {
 		return nil, err
