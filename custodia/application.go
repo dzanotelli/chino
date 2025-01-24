@@ -261,7 +261,7 @@ func (ca *CustodiaAPIv1) LoginUser(username string, password string,
 
 	params := map[string]interface{}{
 		"data": data,
-		"contentType": "multipart/form-data",
+		"Content-Type": "multipart/form-data",
 	}
 	resp, err := ca.Call("POST", url, params)
 	if err != nil {
@@ -305,7 +305,7 @@ func (ca *CustodiaAPIv1) LoginAuthCode(code string,
 
 	params := map[string]interface{}{
 		"data": data,
-		"contentType": "multipart/form-data",
+		"Content-Type": "multipart/form-data",
 	}
 	resp, err := ca.Call("POST", url, params)
 	if err != nil {
@@ -347,7 +347,7 @@ func (ca *CustodiaAPIv1) RefreshToken(application Application) (error) {
 
 	params := map[string]interface{}{
 		"data": data,
-		"contentType": "multipart/form-data",
+		"Content-Type": "multipart/form-data",
 	}
 
 	resp, err := ca.Call("POST", url, params)
@@ -391,7 +391,7 @@ func (ca *CustodiaAPIv1) RevokeToken(auth common.ClientAuth,
 
 	params := map[string]interface{}{
 		"data": data,
-		"contentType": "multipart/form-data",
+		"Content-Type": "multipart/form-data",
 	}
 	_, err := ca.Call("POST", url, params)
 	if err != nil {
@@ -412,7 +412,7 @@ func (ca *CustodiaAPIv1) IntrospectToken(token string) (*TokenInfo, error) {
 
 	params := map[string]interface{}{
 		"data": data,
-		"contentType": "application/x-www-form-urlencoded",
+		"Content-Type": "application/x-www-form-urlencoded",
 	}
 	resp, err := ca.Call("POST", url, params)
 	if err != nil {

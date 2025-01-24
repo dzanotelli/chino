@@ -222,7 +222,7 @@ func (c *Client) Call(method, path string, params map[string]interface{}) (
 	case "GET", "DELETE":
 		req, err = http.NewRequest(method, fullPath, nil)
 	case "POST", "PUT", "PATCH":
-		contentType, ok := params["contentType"].(string)
+		contentType, ok := params["Content-Type"].(string)
 		if !ok {
 			contentType = "application/json"
 		}
@@ -272,12 +272,20 @@ func (c *Client) Call(method, path string, params map[string]interface{}) (
 			if err != nil {
 				return nil, err
 			}
+		case "application/octet-stream":
+			data, ok := params["data"].([]byte)
+			if !ok {
+				return nil, errors.New("data must be []byte")
+			}
+			req, err = http.NewRequest(method, fullPath,
+				bytes.NewBuffer(data))
 		default:
 			panic(fmt.Sprintf("unsupported content type %q", contentType))
 		}
 
-		// set the header once
-		req.Header.Set("Content-Type", contentType)
+		// this may have changed before. reassign it to params since later
+		// we will add all the keys but body as headers to the request
+		params["Content-Type"] = contentType
 	default:
 		err = fmt.Errorf("unsupported HTTP method %q", method)
 	}
@@ -286,9 +294,18 @@ func (c *Client) Call(method, path string, params map[string]interface{}) (
 		return nil, err
 	}
 
-	// set the headers
+	// default headers (we use `Set`, not `Add` cos we want a single value)
 	req.Header.Set("User-Agent", userAgent)
-	req.Header.Add("Accept", "application/json")
+	req.Header.Set("Accept", "application/json")
+
+	// add all the params as headers but "body"
+	for key, value := range params {
+		if key == "body" {
+			continue
+		}
+		req.Header.Set(key, fmt.Sprint(value))
+	}
+
 
 	// handle auth
 	switch c.auth.currentAuthType {
