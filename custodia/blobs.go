@@ -13,6 +13,13 @@ type UploadBlob struct {
 
 }
 
+type Blob struct {
+	Id string `json:"blob_id"`
+	DocumentId string `json:"document_id"`
+	Sha1 string `json:"sha1"`
+	Md5 string `json:"md5"`
+}
+
 type BlobEnvelope struct {
 	Blob map[string]interface{} `json:"blob"`
 }
@@ -77,3 +84,37 @@ func (ca *CustodiaAPIv1) UploadChunk(ub *UploadBlob, data []byte,
 
 	return ub, nil
 }
+
+// Commit a blob
+func (ca *CustodiaAPIv1) CommitBlob(ub *UploadBlob) (*Blob, error) {
+	url := "/blobs/commit"
+	data := map[string]interface{}{"upload_id": ub.Id}
+	resp, err := ca.Call("POST", url, data)
+	if err != nil {
+		return nil, err
+	}
+	blobEnvelope := BlobEnvelope{}
+	if err := json.Unmarshal([]byte(resp), &blobEnvelope); err != nil {
+		return nil, err
+	}
+	blob := &Blob{
+		Id: blobEnvelope.Blob["blob_id"].(string),
+		DocumentId: blobEnvelope.Blob["document_id"].(string),
+		Sha1: blobEnvelope.Blob["sha1"].(string),
+		Md5: blobEnvelope.Blob["md5"].(string),
+	}
+	return blob, nil
+}
+
+// Download a blob
+func (ca *CustodiaAPIv1) DownloadBlob(blobId string) ([]byte, error) {
+	url := fmt.Sprintf("/blobs/%s", blobId)
+	resp, err := ca.Call("GET", url, nil) // FIXME: return raw response
+	if err != nil {
+		return nil, err
+	}
+
+	return []byte(resp), nil
+
+}
+
