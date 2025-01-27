@@ -203,13 +203,17 @@ func (c *Client) GetAuth() *ClientAuth {
 }
 
 // Performs a HTTP Call using Client configuration
-// `params` map may contain two keys:
-// 	- "content_type" is the content type of the request, it defaults to
-// 	  "application/json"
-//  - "data" is the data to be sent in the request body.
+// `params` map may contain the following keys:
+//  - "_data" is the data to be sent in the request body.
 // 		- For "application/json" content type, data is serialized as JSON
 // 		- For "application/x-www-form-urlencoded" content type, data is
 //  	  serialized as a form
+//  - "_rawResponse" is a boolean that indicates if the response should be
+//    returned as is
+// 	- "Content-Type" is the content type of the request, it defaults to
+// 	  "application/json"
+//  - any other key-value pairs which doesn't start wiht a '_' are added
+//   as request headers
 func (c *Client) Call(method, path string, params map[string]interface{}) (
 	*http.Response,	error) {
 	fullPath := strings.TrimRight(c.rootUrl.String(), "/")
@@ -229,7 +233,7 @@ func (c *Client) Call(method, path string, params map[string]interface{}) (
 
 		switch contentType {
 		case "application/json":
-			data := params["data"]
+			data := params["_data"]
 			jsonData, err := json.Marshal(data)
 			if err != nil {
 				return nil, err
@@ -241,9 +245,9 @@ func (c *Client) Call(method, path string, params map[string]interface{}) (
 			}
 		case "application/x-www-form-urlencoded":
 			values := url.Values{}
-			formData, ok := params["data"].(map[string]string)
+			formData, ok := params["_data"].(map[string]string)
 			if !ok {
-				return nil, errors.New("data must be a map[string]string")
+				return nil, errors.New("_data must be a map[string]string")
 			}
 			for key, value := range formData {
 				values.Add(key, value)
@@ -251,9 +255,9 @@ func (c *Client) Call(method, path string, params map[string]interface{}) (
 			req, err = http.NewRequest("POST", fullPath,
 				strings.NewReader(values.Encode()))
 		case "multipart/form-data":
-			data, ok := params["data"].(map[string]string)
+			data, ok := params["_data"].(map[string]string)
 			if !ok {
-				return nil, errors.New("data must be a map[string]string")
+				return nil, errors.New("_data must be a map[string]string")
 			}
 			body := &bytes.Buffer{}
 			w := multipart.NewWriter(body)
@@ -273,9 +277,9 @@ func (c *Client) Call(method, path string, params map[string]interface{}) (
 				return nil, err
 			}
 		case "application/octet-stream":
-			data, ok := params["data"].([]byte)
+			data, ok := params["_data"].([]byte)
 			if !ok {
-				return nil, errors.New("data must be []byte")
+				return nil, errors.New("_data must be []byte")
 			}
 			req, err = http.NewRequest(method, fullPath,
 				bytes.NewBuffer(data))
@@ -296,16 +300,24 @@ func (c *Client) Call(method, path string, params map[string]interface{}) (
 
 	// default headers (we use `Set`, not `Add` cos we want a single value)
 	req.Header.Set("User-Agent", userAgent)
-	req.Header.Set("Accept", "application/json")
 
-	// add all the params as headers but "body"
+	isRawResponse, ok := params["_rawResponse"].(bool)
+	if !ok {
+		isRawResponse = false
+	}
+	if isRawResponse {
+		req.Header.Set("Accept", "*/*")
+	} else {
+		req.Header.Set("Accept", "application/json")
+	}
+
+	// add all the params as headers which doesn't start with "_"
 	for key, value := range params {
-		if key == "body" {
+		if strings.HasPrefix(key, "_") {
 			continue
 		}
 		req.Header.Set(key, fmt.Sprint(value))
 	}
-
 
 	// handle auth
 	switch c.auth.currentAuthType {
@@ -328,6 +340,7 @@ func (c *Client) Call(method, path string, params map[string]interface{}) (
 	if err != nil {
 		return resp, err
 	}
+	defer resp.Body.Close()
 
 	return resp, err
 }

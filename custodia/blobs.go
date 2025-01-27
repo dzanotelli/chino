@@ -107,14 +107,14 @@ func (ca *CustodiaAPIv1) CommitBlob(ub *UploadBlob) (*Blob, error) {
 }
 
 // Download a blob
-func (ca *CustodiaAPIv1) DownloadBlob(blobId string) ([]byte, error) {
+func (ca *CustodiaAPIv1) GetBlobData(blobId string) ([]byte, error) {
 	url := fmt.Sprintf("/blobs/%s", blobId)
-	resp, err := ca.Call("GET", url, nil) // FIXME: return raw response
+	params := map[string]interface{}{"raw_response": true}
+	resp, err := ca.Call("GET", url, params)
 	if err != nil {
 		return nil, err
 	}
 
 	return []byte(resp), nil
-
 }
 
