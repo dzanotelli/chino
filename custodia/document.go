@@ -50,7 +50,7 @@ func (ca *CustodiaAPIv1) CreateDocument(schema *Schema, isActive bool,
 	doc := Document{IsActive: isActive, Content: content}
 	url := fmt.Sprintf("/schemas/%s/documents", schema.Id)
 	params := map[string]interface{}{
-		"data": doc,
+		"_data": doc,
 	}
 	resp, err := ca.Call("POST", url, params)
 	if err != nil {
@@ -112,7 +112,7 @@ func (ca *CustodiaAPIv1) UpdateDocument(id string , isActive bool,
 	// create a doc with just the values we can send, and marshal it
 	doc := Document{IsActive: isActive, Content: content}
 	params := map[string]interface{}{
-		"data": doc,
+		"_data": doc,
 	}
 	resp, err := ca.Call("PUT", url, params)
 	if err != nil {

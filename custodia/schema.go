@@ -76,7 +76,7 @@ func (ca *CustodiaAPIv1) CreateSchema(repository *Repository,
 		Description: descritpion, Structure: fields, IsActive: isActive}
 
 	url := fmt.Sprintf("/repositories/%s/schemas", repository.Id)
-	params := map[string]interface{}{"data": schema}
+	params := map[string]interface{}{"_data": schema}
 	resp, err := ca.Call("POST", url, params)
 	if err != nil {
 		return nil, err
@@ -126,7 +126,7 @@ func (ca *CustodiaAPIv1) UpdateSchema(id string, description string,
 			IsActive: isActive,
 			Structure: structure,
 		}
-		params := map[string]interface{}{"data": schema}
+		params := map[string]interface{}{"_data": schema}
 		resp, err := ca.Call("PUT", url, params)
 		if err != nil {
 			return nil, err

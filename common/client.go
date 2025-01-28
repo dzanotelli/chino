@@ -289,6 +289,9 @@ func (c *Client) Call(method, path string, params map[string]interface{}) (
 
 		// this may have changed before. reassign it to params since later
 		// we will add all the keys but body as headers to the request
+		if params == nil {
+			params = map[string]interface{}{}
+		}
 		params["Content-Type"] = contentType
 	default:
 		err = fmt.Errorf("unsupported HTTP method %q", method)
@@ -340,7 +343,6 @@ func (c *Client) Call(method, path string, params map[string]interface{}) (
 	if err != nil {
 		return resp, err
 	}
-	defer resp.Body.Close()
 
 	return resp, err
 }

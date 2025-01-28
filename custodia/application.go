@@ -142,7 +142,7 @@ func (ca *CustodiaAPIv1) CreateApplication(name string, grantType GrantType,
 		RedirectUrl: redirectUrl,
 	}
 	url := "/auth/applications"
-	params := map[string]interface{}{"data": application}
+	params := map[string]interface{}{"_data": application}
 	resp, err := ca.Call("POST", url, params)
 	if err != nil {
 		return nil, err
@@ -191,7 +191,7 @@ func (ca *CustodiaAPIv1) UpdateApplication(id string, name string,
 		RedirectUrl: redirectUrl,
 	}
 	url := fmt.Sprintf("/auth/applications/%s", id)
-	params := map[string]interface{}{"data": application}
+	params := map[string]interface{}{"_data": application}
 	resp, err := ca.Call("PUT", url, params)
 	if err != nil {
 		return nil, err
@@ -260,7 +260,7 @@ func (ca *CustodiaAPIv1) LoginUser(username string, password string,
 	}
 
 	params := map[string]interface{}{
-		"data": data,
+		"_data": data,
 		"Content-Type": "multipart/form-data",
 	}
 	resp, err := ca.Call("POST", url, params)
@@ -304,7 +304,7 @@ func (ca *CustodiaAPIv1) LoginAuthCode(code string,
 	}
 
 	params := map[string]interface{}{
-		"data": data,
+		"_data": data,
 		"Content-Type": "multipart/form-data",
 	}
 	resp, err := ca.Call("POST", url, params)
@@ -346,7 +346,7 @@ func (ca *CustodiaAPIv1) RefreshToken(application Application) (error) {
 	}
 
 	params := map[string]interface{}{
-		"data": data,
+		"_data": data,
 		"Content-Type": "multipart/form-data",
 	}
 
@@ -390,7 +390,7 @@ func (ca *CustodiaAPIv1) RevokeToken(auth common.ClientAuth,
 	}
 
 	params := map[string]interface{}{
-		"data": data,
+		"_data": data,
 		"Content-Type": "multipart/form-data",
 	}
 	_, err := ca.Call("POST", url, params)
@@ -411,7 +411,7 @@ func (ca *CustodiaAPIv1) IntrospectToken(token string) (*TokenInfo, error) {
 	}
 
 	params := map[string]interface{}{
-		"data": data,
+		"_data": data,
 		"Content-Type": "application/x-www-form-urlencoded",
 	}
 	resp, err := ca.Call("POST", url, params)
