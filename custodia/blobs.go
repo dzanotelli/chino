@@ -118,3 +118,36 @@ func (ca *CustodiaAPIv1) GetBlobData(blobId string) ([]byte, error) {
 	return []byte(resp), nil
 }
 
+// Delete a blob
+func (ca *CustodiaAPIv1) DeleteBlob(blobId string) error {
+	url := fmt.Sprintf("/blobs/%s", blobId)
+	_, err := ca.Call("DELETE", url, nil)
+	return err
+}
+
+
+// Generate a blob url
+func (ca *CustodiaAPIv1) GetBlobUrl(blobId string, oneTime bool,
+	duration int) (map[string]string, error) {
+	url := fmt.Sprintf("/blobs/%s/generate", blobId)
+	data := map[string]interface{}{"one_time": oneTime, "duration": duration}
+	resp, err := ca.Call("POST", url, data)
+	if err != nil {
+		return nil, err
+	}
+
+	// response returns a map with toekn, expiration, and one_time
+	// since one_time is a bool, but we already know it (it's a func param)
+	// we return just the map with two strings
+	respData := map[string]interface{}{}
+	if err := json.Unmarshal([]byte(resp), &respData); err != nil {
+		return nil, err
+	}
+
+	out := map[string]string{
+		"token": respData["token"].(string),
+		"expiration": respData["expiration"].(string),
+	}
+
+	return out, nil
+}
