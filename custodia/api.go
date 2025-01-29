@@ -31,13 +31,17 @@ func NewCustodiaAPIv1(client *common.Client) *CustodiaAPIv1 {
 
 func (ca *CustodiaAPIv1) Call(method, path string,
 	params map[string]interface{}) (string, error) {
+	rawResponse, ok := params["_rawResponse"].(bool)
+	if !ok {
+		rawResponse = false
+	}
 
 	httpResp, err := ca.client.Call(method, "/api/v1" + path, params)
 
 	// save the response for further inspection on need
 	ca.RawResponse = httpResp
 
-	if err != nil {
+	if err != nil || rawResponse {
 		return "", err
 	}
 	defer httpResp.Body.Close()

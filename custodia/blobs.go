@@ -1,8 +1,10 @@
 package custodia
 
 import (
+	"chino/common"
 	"encoding/json"
 	"fmt"
+	"io"
 	"time"
 )
 
@@ -107,15 +109,15 @@ func (ca *CustodiaAPIv1) CommitBlob(ub *UploadBlob) (*Blob, error) {
 }
 
 // Download a blob
-func (ca *CustodiaAPIv1) GetBlobData(blobId string) ([]byte, error) {
+func (ca *CustodiaAPIv1) GetBlobData(blobId string) (io.Reader, error) {
 	url := fmt.Sprintf("/blobs/%s", blobId)
-	params := map[string]interface{}{"raw_response": true}
-	resp, err := ca.Call("GET", url, params)
+	params := map[string]interface{}{"_rawResponse": true}
+	_, err := ca.Call("GET", url, params)
 	if err != nil {
 		return nil, err
 	}
 
-	return []byte(resp), nil
+	return ca.RawResponse.Body, nil
 }
 
 // Delete a blob
@@ -125,9 +127,8 @@ func (ca *CustodiaAPIv1) DeleteBlob(blobId string) error {
 	return err
 }
 
-
-// Generate a blob url
-func (ca *CustodiaAPIv1) GetBlobUrl(blobId string, oneTime bool,
+// Generate a blob token used later to authenticate blob download
+func (ca *CustodiaAPIv1) GenerateBlobToekn(blobId string, oneTime bool,
 	duration int) (map[string]string, error) {
 	url := fmt.Sprintf("/blobs/%s/generate", blobId)
 	data := map[string]interface{}{"one_time": oneTime, "duration": duration}
@@ -150,4 +151,23 @@ func (ca *CustodiaAPIv1) GetBlobUrl(blobId string, oneTime bool,
 	}
 
 	return out, nil
+}
+
+// download a blob with a token
+func (ca *CustodiaAPIv1) GetBlobDataWithToken(blobId string, token string) (
+	io.Reader, error) {
+	url := fmt.Sprintf("/blobs/url/%s?token=%s", blobId, token)
+	params := map[string]interface{}{"_rawResponse": true}
+
+	auth := ca.client.GetAuth()
+	auth.SwitchTo(common.AuthType.NoAuth)
+
+	_, err := ca.Call("GET", url, params)
+	if err != nil {
+		return nil, err
+	}
+
+	auth.SwitchBack()
+
+	return ca.RawResponse.Body, nil
 }
