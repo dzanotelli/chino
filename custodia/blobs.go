@@ -245,3 +245,33 @@ func (ca *CustodiaAPIv1) CreateBlobFromFile(filePath string, documentId string,
 
 	return blob, nil
 }
+
+// Save a blob to a file
+//
+// Args:
+// - blobId: the id of the blob to download
+// - filePath: the path where to save the file
+//
+// Returns:
+// - nil if successful, error otherwise
+func (ca *CustodiaAPIv1) GetBlobToFile(blobId string, filePath string) error {
+	// Create a new file
+	file, err := os.Create(filePath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	// Get the blob data
+	data, err := ca.GetBlobData(blobId)
+	if err != nil {
+		return err
+	}
+
+	// Copy the blob data to the file
+	_, err = io.Copy(file, data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
