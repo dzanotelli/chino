@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/dzanotelli/chino/common"
@@ -171,4 +173,75 @@ func (ca *CustodiaAPIv1) GetBlobDataWithToken(blobId string, token string) (
 	ca.client.GetAuth().SwitchBack()
 
 	return ca.RawResponse.Body, nil
+}
+
+// Upload a blob from a file
+//
+// Args:
+// - filePath: the path to the file to upload
+// - documentId: the id of the document that will be associated with the blob
+// - fieldName: the name of the field in the document where to store the blob
+//
+// Returns:
+// - the created blob
+func (ca *CustodiaAPIv1) CreateBlobFromFile(filePath string, documentId string,
+	fieldName string, chunkSize int64) (*Blob, error) {
+	if chunkSize == 0 {
+		chunkSize = 1024 * 1024 // 1MB
+	}
+
+	// Open the file
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	// Get the file name from the path
+	fileName := filepath.Base(filePath)
+
+	// Create a new blob
+	uploadBlob, err := ca.CreateBlob(documentId, fieldName, fileName)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get file size
+	fileInfo, err := file.Stat()
+	if err != nil {
+		return nil, err
+	}
+	if fileInfo.Size() == 0 {
+		return nil, fmt.Errorf("file is empty")
+	}
+
+	// Upload the file in chunks
+	buffer := make([]byte, chunkSize)
+	var offset int64 = 0
+
+	for {
+		n, err := file.Read(buffer)
+		if err != nil && err != io.EOF {
+			return nil, err
+		}
+		if n == 0 {
+			break
+		}
+
+		_, err = ca.UploadChunk(uploadBlob, buffer[:n], int(chunkSize),
+			int(offset))
+		if err != nil {
+			return nil, err
+		}
+
+		offset += int64(n)
+	}
+
+	// Commit the blob
+	blob, err := ca.CommitBlob(uploadBlob)
+	if err != nil {
+		return nil, err
+	}
+
+	return blob, nil
 }
