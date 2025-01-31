@@ -1,11 +1,12 @@
 package custodia
 
 import (
-	"chino/common"
 	"encoding/json"
 	"fmt"
 	"io"
 	"time"
+
+	"github.com/dzanotelli/chino/common"
 )
 
 
@@ -20,6 +21,12 @@ type Blob struct {
 	DocumentId string `json:"document_id"`
 	Sha1 string `json:"sha1"`
 	Md5 string `json:"md5"`
+}
+
+type BlobToken struct {
+	Token string `json:"token"`
+	Expiration time.Time `json:"expiration"`
+	OneTime bool `json:"one_time"`
 }
 
 type BlobEnvelope struct {
@@ -128,8 +135,8 @@ func (ca *CustodiaAPIv1) DeleteBlob(blobId string) error {
 }
 
 // Generate a blob token used later to authenticate blob download
-func (ca *CustodiaAPIv1) GenerateBlobToekn(blobId string, oneTime bool,
-	duration int) (map[string]string, error) {
+func (ca *CustodiaAPIv1) GenerateBlobToken(blobId string, oneTime bool,
+	duration int) (*BlobToken, error) {
 	url := fmt.Sprintf("/blobs/%s/generate", blobId)
 	data := map[string]interface{}{"one_time": oneTime, "duration": duration}
 	resp, err := ca.Call("POST", url, data)
@@ -140,17 +147,12 @@ func (ca *CustodiaAPIv1) GenerateBlobToekn(blobId string, oneTime bool,
 	// response returns a map with toekn, expiration, and one_time
 	// since one_time is a bool, but we already know it (it's a func param)
 	// we return just the map with two strings
-	respData := map[string]interface{}{}
-	if err := json.Unmarshal([]byte(resp), &respData); err != nil {
+	blobToken := &BlobToken{}
+	if err := json.Unmarshal([]byte(resp), blobToken); err != nil {
 		return nil, err
 	}
 
-	out := map[string]string{
-		"token": respData["token"].(string),
-		"expiration": respData["expiration"].(string),
-	}
-
-	return out, nil
+	return blobToken, nil
 }
 
 // download a blob with a token
@@ -159,15 +161,14 @@ func (ca *CustodiaAPIv1) GetBlobDataWithToken(blobId string, token string) (
 	url := fmt.Sprintf("/blobs/url/%s?token=%s", blobId, token)
 	params := map[string]interface{}{"_rawResponse": true}
 
-	auth := ca.client.GetAuth()
-	auth.SwitchTo(common.AuthType.NoAuth)
+	ca.client.GetAuth().SwitchTo(common.NoAuth)
 
 	_, err := ca.Call("GET", url, params)
 	if err != nil {
 		return nil, err
 	}
 
-	auth.SwitchBack()
+	ca.client.GetAuth().SwitchBack()
 
 	return ca.RawResponse.Body, nil
 }
