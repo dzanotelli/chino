@@ -6,16 +6,15 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/dzanotelli/chino/common"
+	"github.com/simplereach/timeutils"
 )
 
 
 type UploadBlob struct {
 	Id string `json:"upload_id"`
-	ExpireDate time.Time `json:"expire_date"`
-
+	ExpireDate timeutils.Time `json:"expire_date"`
 }
 
 type Blob struct {
@@ -27,7 +26,7 @@ type Blob struct {
 
 type BlobToken struct {
 	Token string `json:"token"`
-	Expiration time.Time `json:"expiration"`
+	Expiration timeutils.Time `json:"expiration"`
 	OneTime bool `json:"one_time"`
 }
 
@@ -45,7 +44,7 @@ func (ca *CustodiaAPIv1) CreateBlob(documentId string, fieldName string,
 
 	data := map[string]interface{}{"document_id": documentId,
 		"field": fieldName, "file_name": fileName}
-	resp, err := ca.Call("POST", "/blobs/" , data)
+	resp, err := ca.Call("POST", "/blobs" , data)
 	if err != nil {
 		return nil, err
 	}
@@ -54,9 +53,17 @@ func (ca *CustodiaAPIv1) CreateBlob(documentId string, fieldName string,
 		return nil, err
 	}
 
+	expireDateStr := blobEnvelope.Blob["expire_date"].(string)
+	expireDateJSON := fmt.Sprintf(`"%s"`, expireDateStr)
+	expireDate := timeutils.Time{}
+	err = json.Unmarshal([]byte(expireDateJSON), &expireDate)
+	if err != nil {
+		return nil, err
+	}
+
 	ub := &UploadBlob{
-		Id: blobEnvelope.Blob["blob_id"].(string),
-		ExpireDate: blobEnvelope.Blob["expire_date"].(time.Time),
+		Id: blobEnvelope.Blob["upload_id"].(string),
+		ExpireDate: expireDate,
 	}
 
 	return ub, nil
@@ -90,7 +97,7 @@ func (ca *CustodiaAPIv1) UploadChunk(ub *UploadBlob, data []byte,
 
 	ub = &UploadBlob{
 		Id: blobEnvelope.Blob["upload_id"].(string),
-		ExpireDate: blobEnvelope.Blob["expire_date"].(time.Time),
+		ExpireDate: blobEnvelope.Blob["expire_date"].(timeutils.Time),
 	}
 
 	return ub, nil
