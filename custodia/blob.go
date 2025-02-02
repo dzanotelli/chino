@@ -71,18 +71,18 @@ func (ca *CustodiaAPIv1) CreateBlob(documentId string, fieldName string,
 
 // Upload a chunk
 // Args:
-// - ub: the UploadBlob returned by CreateBlob
-// - data: the chunk of data
+// - uploadId: the ID of the UploadBlob returned by CreateBlob
+// - data: the chunk of data to upload
 // - length: the total length of the file. Must be passed as header
 // - offset: the offset of this chunk in the file. Must be passed as header
-func (ca *CustodiaAPIv1) UploadChunk(ub *UploadBlob, data []byte,
+func (ca *CustodiaAPIv1) UploadChunk(uploadId string, data []byte,
 	length int, offset int) (*UploadBlob, error) {
-	url := fmt.Sprintf("/blobs/%s", ub.Id)
+	url := fmt.Sprintf("/blobs/%s", uploadId)
 	params := map[string]interface{}{
 		"Content-Type": "application/octet-stream",
 		"Length": fmt.Sprint(length),
 		"Offset": fmt.Sprint(offset),
-		"body": data,
+		"_data": data,
 	}
 
 	resp, err := ca.Call("PUT", url, params)
@@ -95,19 +95,28 @@ func (ca *CustodiaAPIv1) UploadChunk(ub *UploadBlob, data []byte,
 		return nil, err
 	}
 
-	ub = &UploadBlob{
+	expireDateStr := blobEnvelope.Blob["expire_date"].(string)
+	expireDateJSON := fmt.Sprintf(`"%s"`, expireDateStr)
+	expireDate := timeutils.Time{}
+	err = json.Unmarshal([]byte(expireDateJSON), &expireDate)
+	if err != nil {
+		return nil, err
+	}
+
+	ub := &UploadBlob{
 		Id: blobEnvelope.Blob["upload_id"].(string),
-		ExpireDate: blobEnvelope.Blob["expire_date"].(timeutils.Time),
+		ExpireDate: expireDate,
 	}
 
 	return ub, nil
 }
 
 // Commit a blob
-func (ca *CustodiaAPIv1) CommitBlob(ub *UploadBlob) (*Blob, error) {
+func (ca *CustodiaAPIv1) CommitBlob(uploadId string) (*Blob, error) {
 	url := "/blobs/commit"
-	data := map[string]interface{}{"upload_id": ub.Id}
-	resp, err := ca.Call("POST", url, data)
+	data := map[string]interface{}{"upload_id": uploadId}
+	params := map[string]interface{}{"_data": data}
+	resp, err := ca.Call("POST", url, params)
 	if err != nil {
 		return nil, err
 	}
@@ -235,7 +244,7 @@ func (ca *CustodiaAPIv1) CreateBlobFromFile(filePath string, documentId string,
 			break
 		}
 
-		_, err = ca.UploadChunk(uploadBlob, buffer[:n], int(chunkSize),
+		_, err = ca.UploadChunk(uploadBlob.Id, buffer[:n], int(chunkSize),
 			int(offset))
 		if err != nil {
 			return nil, err
@@ -245,7 +254,7 @@ func (ca *CustodiaAPIv1) CreateBlobFromFile(filePath string, documentId string,
 	}
 
 	// Commit the blob
-	blob, err := ca.CommitBlob(uploadBlob)
+	blob, err := ca.CommitBlob(uploadBlob.Id)
 	if err != nil {
 		return nil, err
 	}
