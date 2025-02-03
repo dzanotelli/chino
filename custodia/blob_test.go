@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"reflect"
 	"testing"
 
@@ -242,6 +243,47 @@ func TestBlob(t *testing.T) {
 		}
 	}
 
+	// Test upload a blob from a file
+	file, err := os.CreateTemp("", "chino_unittest_*.txt")
+	if err != nil {
+		t.Errorf("Error creating temp file: %v", err)
+	}
+	defer os.Remove(file.Name())
 
+	// try to upload the emtpy file: we should get an error
+	_, err = custodia.CreateBlobFromFile(file.Name(), dummyUUID, "field", 0)
+	if err == nil {
+		t.Errorf("Expected error when uploading an empty file")
+	} else if fmt.Sprint(err) != "file is empty" {
+		t.Errorf("Expected error 'file is empty', got %v", err)
+	}
 
+	// write some content to the file
+	_, err = file.WriteString("hello world!")
+	if err != nil {
+		t.Errorf("Error writing to temp file: %v", err)
+	}
+	file.Close()
+
+	blob, err = custodia.CreateBlobFromFile(file.Name(), dummyUUID, "field", 0)
+	if err != nil {
+		t.Errorf("Error creating blob from file: %v", err)
+	} else {
+		// this is the result of commit blob
+		var tests = []struct {
+			want interface{}
+			got  interface{}
+		}{
+			{dummyUUID, blob.Id},
+			{dummyUUID, blob.DocumentId},
+			{"sha1", blob.Sha1},
+			{"md5", blob.Md5},
+		}
+		for i, test := range(tests) {
+			if !reflect.DeepEqual(test.want, test.got) {
+				t.Errorf("CommitBlob %d: expected %v, got %v", i, test.want,
+					test.got)
+			}
+		}
+	}
 }
