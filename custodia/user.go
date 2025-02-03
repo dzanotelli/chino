@@ -52,7 +52,7 @@ func (ca *CustodiaAPIv1) CreateUser(userSchema *UserSchema, isActive bool,
 
 	doc := User{IsActive: isActive, Attributes: attributes}
 	url := fmt.Sprintf("/user_schemas/%s/users", userSchema.Id)
-	params := map[string]interface{}{"data": doc}
+	params := map[string]interface{}{"_data": doc}
 	resp, err := ca.Call("POST", url, params)
 	if err != nil {
 		return nil, err
@@ -112,7 +112,7 @@ func (ca *CustodiaAPIv1) UpdateUser(id string , isActive bool,
 
 	// create a user with just the values we can send, and marshal it
 	user := User{IsActive: isActive, Attributes: content}
-	params := map[string]interface{}{"data": user}
+	params := map[string]interface{}{"_data": user}
 	resp, err := ca.Call("PUT", url, params)
 	if err != nil {
 		return nil, err

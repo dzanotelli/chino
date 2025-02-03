@@ -31,7 +31,7 @@ func (ca *CustodiaAPIv1) CreateGroup(name string, isActive bool,
 	attributes map[string]interface{}) (*Group, error) {
 	group := Group{Name: name, IsActive: isActive, Attributes: attributes}
 	url := "/groups"
-	params := map[string]interface{}{"data": group}
+	params := map[string]interface{}{"_data": group}
 	resp, err := ca.Call("POST", url, params)
 	if err != nil {
 		return nil, err
@@ -71,7 +71,7 @@ func (ca *CustodiaAPIv1) UpdateGroup(id string, name string, isActive bool,
 	}
 	group := Group{Name: name, IsActive: isActive, Attributes: attributes}
 	url := fmt.Sprintf("/groups/%s", id)
-	params := map[string]interface{}{"data": group}
+	params := map[string]interface{}{"_data": group}
 	resp, err := ca.Call("PUT", url, params)
 	if err != nil {
 		return nil, err

@@ -32,7 +32,7 @@ func (ca *CustodiaAPIv1) CreateRepository(description string, isActive bool) (
 	*Repository, error) {
 	repository := Repository{Description: description, IsActive: isActive}
 	url := "/repositories"
-	params := map[string]interface{}{"data": repository}
+	params := map[string]interface{}{"_data": repository}
 	resp, err := ca.Call("POST", url, params)
 	if err != nil {
 		return nil, err
@@ -74,7 +74,7 @@ func (ca *CustodiaAPIv1) UpdateRepository(id string, description string,
 
 	// Repository with just the data to send, so we can easily marshal it
 	repo := Repository{Description: description, IsActive: isActive}
-	params := map[string]interface{}{"data": repo}
+	params := map[string]interface{}{"_data": repo}
 	resp, err := ca.Call("PUT", url, params)
 	if err != nil {
 		return nil, err
