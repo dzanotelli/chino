@@ -157,6 +157,9 @@ func (ca *CustodiaAPIv1) ListCollectionDocuments(collectionId string,
 		return nil, err
 	}
 
+	// FIXME: the underlying type of interfaces is not the expected concrete
+	//   type defined in the Schema structure, it's just the result of json
+	//   unmarshalling. Check document/ReadDocument comments for more.
 	result := []*Document{}
 	for _, document := range documentsEnvelope.Documents {
 		result = append(result, &document)
