@@ -12,7 +12,7 @@ import (
 )
 
 
-func TestCollection(t *testing.T) {
+func TestCollectionCRUDL(t *testing.T) {
     envelope := CustodiaEnvelope{
         Result: "success",
         ResultCode: 200,
@@ -93,6 +93,7 @@ func TestCollection(t *testing.T) {
     client := common.NewClient(server.URL, common.GetFakeAuth())
     custodia := NewCustodiaAPIv1(client)
 
+    // == test CRUDL ==
     // test Create
     collection, err := custodia.CreateCollection("unittest")
     if err != nil {
@@ -231,4 +232,133 @@ func TestCollection(t *testing.T) {
             }
         }
     }
+}
+
+func TestCollectionAndDocuments(t *testing.T) {
+    envelope := CustodiaEnvelope{
+        Result: "success",
+        ResultCode: 200,
+        Message: nil,
+    }
+
+    dummyUUID := uuid.New().String()
+
+    collectionData := map[string]interface{}{
+        "collection_id": dummyUUID,
+        "name": "unittest",
+        "insert_date": "2015-04-14T05:09:54.915Z",
+        "last_update": "2015-04-14T05:09:54.915Z",
+        "is_active": true,
+    }
+
+    documentResponse := map[string]interface{}{
+        "document_id": dummyUUID,
+        "repository_id": dummyUUID,
+        "schema_id": dummyUUID,
+        "insert_date": "2015-04-14T05:09:54.915Z",
+        "last_update": "2015-04-14T05:09:54.915Z",
+        "is_active": true,
+        "content": map[string]interface{}{
+            "field": 42,
+        },
+    }
+
+    // mock calls
+    mockHandler := func(w http.ResponseWriter, r *http.Request) {
+        if r.URL.Path == fmt.Sprintf("/api/v1/collections/documents/%s",
+            dummyUUID) && r.Method == "GET" {
+            w.WriteHeader(http.StatusOK)
+            data := map[string]interface{}{
+                "collections": []map[string]interface{}{
+                    collectionData,
+                },
+            }
+            envelope.Data, _ = json.Marshal(data)
+            out, _ := json.Marshal(envelope)
+            w.Write(out)
+        } else if r.URL.Path == fmt.Sprintf("/api/v1/collections/%s/documents",
+            dummyUUID) && r.Method == "GET" {
+            w.WriteHeader(http.StatusOK)
+            data := map[string]interface{}{
+                "documents": []map[string]interface{}{
+                    documentResponse,
+                },
+            }
+            envelope.Data, _ = json.Marshal(data)
+            out, _ := json.Marshal(envelope)
+            w.Write(out)
+        } else {
+            err := `{"result": "error", "result_code": 404, "data": null, `
+            err += `"message": "Resource not found (you may have a '/' at `
+            err += `the end)"}`
+            fmt.Print(err)
+            w.WriteHeader(http.StatusNotFound)
+            w.Write([]byte(err))
+        }
+    }
+
+    server := httptest.NewServer(http.HandlerFunc(mockHandler))
+    defer server.Close()
+
+    client := common.NewClient(server.URL, common.GetFakeAuth())
+    custodia := NewCustodiaAPIv1(client)
+
+    // test ListDocumentCollections
+    collections, err := custodia.ListDocumentCollections(dummyUUID)
+    if err != nil {
+        t.Errorf("error while processing request: %s", err)
+    } else {
+        if len(collections) != 1 {
+            t.Errorf("ListDocumentCollections: want %v, got %v", 1,
+                len(collections))
+        }
+        var tests = []struct {
+            want interface{}
+            got  interface{}
+        }{
+            {dummyUUID, collections[0].Id},
+            {"unittest", collections[0].Name},
+            {2015, collections[0].InsertDate.Year()},
+        }
+
+        for i := 0; i < len(tests); i++ {
+            if tests[i].want != tests[i].got {
+                t.Errorf("ListDocumentCollections #%d: want %v, got %v", i,
+                    tests[i].want, tests[i].got)
+            }
+        }
+    }
+
+    // test ListCollectionDocuments
+    documents, err := custodia.ListCollectionDocuments(dummyUUID, true)
+    if err != nil {
+        t.Errorf("error while processing request: %s", err)
+    } else {
+        if len(documents) != 1 {
+            t.Errorf("ListCollectionDocuments: want %v, got %v", 1,
+                len(documents))
+        }
+        var tests = []struct {
+            want interface{}
+            got  interface{}
+        }{
+            {dummyUUID, documents[0].Id},
+            {dummyUUID, documents[0].RepositoryId},
+            {dummyUUID, documents[0].SchemaId},
+            {2015, documents[0].InsertDate.Year()},
+            {true, documents[0].IsActive},
+            // FIXME: need to fix how Document.Content is handled:
+            //  in ReadDocument we convert the underlying type to the
+            //  types defined in Schema, here we don't (for now)
+            {float64(42), documents[0].Content["field"].(float64)},
+        }
+
+        for i := 0; i < len(tests); i++ {
+            if tests[i].want != tests[i].got {
+                t.Errorf("ListCollectionDocuments #%d: want %v, got %v", i,
+                    tests[i].want, tests[i].got)
+            }
+        }
+    }
+
 }
