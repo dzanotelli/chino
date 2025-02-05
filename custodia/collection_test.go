@@ -262,6 +262,25 @@ func TestCollectionAndDocuments(t *testing.T) {
             "field": 42,
         },
     }
+    searchCollectionResponse := map[string]interface{}{
+        "collections": []map[string]interface{}{
+            {
+                "collection_id": dummyUUID,
+                "name": "unittest1",
+                "insert_date": "2015-04-14T05:09:54.915Z",
+                "last_update": "2015-04-14T05:09:54.915Z",
+                "is_active": true,
+            },
+            {
+                "collection_id": dummyUUID,
+                "name": "unittest2",
+                "insert_date": "2035-04-14T05:09:54.915Z",
+                "last_update": "2035-04-14T05:09:54.915Z",
+                "is_active": true,
+
+            },
+        },
+    }
 
     // mock calls
     mockHandler := func(w http.ResponseWriter, r *http.Request) {
@@ -285,6 +304,26 @@ func TestCollectionAndDocuments(t *testing.T) {
                 },
             }
             envelope.Data, _ = json.Marshal(data)
+            out, _ := json.Marshal(envelope)
+            w.Write(out)
+        } else if r.URL.Path == fmt.Sprintf(
+            "/api/v1/collections/%s/documents/%s", dummyUUID, dummyUUID) &&
+            r.Method == "POST" {
+            w.WriteHeader(http.StatusOK)
+            envelope.Data = nil
+            out, _ := json.Marshal(envelope)
+            w.Write(out)
+        } else if r.URL.Path == fmt.Sprintf(
+            "/api/v1/collections/%s/documents/%s", dummyUUID, dummyUUID) &&
+            r.Method == "DELETE" {
+            w.WriteHeader(http.StatusOK)
+            envelope.Data = nil
+            out, _ := json.Marshal(envelope)
+            w.Write(out)
+        } else if r.URL.Path == "/api/v1/collections/search" &&
+            r.Method == "POST" {
+            w.WriteHeader(http.StatusOK)
+            envelope.Data, _ = json.Marshal(searchCollectionResponse)
             out, _ := json.Marshal(envelope)
             w.Write(out)
         } else {
@@ -361,4 +400,44 @@ func TestCollectionAndDocuments(t *testing.T) {
         }
     }
 
+    // test AddDocumentToCollection
+    err = custodia.AddDocumentToCollection(dummyUUID, dummyUUID)
+    if err != nil {
+        t.Errorf("error while processing request: %s", err)
+    }
+
+    // test RemoveDocumentFromCollection
+    err = custodia.RemoveDocumentFromCollection(dummyUUID, dummyUUID)
+    if err != nil {
+        t.Errorf("error while processing request: %s", err)
+    }
+
+    // test SearchCollection
+    collections, err = custodia.SearchCollection("unittest", true)
+    if err != nil {
+        t.Errorf("error while processing request: %s", err)
+    } else {
+        if len(collections) != 2 {
+            t.Errorf("SearchCollection: want %v, got %v", 2,
+                len(collections))
+        }
+        var tests = []struct {
+            want interface{}
+            got  interface{}
+        }{
+            {dummyUUID, collections[0].Id},
+            {"unittest1", collections[0].Name},
+            {2015, collections[0].InsertDate.Year()},
+            {dummyUUID, collections[1].Id},
+            {"unittest2", collections[1].Name},
+            {2035, collections[1].InsertDate.Year()},
+        }
+
+        for i := 0; i < len(tests); i++ {
+            if tests[i].want != tests[i].got {
+                t.Errorf("SearchCollection #%d: want %v, got %v", i,
+                    tests[i].want, tests[i].got)
+            }
+        }
+    }
 }
