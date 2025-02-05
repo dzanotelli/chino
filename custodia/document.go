@@ -88,6 +88,13 @@ func (ca *CustodiaAPIv1) ReadDocument(schema Schema, id string) (*Document,
 		return nil, err
 	}
 
+	// FIXME: probably better to:
+	//   1. remove this convertion here, and let Content be raw interfaces
+	//      as returned by Unmarshal
+	//   2. add a `GetContent` method to Document, which converts the
+	//      underlying type of interfaces to the expected concrete types
+	//      (e.g. strings to time.Time, or float to int)
+
 	// convert values to concrete types
 	converted, ee := convertData(docEnvelope.Document.Content, &schema)
 	if len(ee) > 0 {
