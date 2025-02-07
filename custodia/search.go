@@ -7,15 +7,8 @@ import (
 	"github.com/dzanotelli/chino/common"
 )
 
-type SearchDocumentsResponse struct {
+type SearchResponse struct {
 	Documents []*Document `json:"documents,omitempty"`
-	Count int `json:"count"`
-	TotalCount int `json:"total_count"`
-	Limit int `json:"limit"`
-	Offset int `json:"offset"`
-}
-
-type SearchUsersResponse struct {
 	Users []*User `json:"users,omitempty"`
 	Count int `json:"count"`
 	TotalCount int `json:"total_count"`
@@ -65,26 +58,33 @@ func (rt* ResultType) UnmarshalJSON(data []byte) error {
 // Search documents
 func (ca *CustodiaAPIv1) SearchDocuments(schemaId string,
 	resultType ResultType, query map[string]interface{},
-	sort map[string]interface{}) (*SearchDocumentsResponse, error) {
+	sort map[string]interface{}) (*SearchResponse, error) {
 	if !common.IsValidUUID(schemaId) {
 		return nil, fmt.Errorf("schemaId is not a valid UUID: %s", schemaId)
 	}
 
 	url := fmt.Sprintf("/search/documents/%s", schemaId)
-	data := map[string]interface{}{"result_type": resultType, "query": query}
+	data := map[string]interface{}{"result_type": resultType.String(),
+		"query": query}
 	if sort != nil {
 		data["sort"] = sort
 	}
-	resp, err := ca.Call("POST", url, data)
+	params := map[string]interface{}{"_data": true}
+	resp, err := ca.Call("POST", url, params)
 	if err != nil {
 		return nil, err
 	}
 
 	// JSON: unmarshal resp content
-	searchResponse := &SearchDocumentsResponse{}
+	searchResponse := &SearchResponse{}
 	if err := json.Unmarshal([]byte(resp), searchResponse); err != nil {
 		return nil, err
 	}
+
+	// FIXME: golang unmarshals returns always float64 for numbers
+	//   dunno if let the user do this, or force convertion of the
+	//   underlying type in SearchDocuments (but we need the schema!)
+	//   Check `ReadDocument` for more (there we apply conversion)
 
 	return searchResponse, nil
 }
@@ -92,24 +92,26 @@ func (ca *CustodiaAPIv1) SearchDocuments(schemaId string,
 // Search users
 func (ca *CustodiaAPIv1) SearchUsers(userSchemaId string,
 	resultType ResultType, query map[string]interface{},
-	sort map[string]interface{}) (*SearchUsersResponse, error) {
+	sort map[string]interface{}) (*SearchResponse, error) {
 	if !common.IsValidUUID(userSchemaId) {
 		return nil, fmt.Errorf("userSchemaId is not a valid UUID: %s",
 			userSchemaId)
 	}
 
 	url := fmt.Sprintf("/search/users/%s", userSchemaId)
-	data := map[string]interface{}{"result_type": resultType, "query": query}
+	data := map[string]interface{}{"result_type": resultType.String(),
+		"query": query}
 	if sort != nil {
 		data["sort"] = sort
 	}
-	resp, err := ca.Call("POST", url, data)
+	params := map[string]interface{}{"_data": data}
+	resp, err := ca.Call("POST", url, params)
 	if err != nil {
 		return nil, err
 	}
 
 	// JSON: unmarshal resp content
-	searchResponse := &SearchUsersResponse{}
+	searchResponse := &SearchResponse{}
 	if err := json.Unmarshal([]byte(resp), searchResponse); err != nil {
 		return nil, err
 	}
