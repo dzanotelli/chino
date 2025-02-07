@@ -20,7 +20,7 @@ type User struct {
 	InsertDate timeutils.Time `json:"insert_date,omitempty"`
 	LastUpdate timeutils.Time `json:"last_update,omitempty"`
 	IsActive bool `json:"is_active"`
-	Attributes map[string]interface{} `json:"content,omitempty"`
+	Attributes map[string]interface{} `json:"attributes,omitempty"`
 	Groups []string `jsong:"groups,omitempty"`
 }
 

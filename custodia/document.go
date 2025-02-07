@@ -34,9 +34,9 @@ type DocumentsEnvelope struct {
 func (ca *CustodiaAPIv1) CreateDocument(schema *Schema, isActive bool,
 	content map[string]interface{}) (*Document, error) {
 	if schema.Id == "" {
-		return nil, fmt.Errorf("schema has no SchemaId, does it exist?")
+		return nil, fmt.Errorf("schema has no Id, does it exist?")
 	} else if !common.IsValidUUID(schema.Id) {
-		return nil, fmt.Errorf("SchemaId is not a valid UUID: %s (it " +
+		return nil, fmt.Errorf("schema.Id is not a valid UUID: %s (it " +
 			"should not be manually set)", schema.Id)
 	}
 
