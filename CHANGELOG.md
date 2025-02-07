@@ -17,3 +17,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - custodia OAuth API (#8)
 - custodia groups API (#9)
 - custodia permissions API (#9)
+- custodia blobs API (#10)
+- custodia collection API (#11)
+- custodia search API (#12)
