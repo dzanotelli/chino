@@ -22,18 +22,18 @@ func TestBlob(t *testing.T) {
         ResultCode: 200,
         Message: nil,
     }
-    dummyUUID := uuid.New().String()
+    dummyUUID := uuid.New()
 
 	blobCreateResp := map[string]interface{}{
 		"blob": map[string]string{
-			"upload_id": dummyUUID,
+			"upload_id": dummyUUID.String(),
 			"expire_date": "2015-04-14T05:09:54.915Z",
 		},
 	}
 	blobCommitResp := map[string]interface{}{
 		"blob": map[string]string{
-			"blob_id": dummyUUID,
-			"document_id": dummyUUID,
+			"blob_id": dummyUUID.String(),
+			"document_id": dummyUUID.String(),
 			"sha1": "sha1",
 			"md5": "md5",
 		},
@@ -52,7 +52,7 @@ func TestBlob(t *testing.T) {
 			envelope.Data, _ = json.Marshal(blobCreateResp)
 			out, _ := json.Marshal(envelope)
 			w.Write(out)
-		} else if r.URL.Path == "/api/v1/blobs/" + dummyUUID &&
+		} else if r.URL.Path == "/api/v1/blobs/" + dummyUUID.String() &&
 			r.Method == "PUT" {
 			// mock upload a chunk
 			w.WriteHeader(http.StatusOK)
@@ -65,20 +65,20 @@ func TestBlob(t *testing.T) {
 			envelope.Data, _ = json.Marshal(blobCommitResp)
 			out, _ := json.Marshal(envelope)
 			w.Write(out)
-		} else if r.URL.Path == "/api/v1/blobs/" + dummyUUID &&
+		} else if r.URL.Path == "/api/v1/blobs/" + dummyUUID.String() &&
 			r.Method == "GET" {
 			// mock GET blob
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte("hello world!"))
-		} else if r.URL.Path == "/api/v1/blobs/" + dummyUUID &&
+		} else if r.URL.Path == "/api/v1/blobs/" + dummyUUID.String() &&
 			r.Method == "DELETE" {
 			// mock DELETE blob
 			w.WriteHeader(http.StatusOK)
 			envelope.Data = nil
 			out, _ := json.Marshal(envelope)
 			w.Write(out)
-		} else if r.URL.Path == "/api/v1/blobs/" + dummyUUID + "/generate" &&
-			r.Method == "POST" {
+		} else if r.URL.Path == fmt.Sprintf("/api/v1/blobs/%s/generate",
+			dummyUUID.String()) && r.Method == "POST" {
 			// mock generate blob token
 			w.WriteHeader(http.StatusOK)
 			envelope.Data, _ = json.Marshal(blobTokenResponse)
@@ -135,6 +135,11 @@ func TestBlob(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error creating blob: %v", err)
 	}
+	// we just check the UUID
+	if (ub.Id != dummyUUID) {
+		t.Errorf("CreateBlob: expected %v, got %v", dummyUUID, ub.Id)
+	}
+
 	data := []byte("hello world")
 	ub, err = custodia.UploadChunk(dummyUUID, data, 11, 0)
 	if err != nil {
@@ -169,15 +174,15 @@ func TestBlob(t *testing.T) {
 			want interface{}
 			got  interface{}
 		}{
-			{dummyUUID, blob.Id},
-			{dummyUUID, blob.DocumentId},
+			{dummyUUID.String(), blob.Id.String()},
+			{dummyUUID.String(), blob.DocumentId},
 			{"sha1", blob.Sha1},
 			{"md5", blob.Md5},
 		}
 		for i, test := range(tests) {
 			if !reflect.DeepEqual(test.want, test.got) {
-				t.Errorf("CommitBlob %d: expected %v, got %v", i, test.want,
-					test.got)
+				t.Errorf("CommitBlob %d: expected %v (%t), got %v (%t)", i,
+				test.want, test.want, test.got, test.got)
 			}
 		}
 	}
@@ -274,15 +279,15 @@ func TestBlob(t *testing.T) {
 			want interface{}
 			got  interface{}
 		}{
-			{dummyUUID, blob.Id},
-			{dummyUUID, blob.DocumentId},
+			{dummyUUID.String(), blob.Id.String()},
+			{dummyUUID.String(), blob.DocumentId},
 			{"sha1", blob.Sha1},
 			{"md5", blob.Md5},
 		}
 		for i, test := range(tests) {
 			if !reflect.DeepEqual(test.want, test.got) {
-				t.Errorf("CommitBlob %d: expected %v, got %v", i, test.want,
-					test.got)
+				t.Errorf("CreateBlobFromFile %d: expected %v, got %v", i,
+					test.want, test.got)
 			}
 		}
 	}

@@ -4,7 +4,7 @@ go 1.22.0
 
 toolchain go1.22.2
 
-require github.com/google/uuid v1.3.0
+require github.com/google/uuid v1.6.0
 
 require (
 	github.com/simplereach/timeutils v1.2.0 // indirect
