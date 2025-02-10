@@ -19,17 +19,17 @@ func TestCollectionCRUDL(t *testing.T) {
         Message: nil,
     }
 
-    dummyUUID := uuid.New().String()
+    dummyUUID := uuid.New()
 
     createResponse := map[string]interface{}{
-        "collection_id": dummyUUID,
+        "collection_id": dummyUUID.String(),
         "name": "unittest",
         "insert_date": "2015-04-14T05:09:54.915Z",
         "last_update": "2015-04-14T05:09:54.915Z",
         "is_active": true,
     }
     updateResponse := map[string]interface{}{
-        "collection_id": dummyUUID,
+        "collection_id": dummyUUID.String(),
         "name": "changed",
         "insert_date": "2025-04-14T05:09:54.915Z",
         "last_update": "2025-04-14T05:09:54.915Z",
@@ -104,7 +104,7 @@ func TestCollectionCRUDL(t *testing.T) {
             want interface{}
             got  interface{}
         }{
-            {dummyUUID, collection.Id},
+            {dummyUUID.String(), collection.Id.String()},
             {"unittest", collection.Name},
             {2015, collection.InsertDate.Year()},
             {4, int(collection.InsertDate.Month())},
@@ -138,7 +138,7 @@ func TestCollectionCRUDL(t *testing.T) {
             want interface{}
             got  interface{}
         }{
-            {dummyUUID, collection.Id},
+            {dummyUUID.String(), collection.Id.String()},
             {"unittest", collection.Name},
             {2015, collection.InsertDate.Year()},
             {4, int(collection.InsertDate.Month())},
@@ -172,7 +172,7 @@ func TestCollectionCRUDL(t *testing.T) {
             want interface{}
             got  interface{}
         }{
-            {dummyUUID, collection.Id},
+            {dummyUUID.String(), collection.Id.String()},
             {"changed", collection.Name},
             {2025, collection.InsertDate.Year()},
             {4, int(collection.InsertDate.Month())},
@@ -217,10 +217,10 @@ func TestCollectionCRUDL(t *testing.T) {
             want interface{}
             got  interface{}
         }{
-            {dummyUUID, collections[0].Id},
+            {dummyUUID.String(), collections[0].Id.String()},
             {"unittest", collections[0].Name},
             {2015, collections[0].InsertDate.Year()},
-            {dummyUUID, collections[1].Id},
+            {dummyUUID.String(), collections[1].Id.String()},
             {"changed", collections[1].Name},
             {2025, collections[1].InsertDate.Year()},
         }
@@ -241,10 +241,10 @@ func TestCollectionAndDocuments(t *testing.T) {
         Message: nil,
     }
 
-    dummyUUID := uuid.New().String()
+    dummyUUID := uuid.New()
 
     collectionData := map[string]interface{}{
-        "collection_id": dummyUUID,
+        "collection_id": dummyUUID.String(),
         "name": "unittest",
         "insert_date": "2015-04-14T05:09:54.915Z",
         "last_update": "2015-04-14T05:09:54.915Z",
@@ -252,9 +252,9 @@ func TestCollectionAndDocuments(t *testing.T) {
     }
 
     documentResponse := map[string]interface{}{
-        "document_id": dummyUUID,
-        "repository_id": dummyUUID,
-        "schema_id": dummyUUID,
+        "document_id": dummyUUID.String(),
+        "repository_id": dummyUUID.String(),
+        "schema_id": dummyUUID.String(),
         "insert_date": "2015-04-14T05:09:54.915Z",
         "last_update": "2015-04-14T05:09:54.915Z",
         "is_active": true,
@@ -265,14 +265,14 @@ func TestCollectionAndDocuments(t *testing.T) {
     searchCollectionResponse := map[string]interface{}{
         "collections": []map[string]interface{}{
             {
-                "collection_id": dummyUUID,
+                "collection_id": dummyUUID.String(),
                 "name": "unittest1",
                 "insert_date": "2015-04-14T05:09:54.915Z",
                 "last_update": "2015-04-14T05:09:54.915Z",
                 "is_active": true,
             },
             {
-                "collection_id": dummyUUID,
+                "collection_id": dummyUUID.String(),
                 "name": "unittest2",
                 "insert_date": "2035-04-14T05:09:54.915Z",
                 "last_update": "2035-04-14T05:09:54.915Z",
@@ -355,7 +355,7 @@ func TestCollectionAndDocuments(t *testing.T) {
             want interface{}
             got  interface{}
         }{
-            {dummyUUID, collections[0].Id},
+            {dummyUUID.String(), collections[0].Id.String()},
             {"unittest", collections[0].Name},
             {2015, collections[0].InsertDate.Year()},
         }
@@ -381,9 +381,9 @@ func TestCollectionAndDocuments(t *testing.T) {
             want interface{}
             got  interface{}
         }{
-            {dummyUUID, documents[0].Id},
-            {dummyUUID, documents[0].RepositoryId},
-            {dummyUUID, documents[0].SchemaId},
+            {dummyUUID.String(), documents[0].Id},
+            {dummyUUID.String(), documents[0].RepositoryId},
+            {dummyUUID.String(), documents[0].SchemaId},
             {2015, documents[0].InsertDate.Year()},
             {true, documents[0].IsActive},
             // FIXME: need to fix how Document.Content is handled:
@@ -425,10 +425,10 @@ func TestCollectionAndDocuments(t *testing.T) {
             want interface{}
             got  interface{}
         }{
-            {dummyUUID, collections[0].Id},
+            {dummyUUID.String(), collections[0].Id.String()},
             {"unittest1", collections[0].Name},
             {2015, collections[0].InsertDate.Year()},
-            {dummyUUID, collections[1].Id},
+            {dummyUUID.String(), collections[1].Id.String()},
             {"unittest2", collections[1].Name},
             {2035, collections[1].InsertDate.Year()},
         }
