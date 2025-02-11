@@ -8,14 +8,15 @@ import (
 	"time"
 
 	"github.com/dzanotelli/chino/common"
+	"github.com/google/uuid"
 	"github.com/simplereach/timeutils"
 )
 
 
 type Document struct {
-	Id string `json:"document_id,omitempty"`
-	SchemaId string `json:"schema_id,omitempty"`
-	RepositoryId string `json:"repository_id,omitempty"`
+	Id uuid.UUID `json:"document_id,omitempty"`
+	SchemaId uuid.UUID `json:"schema_id,omitempty"`
+	RepositoryId uuid.UUID `json:"repository_id,omitempty"`
 	InsertDate timeutils.Time `json:"insert_date,omitempty"`
 	LastUpdate timeutils.Time `json:"last_update,omitempty"`
 	IsActive bool `json:"is_active"`
