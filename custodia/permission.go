@@ -2,11 +2,10 @@ package custodia
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
 
-	"github.com/dzanotelli/chino/common"
+	"github.com/google/uuid"
 	"golang.org/x/exp/slices"
 )
 
@@ -207,10 +206,10 @@ func (rt* ResourceType) UnmarshalJSON(data []byte) error {
 
 type Resource struct {
 	Access string `json:"access"`
-	ParentId string `json:"parent_id,omitempty"`
-	Id string `json:"resource_id"`
+	ParentId uuid.UUID `json:"parent_id,omitempty"`
+	Id uuid.UUID `json:"resource_id"`
 	Type ResourceType `json:"resource_type"`
-	OwnerId string `json:"owner_id,omitempty"`
+	OwnerId uuid.UUID `json:"owner_id,omitempty"`
 	OwnerType ResourceType `json:"owner_type,omitempty"`
 	Permission map[PermissionScope][]PermissionType `json:"permission"`
 }
@@ -243,15 +242,11 @@ func (r* Resource) UnmarshalJSON(data []byte) error {
 // Grant or revoke permissions over resources of a specific type.
 // It can be used only on Top Level resources.
 func (ca *CustodiaAPIv1) PermissionOnResources(action PermissionAction,
-	resourceType ResourceType, subjectType ResourceType, subjectId string,
+	resourceType ResourceType, subjectType ResourceType, subjectId uuid.UUID,
 	permissions map[PermissionScope][]PermissionType) (
 	error) {
-	if !common.IsValidUUID(subjectId) {
-		return errors.New("subjectId is not a valid UUID: " + subjectId)
-    }
-
 	url := fmt.Sprintf("/perms/%s/%s/%s/%s", action, resourceType.UrlString(),
-        subjectType.UrlString(), subjectId)
+        subjectType.UrlString(), subjectId.String())
 	params := map[string]interface{}{"data": permissions}
 	_, err := ca.Call("POST", url, params)
     if err!= nil {
@@ -263,19 +258,12 @@ func (ca *CustodiaAPIv1) PermissionOnResources(action PermissionAction,
 // Grant or Revoke permissions over a specific resource.
 // It can be called on all resources.
 func (ca *CustodiaAPIv1) PermissionOnResource(action PermissionAction,
-    resourceType ResourceType, resourceId string, subjectType ResourceType,
-	subjectId string, permissions map[PermissionScope][]PermissionType) (
+    resourceType ResourceType, resourceId uuid.UUID, subjectType ResourceType,
+	subjectId uuid.UUID, permissions map[PermissionScope][]PermissionType) (
     error) {
-	if !common.IsValidUUID(resourceId) {
-        return errors.New("resourceId is not a valid UUID: " + resourceId)
-    }
-	if !common.IsValidUUID(subjectId) {
-		return errors.New("subjectId is not a valid UUID: " + subjectId)
-	}
-
     url := fmt.Sprintf("/perms/%s/%s/%s/%s/%s", action,
-        resourceType.UrlString(), resourceId, subjectType.UrlString(),
-        subjectId)
+        resourceType.UrlString(), resourceId.String(), subjectType.UrlString(),
+        subjectId.String())
     params := map[string]interface{}{"data": permissions}
     _, err := ca.Call("POST", url, params)
     if err!= nil {
@@ -287,20 +275,14 @@ func (ca *CustodiaAPIv1) PermissionOnResource(action PermissionAction,
 // Grant or Revoke permissions over all the children of a specific resource.
 // It can be used only on resources that have a parent-child relationship.
 func (ca *CustodiaAPIv1) PermissionOnResourceChildren(action PermissionAction,
-    resourceType ResourceType, resourceId string,
+    resourceType ResourceType, resourceId uuid.UUID,
 	resourceChildType ResourceType, subjectType ResourceType,
-	subjectId string, permissions map[PermissionScope][]PermissionType) (
+	subjectId uuid.UUID, permissions map[PermissionScope][]PermissionType) (
 	error) {
-	if !common.IsValidUUID(resourceId) {
-		return errors.New("resourceId is not a valid UUID: " + resourceId)
-	}
-	if !common.IsValidUUID(subjectId) {
-		return errors.New("subjectId is not a valid UUID: " + subjectId)
-	}
-
 	url := fmt.Sprintf("/perms/%s/%s/%s/%s/%s/%s", action,
-        resourceType.UrlString(), resourceId, resourceChildType.UrlString(),
-        subjectType.UrlString(), subjectId)
+        resourceType.UrlString(), resourceId.String(),
+        resourceChildType.UrlString(), subjectType.UrlString(),
+        subjectId.String())
 	params := map[string]interface{}{"data": permissions}
 	_, err := ca.Call("POST", url, params)
 	if err!= nil {
@@ -331,13 +313,9 @@ func (ca *CustodiaAPIv1) ReadAllPermissions() ([]Resource, error) {
 }
 
 // Read permissions over a document
-func (ca *CustodiaAPIv1) ReadPermissionsOnDocument(documentId string) (
+func (ca *CustodiaAPIv1) ReadPermissionsOnDocument(documentId uuid.UUID) (
     []Resource, error) {
-	if !common.IsValidUUID(documentId) {
-		return nil, errors.New("documentId is not a valid UUID: " + documentId)
-	}
-
-	url := fmt.Sprintf("/perms/documents/%s", documentId)
+	url := fmt.Sprintf("/perms/documents/%s", documentId.String())
 	resp, err := ca.Call("GET", url, nil)
 	if err!= nil {
         return nil, err
@@ -357,13 +335,9 @@ func (ca *CustodiaAPIv1) ReadPermissionsOnDocument(documentId string) (
 
 // Read permissions over a user.
 // List all the permissions that the user has on Resources.
-func (ca *CustodiaAPIv1) ReadPermissionsOnUser(userId string) ([]Resource,
+func (ca *CustodiaAPIv1) ReadPermissionsOnUser(userId uuid.UUID) ([]Resource,
 	error) {
-    if !common.IsValidUUID(userId) {
-        return nil, errors.New("userId is not a valid UUID: " + userId)
-    }
-
-    url := fmt.Sprintf("/perms/users/%s", userId)
+    url := fmt.Sprintf("/perms/users/%s", userId.String())
     resp, err := ca.Call("GET", url, nil)
     if err!= nil {
         return nil, err
@@ -382,13 +356,9 @@ func (ca *CustodiaAPIv1) ReadPermissionsOnUser(userId string) ([]Resource,
 }
 
 // Read permissions over a group.
-func (ca *CustodiaAPIv1) ReadPermissionsOnGroup(groupId string) ([]Resource,
+func (ca *CustodiaAPIv1) ReadPermissionsOnGroup(groupId uuid.UUID) ([]Resource,
 	error) {
-	if!common.IsValidUUID(groupId) {
-        return nil, errors.New("groupId is not a valid UUID: " + groupId)
-    }
-
-    url := fmt.Sprintf("/perms/groups/%s", groupId)
+    url := fmt.Sprintf("/perms/groups/%s", groupId.String())
     resp, err := ca.Call("GET", url, nil)
     if err!= nil {
         return nil, err
