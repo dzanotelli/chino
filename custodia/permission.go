@@ -315,7 +315,7 @@ func (ca *CustodiaAPIv1) ReadAllPermissions() ([]Resource, error) {
 // Read permissions over a document
 func (ca *CustodiaAPIv1) ReadPermissionsOnDocument(documentId uuid.UUID) (
     []Resource, error) {
-	url := fmt.Sprintf("/perms/documents/%s", documentId.String())
+	url := fmt.Sprintf("/perms/documents/%s", documentId)
 	resp, err := ca.Call("GET", url, nil)
 	if err!= nil {
         return nil, err
@@ -337,7 +337,7 @@ func (ca *CustodiaAPIv1) ReadPermissionsOnDocument(documentId uuid.UUID) (
 // List all the permissions that the user has on Resources.
 func (ca *CustodiaAPIv1) ReadPermissionsOnUser(userId uuid.UUID) ([]Resource,
 	error) {
-    url := fmt.Sprintf("/perms/users/%s", userId.String())
+    url := fmt.Sprintf("/perms/users/%s", userId)
     resp, err := ca.Call("GET", url, nil)
     if err!= nil {
         return nil, err
@@ -358,7 +358,7 @@ func (ca *CustodiaAPIv1) ReadPermissionsOnUser(userId uuid.UUID) ([]Resource,
 // Read permissions over a group.
 func (ca *CustodiaAPIv1) ReadPermissionsOnGroup(groupId uuid.UUID) ([]Resource,
 	error) {
-    url := fmt.Sprintf("/perms/groups/%s", groupId.String())
+    url := fmt.Sprintf("/perms/groups/%s", groupId)
     resp, err := ca.Call("GET", url, nil)
     if err!= nil {
         return nil, err

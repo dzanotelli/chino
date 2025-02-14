@@ -7,13 +7,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dzanotelli/chino/common"
+	"github.com/google/uuid"
 	"github.com/simplereach/timeutils"
 )
 
 
 type User struct {
-	Id string `json:"user_id,omitempty"`
+	Id uuid.UUID `json:"user_id,omitempty"`
 	UserSchemaId string `json:"schema_id,omitempty"`
 	Username string `json:"username"`
 	Password string `json:"password,omitempty"`
@@ -35,16 +35,9 @@ type UsersEnvelope struct {
 // [C]reate a new user
 func (ca *CustodiaAPIv1) CreateUser(userSchema *UserSchema, isActive bool,
 	attributes map[string]interface{}) (*User, error) {
-	if userSchema.Id == "" {
-		return nil, fmt.Errorf("user schema has no UserSchemaId, " +
-			"does it exist?")
-	} else if !common.IsValidUUID(userSchema.Id) {
-		return nil, fmt.Errorf("SchemaId is not a valid UUID: %s (it " +
-			"should not be manually set)", userSchema.Id)
-	}
-
 	// validate user content
-	contentErrors := validateContent(attributes, userSchema.getStructureAsMap())
+	contentErrors := validateContent(attributes,
+		userSchema.getStructureAsMap())
 	if len(contentErrors) > 0 {
 		e := fmt.Errorf("content errors: %w", errors.Join(contentErrors...))
 		return nil, e
@@ -71,13 +64,9 @@ func (ca *CustodiaAPIv1) CreateUser(userSchema *UserSchema, isActive bool,
 }
 
 // [R]ead an existent user
-func (ca *CustodiaAPIv1) ReadUser(schema UserSchema, id string) (*User,
-	 error) {
-	if !common.IsValidUUID(id) {
-		return nil, errors.New("id is not a valid UUID: " + id)
-	}
-
-	url := fmt.Sprintf("/users/%s", id)
+func (ca *CustodiaAPIv1) ReadUser(userSchema UserSchema, userId uuid.UUID) (
+	*User, error) {
+	url := fmt.Sprintf("/users/%s", userId)
 	resp, err := ca.Call("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -90,7 +79,7 @@ func (ca *CustodiaAPIv1) ReadUser(schema UserSchema, id string) (*User,
 	}
 
 	// convert values to concrete types
-	converted, ee := convertData(userEnvelope.User.Attributes, &schema)
+	converted, ee := convertData(userEnvelope.User.Attributes, &userSchema)
 	if len(ee) > 0 {
 		err := fmt.Errorf("conversion errors: %w", errors.Join(ee...))
 		return userEnvelope.User, err
@@ -102,13 +91,9 @@ func (ca *CustodiaAPIv1) ReadUser(schema UserSchema, id string) (*User,
 }
 
 // [U]pdate an existent user
-func (ca *CustodiaAPIv1) UpdateUser(id string , isActive bool,
+func (ca *CustodiaAPIv1) UpdateUser(userId uuid.UUID , isActive bool,
 	content map[string]interface{}) (*User, error) {
-		if !common.IsValidUUID(id) {
-			return nil, errors.New("id is not a valid UUID: " + id)
-		}
-
-	url := fmt.Sprintf("/users/%s", id)
+	url := fmt.Sprintf("/users/%s", userId)
 
 	// create a user with just the values we can send, and marshal it
 	user := User{IsActive: isActive, Attributes: content}
@@ -131,9 +116,9 @@ func (ca *CustodiaAPIv1) UpdateUser(id string , isActive bool,
 // [D]elete an existent user
 // if force=false user is just deactivated
 // if consisten=true the operation is done sync (server waits to respond)
-func (ca *CustodiaAPIv1) DeleteUser(id string, force, consistent bool) (
+func (ca *CustodiaAPIv1) DeleteUser(userId uuid.UUID, force, consistent bool) (
 	error) {
-	url := fmt.Sprintf("/users/%s", id)
+	url := fmt.Sprintf("/users/%s", userId)
 	url += fmt.Sprintf("?force=%v&consistent=%v", force, consistent)
 
 	_, err := ca.Call("DELETE", url, nil)
@@ -151,13 +136,8 @@ func (ca *CustodiaAPIv1) DeleteUser(id string, force, consistent bool) (
 //   insert_date__lt: time.Time
 //   last_update__gt: time.Time
 //   last_update__lt: time.Time
-func (ca *CustodiaAPIv1) ListUsers(userSchemaId string,
+func (ca *CustodiaAPIv1) ListUsers(userSchemaId uuid.UUID,
 	params map[string]interface{}) ([]*User, error) {
-	if !common.IsValidUUID(userSchemaId) {
-		return nil, fmt.Errorf("schemaId is not a valid UUID: %s",
-			userSchemaId)
-	}
-
 	url := fmt.Sprintf("/user_schemas/%s/users", userSchemaId)
 	if len(params) > 0 {
 		url += "?"

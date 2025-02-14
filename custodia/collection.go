@@ -48,7 +48,7 @@ func (ca *CustodiaAPIv1) CreateCollection(name string) (*Collection, error) {
 // [R]ead an existent collection
 func (ca *CustodiaAPIv1) ReadCollection(collectionId uuid.UUID) (*Collection,
 	error) {
-	url := fmt.Sprintf("/collections/%s", collectionId.String())
+	url := fmt.Sprintf("/collections/%s", collectionId)
 	resp, err := ca.Call("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -67,7 +67,7 @@ func (ca *CustodiaAPIv1) ReadCollection(collectionId uuid.UUID) (*Collection,
 func (ca *CustodiaAPIv1) UpdateCollection(collectionId uuid.UUID,
 	name string) (
 	*Collection, error) {
-	url := fmt.Sprintf("/collections/%s", collectionId.String())
+	url := fmt.Sprintf("/collections/%s", collectionId)
 	data := map[string]interface{}{"name": name}
 	params := map[string]interface{}{"_data": data}
 	resp, err := ca.Call("PUT", url, params)
@@ -87,7 +87,7 @@ func (ca *CustodiaAPIv1) UpdateCollection(collectionId uuid.UUID,
 // [D]elete an existent collection
 func (ca *CustodiaAPIv1) DeleteCollection(collectionId uuid.UUID, force bool) (
 	error) {
-	url := fmt.Sprintf("/collections/%s", collectionId.String())
+	url := fmt.Sprintf("/collections/%s", collectionId)
 	if force {
 		url += "?force=true"
 	}
@@ -123,7 +123,7 @@ func (ca *CustodiaAPIv1) ListCollections() ([]*Collection, error) {
 // List the collections of a document
 func (ca *CustodiaAPIv1) ListDocumentCollections(documentId uuid.UUID) (
 	[]*Collection, error) {
-	url := fmt.Sprintf("/collections/documents/%s", documentId.String())
+	url := fmt.Sprintf("/collections/documents/%s", documentId)
 	resp, err := ca.Call("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -145,7 +145,7 @@ func (ca *CustodiaAPIv1) ListDocumentCollections(documentId uuid.UUID) (
 // List the documents of a collection
 func (ca *CustodiaAPIv1) ListCollectionDocuments(collectionId uuid.UUID,
 	fullDocument bool) ([]*Document, error) {
-	url := fmt.Sprintf("/collections/%s/documents", collectionId.String())
+	url := fmt.Sprintf("/collections/%s/documents", collectionId)
 	if fullDocument {
 		url += "?full_document=true"
 	}
@@ -174,8 +174,8 @@ func (ca *CustodiaAPIv1) ListCollectionDocuments(collectionId uuid.UUID,
 // Add a document to a collection
 func (ca *CustodiaAPIv1) AddDocumentToCollection(documentId uuid.UUID,
 	collectionId uuid.UUID) error {
-	url := fmt.Sprintf("/collections/%s/documents/%s", collectionId.String(),
-		documentId.String())
+	url := fmt.Sprintf("/collections/%s/documents/%s", collectionId,
+		documentId)
 	_, err := ca.Call("POST", url, nil)
 	if err != nil {
 		return err
@@ -186,8 +186,8 @@ func (ca *CustodiaAPIv1) AddDocumentToCollection(documentId uuid.UUID,
 // Remove a document from a collection
 func (ca *CustodiaAPIv1) RemoveDocumentFromCollection(documentId uuid.UUID,
 	collectionId uuid.UUID) error {
-	url := fmt.Sprintf("/collections/%s/documents/%s", collectionId.String(),
-		documentId.String())
+	url := fmt.Sprintf("/collections/%s/documents/%s", collectionId,
+		documentId)
 	_, err := ca.Call("DELETE", url, nil)
 	if err != nil {
 		return err

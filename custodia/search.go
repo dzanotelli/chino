@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/dzanotelli/chino/common"
+	"github.com/google/uuid"
 )
 
 type SearchResponse struct {
@@ -56,13 +56,9 @@ func (rt* ResultType) UnmarshalJSON(data []byte) error {
 }
 
 // Search documents
-func (ca *CustodiaAPIv1) SearchDocuments(schemaId string,
+func (ca *CustodiaAPIv1) SearchDocuments(schemaId uuid.UUID,
 	resultType ResultType, query map[string]interface{},
 	sort map[string]interface{}) (*SearchResponse, error) {
-	if !common.IsValidUUID(schemaId) {
-		return nil, fmt.Errorf("schemaId is not a valid UUID: %s", schemaId)
-	}
-
 	url := fmt.Sprintf("/search/documents/%s", schemaId)
 	data := map[string]interface{}{"result_type": resultType.String(),
 		"query": query}
@@ -90,14 +86,9 @@ func (ca *CustodiaAPIv1) SearchDocuments(schemaId string,
 }
 
 // Search users
-func (ca *CustodiaAPIv1) SearchUsers(userSchemaId string,
+func (ca *CustodiaAPIv1) SearchUsers(userSchemaId uuid.UUID,
 	resultType ResultType, query map[string]interface{},
 	sort map[string]interface{}) (*SearchResponse, error) {
-	if !common.IsValidUUID(userSchemaId) {
-		return nil, fmt.Errorf("userSchemaId is not a valid UUID: %s",
-			userSchemaId)
-	}
-
 	url := fmt.Sprintf("/search/users/%s", userSchemaId)
 	data := map[string]interface{}{"result_type": resultType.String(),
 		"query": query}

@@ -2,16 +2,15 @@ package custodia
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 
-	"github.com/dzanotelli/chino/common"
+	"github.com/google/uuid"
 	"github.com/simplereach/timeutils"
 )
 
 // Repository represent a repository stored in Custodia
 type Repository struct {
-	Id string `json:"repository_id,omitempty"`
+	Id uuid.UUID `json:"repository_id,omitempty"`
 	Description string `json:"description"`
 	InsertDate timeutils.Time `json:"insert_date"`
 	LastUpdate timeutils.Time `json:"last_update"`
@@ -48,12 +47,9 @@ func (ca *CustodiaAPIv1) CreateRepository(description string, isActive bool) (
 }
 
 // [R]ead an existent repository
-func (ca *CustodiaAPIv1) ReadRepository(id string) (*Repository, error) {
-	if !common.IsValidUUID(id) {
-		return nil, errors.New("id is not a valid UUID: " + id)
-	}
-
-	url := fmt.Sprintf("/repositories/%s", id)
+func (ca *CustodiaAPIv1) ReadRepository(repoId uuid.UUID) (*Repository,
+	error) {
+	url := fmt.Sprintf("/repositories/%s", repoId)
 	resp, err := ca.Call("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -68,9 +64,9 @@ func (ca *CustodiaAPIv1) ReadRepository(id string) (*Repository, error) {
 }
 
 // [U]pdate an existent repository
-func (ca *CustodiaAPIv1) UpdateRepository(id string, description string,
+func (ca *CustodiaAPIv1) UpdateRepository(repoId uuid.UUID, description string,
 	isActive bool) (*Repository, error) {
-	url := fmt.Sprintf("/repositories/%s", id)
+	url := fmt.Sprintf("/repositories/%s", repoId)
 
 	// Repository with just the data to send, so we can easily marshal it
 	repo := Repository{Description: description, IsActive: isActive}
@@ -91,9 +87,9 @@ func (ca *CustodiaAPIv1) UpdateRepository(id string, description string,
 // [D]elete an existent repository
 // if force=true recursively deletes all the repository content, else the
 // repository is just deactivated
-func (ca *CustodiaAPIv1) DeleteRepository(id string, force bool) (
+func (ca *CustodiaAPIv1) DeleteRepository(repoId uuid.UUID, force bool) (
 	error) {
-	url := fmt.Sprintf("/repositories/%s", id)
+	url := fmt.Sprintf("/repositories/%s", repoId)
 	url += fmt.Sprintf("?force=%v", force)
 
 	_, err := ca.Call("DELETE", url, nil)

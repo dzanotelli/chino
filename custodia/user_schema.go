@@ -2,15 +2,14 @@ package custodia
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 
-	"github.com/dzanotelli/chino/common"
+	"github.com/google/uuid"
 	"github.com/simplereach/timeutils"
 )
 
 type UserSchema struct {
-	Id string `json:"user_schema_id,omitempty"`
+	Id uuid.UUID `json:"user_schema_id,omitempty"`
 	Description string `json:"description"`
 	Groups []string `json:"gropus,omitempty"`
 	InsertDate timeutils.Time `json:"insert_date,omitempty"`
@@ -60,12 +59,9 @@ func (ca *CustodiaAPIv1) CreateUserSchema(descritpion string, isActive bool,
 }
 
 // [R]ead an existent user schema
-func (ca *CustodiaAPIv1) ReadUserSchema(id string) (*UserSchema, error) {
-	if !common.IsValidUUID(id) {
-		return nil, errors.New("id is not a valid UUID: " + id)
-	}
-
-	url := fmt.Sprintf("/user_schemas/%s", id)
+func (ca *CustodiaAPIv1) ReadUserSchema(userSchemaId uuid.UUID) (*UserSchema,
+	error) {
+	url := fmt.Sprintf("/user_schemas/%s", userSchemaId)
 	resp, err := ca.Call("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -82,38 +78,39 @@ func (ca *CustodiaAPIv1) ReadUserSchema(id string) (*UserSchema, error) {
 }
 
 // [U]pdate an existent user schema
-func (ca *CustodiaAPIv1) UpdateUserSchema(id string, description string,
-	isActive bool, structure []SchemaField) (*UserSchema, error) {
+func (ca *CustodiaAPIv1) UpdateUserSchema(userSchemaId uuid.UUID,
+	description string, isActive bool, structure []SchemaField) (*UserSchema,
+	error) {
 	// isActive bool, structure json.RawMessage) (*UserSchema, error) {
-		url := fmt.Sprintf("/user_schemas/%s", id)
+	url := fmt.Sprintf("/user_schemas/%s", userSchemaId)
 
-		// UserSchema with just the data to send, so we can easily marshal it
-		schema := UserSchema{
-			Description: description,
-			IsActive: isActive,
-			Structure: structure,
-		}
-		params := map[string]interface{}{"_data": schema}
-		resp, err := ca.Call("PUT", url, params)
-		if err != nil {
-			return nil, err
-		}
+	// UserSchema with just the data to send, so we can easily marshal it
+	schema := UserSchema{
+		Description: description,
+		IsActive: isActive,
+		Structure: structure,
+	}
+	params := map[string]interface{}{"_data": schema}
+	resp, err := ca.Call("PUT", url, params)
+	if err != nil {
+		return nil, err
+	}
 
-		// JSON: unmarshal resp content and return new user schema
-		schemaEnvelope := UserSchemaEnvelope{}
-		if err := json.Unmarshal([]byte(resp), &schemaEnvelope); err != nil {
-			return nil, err
-		}
-		schemaEnvelope.UserSchema.adjustDefaultTypes()
+	// JSON: unmarshal resp content and return new user schema
+	schemaEnvelope := UserSchemaEnvelope{}
+	if err := json.Unmarshal([]byte(resp), &schemaEnvelope); err != nil {
+		return nil, err
+	}
+	schemaEnvelope.UserSchema.adjustDefaultTypes()
 
-		return schemaEnvelope.UserSchema, nil
+	return schemaEnvelope.UserSchema, nil
 }
 
 // [D]elete an existent user schema
 // if force=true the user schema is deleted, else it's just deactivated
-func (ca *CustodiaAPIv1) DeleteUserSchema(id string, force bool) (
+func (ca *CustodiaAPIv1) DeleteUserSchema(userSchemaId uuid.UUID, force bool) (
 	error) {
-	url := fmt.Sprintf("/user_schemas/%s", id)
+	url := fmt.Sprintf("/user_schemas/%s", userSchemaId)
 	if force {
 		url += "?force=true"
 	}

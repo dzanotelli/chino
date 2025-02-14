@@ -73,7 +73,7 @@ func (ca *CustodiaAPIv1) CreateBlob(documentId uuid.UUID, fieldName string,
 // - offset: the offset of this chunk in the file. Must be passed as header
 func (ca *CustodiaAPIv1) UploadChunk(uploadId uuid.UUID, data []byte,
 	length int, offset int) (*UploadBlob, error) {
-	url := fmt.Sprintf("/blobs/%s", uploadId.String())
+	url := fmt.Sprintf("/blobs/%s", uploadId)
 	params := map[string]interface{}{
 		"Content-Type": "application/octet-stream",
 		"Length": fmt.Sprint(length),
@@ -118,7 +118,7 @@ func (ca *CustodiaAPIv1) CommitBlob(uploadId uuid.UUID) (*Blob, error) {
 
 // Download a blob
 func (ca *CustodiaAPIv1) GetBlobData(blobId uuid.UUID) (io.Reader, error) {
-	url := fmt.Sprintf("/blobs/%s", blobId.String())
+	url := fmt.Sprintf("/blobs/%s", blobId)
 	params := map[string]interface{}{"_rawResponse": true}
 	_, err := ca.Call("GET", url, params)
 	if err != nil {
@@ -130,7 +130,7 @@ func (ca *CustodiaAPIv1) GetBlobData(blobId uuid.UUID) (io.Reader, error) {
 
 // Delete a blob
 func (ca *CustodiaAPIv1) DeleteBlob(blobId uuid.UUID) error {
-	url := fmt.Sprintf("/blobs/%s", blobId.String())
+	url := fmt.Sprintf("/blobs/%s", blobId)
 	_, err := ca.Call("DELETE", url, nil)
 	return err
 }
@@ -138,7 +138,7 @@ func (ca *CustodiaAPIv1) DeleteBlob(blobId uuid.UUID) error {
 // Generate a blob token used later to authenticate blob download
 func (ca *CustodiaAPIv1) GenerateBlobToken(blobId uuid.UUID, oneTime bool,
 	duration int) (*BlobToken, error) {
-	url := fmt.Sprintf("/blobs/%s/generate", blobId.String())
+	url := fmt.Sprintf("/blobs/%s/generate", blobId)
 	data := map[string]interface{}{"one_time": oneTime, "duration": duration}
 	resp, err := ca.Call("POST", url, data)
 	if err != nil {
@@ -159,7 +159,7 @@ func (ca *CustodiaAPIv1) GenerateBlobToken(blobId uuid.UUID, oneTime bool,
 // download a blob with a token
 func (ca *CustodiaAPIv1) GetBlobDataWithToken(blobId uuid.UUID, token string) (
 	io.Reader, error) {
-	url := fmt.Sprintf("/blobs/url/%s?token=%s", blobId.String(), token)
+	url := fmt.Sprintf("/blobs/url/%s?token=%s", blobId, token)
 	params := map[string]interface{}{"_rawResponse": true}
 
 	ca.client.GetAuth().SwitchTo(common.NoAuth)

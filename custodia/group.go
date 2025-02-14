@@ -45,7 +45,7 @@ func (ca *CustodiaAPIv1) CreateGroup(name string, isActive bool,
 
 // [R]ead an existent group
 func (ca *CustodiaAPIv1) ReadGroup(groupId uuid.UUID) (*Group, error) {
-	url := fmt.Sprintf("/groups/%s", groupId.String())
+	url := fmt.Sprintf("/groups/%s", groupId)
 	resp, err := ca.Call("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -62,7 +62,7 @@ func (ca *CustodiaAPIv1) ReadGroup(groupId uuid.UUID) (*Group, error) {
 func (ca *CustodiaAPIv1) UpdateGroup(groupId uuid.UUID, name string,
 	isActive bool, attributes map[string]interface{}) (*Group, error) {
 	group := Group{Name: name, IsActive: isActive, Attributes: attributes}
-	url := fmt.Sprintf("/groups/%s", groupId.String())
+	url := fmt.Sprintf("/groups/%s", groupId)
 	params := map[string]interface{}{"_data": group}
 	resp, err := ca.Call("PUT", url, params)
 	if err != nil {
@@ -78,7 +78,7 @@ func (ca *CustodiaAPIv1) UpdateGroup(groupId uuid.UUID, name string,
 
 // [D]elete an existent group
 func (ca *CustodiaAPIv1) DeleteGroup(groupId uuid.UUID, force bool) error {
-	url := fmt.Sprintf("/groups/%s?force=%v", groupId.String(), force)
+	url := fmt.Sprintf("/groups/%s?force=%v", groupId, force)
 	_, err := ca.Call("DELETE", url, nil)
 	return err
 }
@@ -102,7 +102,7 @@ func (ca *CustodiaAPIv1) ListGroups() ([]Group, error) {
 
 // [L]ist group's users
 func (ca *CustodiaAPIv1) ListGroupUsers(groupId uuid.UUID) ([]User, error) {
-	url := fmt.Sprintf("/groups/%s/users", groupId.String())
+	url := fmt.Sprintf("/groups/%s/users", groupId)
 	resp, err := ca.Call("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -118,8 +118,7 @@ func (ca *CustodiaAPIv1) ListGroupUsers(groupId uuid.UUID) ([]User, error) {
 // [C] Add a user to the group
 func (ca *CustodiaAPIv1) AddUserToGroup(userId uuid.UUID, groupId uuid.UUID) (
 	error) {
-	url := fmt.Sprintf("/groups/%s/users/%s", groupId.String(),
-		userId.String())
+	url := fmt.Sprintf("/groups/%s/users/%s", groupId, userId)
 	_, err := ca.Call("POST", url, nil)
 	if err != nil {
 		return err
@@ -130,8 +129,7 @@ func (ca *CustodiaAPIv1) AddUserToGroup(userId uuid.UUID, groupId uuid.UUID) (
 // [C] Add all users of a UserSchema to the group
 func (ca *CustodiaAPIv1) AddUsersFromUserSchemaToGroup(
     userSchemaId uuid.UUID, groupId uuid.UUID) error {
-    url := fmt.Sprintf("/groups/%s/user_schemas/%s", groupId.String(),
-		userSchemaId.String())
+    url := fmt.Sprintf("/groups/%s/user_schemas/%s", groupId, userSchemaId)
     _, err := ca.Call("POST", url, nil)
     if err != nil {
         return err
@@ -142,8 +140,7 @@ func (ca *CustodiaAPIv1) AddUsersFromUserSchemaToGroup(
 // [D] Remove a user from the group
 func (ca *CustodiaAPIv1) RemoveUserFromGroup(userId uuid.UUID,
 	groupId uuid.UUID) (error) {
-    url := fmt.Sprintf("/groups/%s/users/%s", groupId.String(),
-		userId.String())
+    url := fmt.Sprintf("/groups/%s/users/%s", groupId, userId)
     _, err := ca.Call("DELETE", url, nil)
     if err != nil {
         return err
@@ -154,8 +151,7 @@ func (ca *CustodiaAPIv1) RemoveUserFromGroup(userId uuid.UUID,
 // [D] Remove all users of a UserSchema from the group
 func (ca *CustodiaAPIv1) RemoveUsersFromUserSchemaFromGroup(
     userSchemaId uuid.UUID, groupId uuid.UUID) error {
-    url := fmt.Sprintf("/groups/%s/user_schemas/%s", groupId.String(),
-		userSchemaId.String())
+    url := fmt.Sprintf("/groups/%s/user_schemas/%s", groupId, userSchemaId)
     _, err := ca.Call("DELETE", url, nil)
     if err != nil {
         return err
