@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dzanotelli/chino/common"
 	"github.com/google/uuid"
 	"github.com/simplereach/timeutils"
 )
@@ -34,13 +33,6 @@ type DocumentsEnvelope struct {
 // [C]reate a new document
 func (ca *CustodiaAPIv1) CreateDocument(schema *Schema, isActive bool,
 	content map[string]interface{}) (*Document, error) {
-	if schema.Id == "" {
-		return nil, fmt.Errorf("schema has no Id, does it exist?")
-	} else if !common.IsValidUUID(schema.Id) {
-		return nil, fmt.Errorf("schema.Id is not a valid UUID: %s (it " +
-			"should not be manually set)", schema.Id)
-	}
-
 	// validate document content
 	contentErrors := validateContent(content, schema.getStructureAsMap())
 	if len(contentErrors) > 0 {
@@ -71,13 +63,9 @@ func (ca *CustodiaAPIv1) CreateDocument(schema *Schema, isActive bool,
 }
 
 // [R]ead an existent document
-func (ca *CustodiaAPIv1) ReadDocument(schema Schema, id string) (*Document,
-	 error) {
-	if !common.IsValidUUID(id) {
-		return nil, errors.New("id is not a valid UUID: " + id)
-	}
-
-	url := fmt.Sprintf("/documents/%s", id)
+func (ca *CustodiaAPIv1) ReadDocument(schema Schema, documentId uuid.UUID) (
+	*Document, error) {
+	url := fmt.Sprintf("/documents/%s", documentId)
 	resp, err := ca.Call("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -109,13 +97,9 @@ func (ca *CustodiaAPIv1) ReadDocument(schema Schema, id string) (*Document,
 }
 
 // [U]pdate an existent document
-func (ca *CustodiaAPIv1) UpdateDocument(id string , isActive bool,
+func (ca *CustodiaAPIv1) UpdateDocument(documentId uuid.UUID, isActive bool,
 	content map[string]interface{}) (*Document, error) {
-		if !common.IsValidUUID(id) {
-			return nil, errors.New("id is not a valid UUID: " + id)
-		}
-
-	url := fmt.Sprintf("/documents/%s", id)
+	url := fmt.Sprintf("/documents/%s", documentId)
 
 	// create a doc with just the values we can send, and marshal it
 	doc := Document{IsActive: isActive, Content: content}
@@ -140,9 +124,9 @@ func (ca *CustodiaAPIv1) UpdateDocument(id string , isActive bool,
 // [D]elete an existent document
 // if force=false document is just deactivated
 // if consisten=true the operation is done sync (server waits to respond)
-func (ca *CustodiaAPIv1) DeleteDocument(id string, force, consistent bool) (
-	error) {
-	url := fmt.Sprintf("/documents/%s", id)
+func (ca *CustodiaAPIv1) DeleteDocument(documentId uuid.UUID, force,
+	consistent bool) (error) {
+	url := fmt.Sprintf("/documents/%s", documentId)
 	url += fmt.Sprintf("?force=%v&consistent=%v", force, consistent)
 
 	_, err := ca.Call("DELETE", url, nil)
@@ -160,12 +144,8 @@ func (ca *CustodiaAPIv1) DeleteDocument(id string, force, consistent bool) (
 //   insert_date__lt: time.Time
 //   last_update__gt: time.Time
 //   last_update__lt: time.Time
-func (ca *CustodiaAPIv1) ListDocuments(schemaId string,
+func (ca *CustodiaAPIv1) ListDocuments(schemaId uuid.UUID,
 	params map[string]interface{}) ([]*Document, error) {
-	if !common.IsValidUUID(schemaId) {
-		return nil, fmt.Errorf("schemaId is not a valid UUID: %s", schemaId)
-	}
-
 	url := fmt.Sprintf("/schemas/%s/documents", schemaId)
 	if len(params) > 0 {
 		url += "?"
