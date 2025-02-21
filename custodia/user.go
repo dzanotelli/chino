@@ -14,7 +14,7 @@ import (
 
 type User struct {
 	Id uuid.UUID `json:"user_id,omitempty"`
-	UserSchemaId string `json:"schema_id,omitempty"`
+	UserSchemaId uuid.UUID `json:"schema_id,omitempty"`
 	Username string `json:"username"`
 	Password string `json:"password,omitempty"`
 	InsertDate timeutils.Time `json:"insert_date,omitempty"`

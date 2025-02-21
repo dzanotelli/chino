@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/dzanotelli/chino/common"
+	"github.com/google/uuid"
 	"github.com/simplereach/timeutils"
 	// "golang.org/x/text/cases"
 )
@@ -303,7 +304,8 @@ func convertData(data map[string]interface{}, schema StructureMapper) (
 	structure := schema.getStructureAsMap()
 
 	// get id and description of schema/userschema
-	var id, descr string
+	var id uuid.UUID
+	var descr string
 	switch concreteSchema := schema.(type) {
 	case *UserSchema:
 		id = concreteSchema.Id

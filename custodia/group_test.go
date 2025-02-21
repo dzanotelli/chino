@@ -19,28 +19,28 @@ func TestGroupCRUDL(t *testing.T) {
         Message: nil,
     }
 
+    gid := uuid.New()
     dummyGroup := map[string]interface{}{
-        "group_id": uuid.New().String(),
+        "group_id": gid.String(),
         "group_name": "unittest",
         "attributes": map[string]interface{}{"antani": 3.14},
         "is_active": true,
         "insert_date": "2015-02-07T12:14:46.754",
         "last_update": "2015-03-13T18:06:21.242",
     }
-    gid, _ := dummyGroup["group_id"].(string)
 
-    userSchemaId := uuid.New().String()
+    userSchemaId := uuid.New()
+    uid := uuid.New()
     dummyUser := map[string]interface{}{
         "username": "unittest",
-        "schemas_id": userSchemaId,
-        "user_id": uuid.New().String(),
+        "schemas_id": userSchemaId.String(),
+        "user_id": uid.String(),
         "insert_date": "2015-02-07T12:14:46.754",
         "last_update": "2015-03-13T18:06:21.242",
         "is_active": true,
         "attributes": map[string]interface{}{"antani": 3.14},
-        "groups": []string{gid},
+        "groups": []string{gid.String()},
     }
-    uid, _ := dummyUser["user_id"].(string)
 
     responseGroup := map[string]interface{}{
         "group": dummyGroup,

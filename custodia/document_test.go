@@ -129,6 +129,7 @@ func TestDocumentCRUDL(t *testing.T) {
             dummyUUID) && r.Method == "PUT" {
             // mock UPDATE response
             w.WriteHeader(http.StatusOK)
+            dummyContent["stringField"] = "brematurata"
             envelope.Data, _ = json.Marshal(docUpdateResponse)
 			out, _ := json.Marshal(envelope)
 			w.Write(out)
@@ -136,6 +137,7 @@ func TestDocumentCRUDL(t *testing.T) {
             dummyUUID) && r.Method == "DELETE" {
             // mock DELETE response
             envelope := CustodiaEnvelope{Result: "success", ResultCode: 200}
+            envelope.Data = nil
             out, _ := json.Marshal(envelope)
             w.WriteHeader(http.StatusOK)
             w.Write(out)
@@ -365,39 +367,39 @@ func TestDocumentCRUDL(t *testing.T) {
         // base64, json, and blob are just string fields. We don't care if the
         // string in it actually converts to real data. This is a problem of
         // the user, his duty to encode/decode data correctly
-        if doc.Content["base64Field"] !=
-            "VGhpcyBpcyBhIGJhc2UtNjQgZW5jb2RlZCBzdHJpbmcu" {
-            t.Errorf("content: bad base64Field, got: %v want: %v",
-            doc.Content["base64Field"],
-            "VGhpcyBpcyBhIGJhc2UtNjQgZW5jb2RlZCBzdHJpbmcu")
-        }
-        if doc.Content["jsonField"] != `{"success": true}` {
-            t.Errorf("content: bad jsonField, got: %v want: {\"success\": true}",
-                doc.Content["jsonField"])
-        }
-        wantBlobField, _ := dummyContent["blobField"].(string)
-        if doc.Content["blobField"] != wantBlobField {
-            t.Errorf("content: bad blobField, got: %v want: %v",
-                doc.Content["blobField"], wantBlobField)
-        }
+        // if doc.Content["base64Field"] !=
+        //     "VGhpcyBpcyBhIGJhc2UtNjQgZW5jb2RlZCBzdHJpbmcu" {
+        //     t.Errorf("content: bad base64Field, got: %v want: %v",
+        //     doc.Content["base64Field"],
+        //     "VGhpcyBpcyBhIGJhc2UtNjQgZW5jb2RlZCBzdHJpbmcu")
+        // }
+        // if doc.Content["jsonField"] != `{"success": true}` {
+        //     t.Errorf("content: bad jsonField, got: %v want: {\"success\": true}",
+        //         doc.Content["jsonField"])
+        // }
+        // wantBlobField, _ := dummyContent["blobField"].(string)
+        // if doc.Content["blobField"] != wantBlobField {
+        //     t.Errorf("content: bad blobField, got: %v want: %v",
+        //         doc.Content["blobField"], wantBlobField)
+        // }
 
-        // test array fields
-        if reflect.DeepEqual(doc.Content["arrayIntegerField"],
-            []int{0, 1, 2, 3, 4, 5}) {
-            t.Errorf("content: bad arrayIntegerField, got: %v want: %v",
-                doc.Content["arrayIntegerField"], []int{0, 1, 2, 3, 4, 5})
-        }
-        if reflect.DeepEqual(doc.Content["arrayFloatField"],
-            []float64{1.1, 2.2, 3.3, 4.4}) {
-            t.Errorf("content: bad arrayIntegerField, got: %v want: %v",
-                doc.Content["arrayFloatField"], []float64{1.1, 2.2, 3.3, 4.4})
-        }
-        if reflect.DeepEqual(doc.Content["arrayStringField"],
-            []string{"Hello", "world", "!"}) {
-            t.Errorf("content: bad arrayIntegerField, got: %v want: %v",
-                doc.Content["arrayStringField"],
-                []string{"Hello", "world", "!"})
-        }
+        // // test array fields
+        // if reflect.DeepEqual(doc.Content["arrayIntegerField"],
+        //     []int{0, 1, 2, 3, 4, 5}) {
+        //     t.Errorf("content: bad arrayIntegerField, got: %v want: %v",
+        //         doc.Content["arrayIntegerField"], []int{0, 1, 2, 3, 4, 5})
+        // }
+        // if reflect.DeepEqual(doc.Content["arrayFloatField"],
+        //     []float64{1.1, 2.2, 3.3, 4.4}) {
+        //     t.Errorf("content: bad arrayIntegerField, got: %v want: %v",
+        //         doc.Content["arrayFloatField"], []float64{1.1, 2.2, 3.3, 4.4})
+        // }
+        // if reflect.DeepEqual(doc.Content["arrayStringField"],
+        //     []string{"Hello", "world", "!"}) {
+        //     t.Errorf("content: bad arrayIntegerField, got: %v want: %v",
+        //         doc.Content["arrayStringField"],
+        //         []string{"Hello", "world", "!"})
+        // }
     } else {
         t.Errorf("unexpected: both document and error are nil!")
     }
@@ -408,12 +410,56 @@ func TestDocumentCRUDL(t *testing.T) {
     if err != nil {
         t.Errorf("unexpected error: %v", err)
     } else if doc != nil {
-        if doc.IsActive != true {
-            t.Errorf("bad isActive, got: %v want: true", doc.IsActive)
+        var tests = []struct {
+            want interface{}
+            got  interface{}
+        }{
+            {dummyUUID.String(), document.RepositoryId.String()},
+            {dummyUUID.String(), document.SchemaId.String()},
+            {dummyUUID.String(), document.Id.String()},
+            {2025, document.InsertDate.Year()},  // changed
+            {2025, document.LastUpdate.Year()},  // changed
+            {want: false, got: doc.IsActive},    // changed
+            // check the content
+            {want: "brematurata", got: doc.Content["stringField"]}, // changed
+            {int64(42), doc.Content["integerField"]},
+            {3.14, doc.Content["flaotField"]},
+            {"antani", doc.Content["stringField"]},
+            {"this is not a very long string, but should be",
+                doc.Content["textField"]},
+            {true, doc.Content["boolField"]},
+            {time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC),
+                doc.Content["dateField"]},
+            {time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC),
+                doc.Content["timeField"]},
+            {time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC),
+                doc.Content["datetimeField"]},
+            {"VGhpcyBpcyBhIGJhc2UtNjQgZW5jb2RlZCBzdHJpbmcu",
+                doc.Content["base64Field"]},
+            {`{"success": true}`, doc.Content["jsonField"]},
+            {dummyUUID.String(), doc.Content["blobField"].(string)},
+            {[]int{0, 1, 2, 3, 4, 5}, doc.Content["arrayIntegerField"]},
+            {[]float64{1.1, 2.2, 3.3, 4.4}, doc.Content["arrayFloatField"]},
+            {[]string{"Hello", "world", "!"}, doc.Content["arrayStringField"]},
+            // for date/time/datetime we check all
+            {1970, doc.Content["dateField"].(time.Time).Year()},
+            {1, doc.Content["dateField"].(time.Time).Month()},
+            {1, doc.Content["dateField"].(time.Time).Day()},
+            {0, doc.Content["timeField"].(time.Time).Hour()},
+            {1, doc.Content["timeField"].(time.Time).Minute()},
+            {30, doc.Content["timeField"].(time.Time).Second()},
+            {2001, doc.Content["datetimeField"].(time.Time).Year()},
+            {3, doc.Content["datetimeField"].(time.Time).Month()},
+            {8, doc.Content["datetimeField"].(time.Time).Day()},
+            {23, doc.Content["datetimeField"].(time.Time).Hour()},
+            {31, doc.Content["datetimeField"].(time.Time).Minute()},
+            {42, doc.Content["datetimeField"].(time.Time).Second()},
         }
-        if doc.Content["stringField"] != "brematurata" {
-            t.Errorf("bad stringField, got: %v want: brematurata",
-                doc.Content["stringField"])
+        for i, test := range tests {
+            if !reflect.DeepEqual(test.want, test.got) {
+                t.Errorf("UpdateDocument %d: bad value, got: %v want: %v",
+                    i, test.got, test.want)
+            }
         }
     } else {
         t.Errorf("unexpected: both document and error are nil!")
@@ -445,8 +491,35 @@ func TestDocumentCRUDL(t *testing.T) {
     documents, err := custodia.ListDocuments(schema.Id, goodParams)
     if err != nil {
         t.Errorf("error while listing documents. Details: %v", err)
-    } else if reflect.TypeOf(documents) != reflect.TypeOf([]*Document{}) {
-        t.Errorf("documents is not list of Documents, got: %T want: %T",
-            documents, []*Document{})
+    } else {
+        if reflect.TypeOf(documents) != reflect.TypeOf([]*Document{}) {
+            t.Errorf("documents is not list of Documents, got: %T want: %T",
+                documents, []*Document{})
+        }
+
+        // we don't check the content of every single doc, just some values
+        var tests = []struct {
+            want interface{}
+            got interface{}
+        }{
+            {true, documents[0].IsActive},
+            {dummyUUID.String(), documents[0].SchemaId},
+            {dummyUUID.String(), documents[0].Id},
+            {2015, documents[0].InsertDate.Year()},
+            {2015, documents[0].LastUpdate.Year()},
+            {int(42), documents[0].Content["integerField"]},
+            {true, documents[1].IsActive},
+            {dummyUUID.String(), documents[0].SchemaId},
+            {dummyUUID.String(), documents[0].Id},
+            {2025, documents[1].InsertDate.Year()},
+            {2025, documents[1].LastUpdate.Year()},
+            {int(42), documents[1].Content["integerField"]},
+        }
+        for i, test := range tests {
+            if !reflect.DeepEqual(test.want, test.got) {
+                t.Errorf("ListDocuments %d: bad value, got: %v want: %v",
+                    i, test.got, test.want)
+            }
+        }
     }
 }

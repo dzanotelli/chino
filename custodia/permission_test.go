@@ -19,7 +19,7 @@ func TestPermission(t *testing.T) {
         Message: nil,
     }
 
-    dummyUUID := uuid.New().String()
+    dummyUUID := uuid.New()
 
     // dummy data to return from ReadAllPermissions
     allPermissions := []map[string]interface{}{
