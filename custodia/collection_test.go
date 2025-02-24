@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 
 	"github.com/dzanotelli/chino/common"
@@ -121,10 +122,10 @@ func TestCollectionCRUDL(t *testing.T) {
             {true, collection.IsActive},
         }
 
-        for i := 0; i < len(tests); i++ {
-            if tests[i].want != tests[i].got {
-                t.Errorf("CreateCollection #%d: want %v, got %v", i,
-                    tests[i].want, tests[i].got)
+        for i, test := range tests {
+            if !reflect.DeepEqual(test.want, test.got) {
+                t.Errorf("CreateCollection %d: expected %v, got %v", i, test.want,
+                test.got)
             }
         }
     }
@@ -155,10 +156,10 @@ func TestCollectionCRUDL(t *testing.T) {
             {true, collection.IsActive},
         }
 
-        for i := 0; i < len(tests); i++ {
-            if tests[i].want != tests[i].got {
-                t.Errorf("ReadCollection #%d: want %v, got %v", i,
-                    tests[i].want, tests[i].got)
+        for i, test := range tests {
+            if !reflect.DeepEqual(test.want, test.got) {
+                t.Errorf("ReadCollection %d: expected %v, got %v", i,
+                test.want, test.got)
             }
         }
     }
@@ -189,10 +190,10 @@ func TestCollectionCRUDL(t *testing.T) {
             {false, collection.IsActive},
         }
 
-        for i := 0; i < len(tests); i++ {
-            if tests[i].want != tests[i].got {
-                t.Errorf("UpdateCollection #%d: want %v, got %v", i,
-                    tests[i].want, tests[i].got)
+        for i, test := range tests {
+            if !reflect.DeepEqual(test.want, test.got) {
+                t.Errorf("UpdateCollection %d: expected %v, got %v", i,
+                test.want, test.got)
             }
         }
     }
@@ -225,10 +226,10 @@ func TestCollectionCRUDL(t *testing.T) {
             {2025, collections[1].InsertDate.Year()},
         }
 
-        for i := 0; i < len(tests); i++ {
-            if tests[i].want != tests[i].got {
-                t.Errorf("ListCollections #%d: want %v, got %v", i,
-                    tests[i].want, tests[i].got)
+        for i, test := range tests {
+            if !reflect.DeepEqual(test.want, test.got) {
+                t.Errorf("ListCollections %d: expected %v, got %v", i,
+                test.want, test.got)
             }
         }
     }
@@ -360,10 +361,10 @@ func TestCollectionAndDocuments(t *testing.T) {
             {2015, collections[0].InsertDate.Year()},
         }
 
-        for i := 0; i < len(tests); i++ {
-            if tests[i].want != tests[i].got {
-                t.Errorf("ListDocumentCollections #%d: want %v, got %v", i,
-                    tests[i].want, tests[i].got)
+        for i, test := range tests {
+            if !reflect.DeepEqual(test.want, test.got) {
+                t.Errorf("ListDocumentCollections %d: expected %v, got %v", i,
+                test.want, test.got)
             }
         }
     }
@@ -392,10 +393,10 @@ func TestCollectionAndDocuments(t *testing.T) {
             {float64(42), documents[0].Content["field"].(float64)},
         }
 
-        for i := 0; i < len(tests); i++ {
-            if tests[i].want != tests[i].got {
-                t.Errorf("ListCollectionDocuments #%d: want %v, got %v", i,
-                    tests[i].want, tests[i].got)
+        for i, test := range tests {
+            if !reflect.DeepEqual(test.want, test.got) {
+                t.Errorf("ListCollectionDocuments %d: expected %v, got %v", i,
+                test.want, test.got)
             }
         }
     }
@@ -433,10 +434,10 @@ func TestCollectionAndDocuments(t *testing.T) {
             {2035, collections[1].InsertDate.Year()},
         }
 
-        for i := 0; i < len(tests); i++ {
-            if tests[i].want != tests[i].got {
-                t.Errorf("SearchCollection #%d: want %v, got %v", i,
-                    tests[i].want, tests[i].got)
+        for i, test := range tests {
+            if !reflect.DeepEqual(test.want, test.got) {
+                t.Errorf("SearchCollection %d: expected %v, got %v", i,
+                test.want, test.got)
             }
         }
     }
