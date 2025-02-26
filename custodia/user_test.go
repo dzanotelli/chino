@@ -14,43 +14,35 @@ import (
 )
 
 func TestUserCRUDL(t *testing.T) {
-    // ResponseInnerUser will be included in responses
-    type ResponseInnerUser struct {
-        UserId string `json:"user_id"`
-        UserSchemaId string `json:"schema_id"`
-        Username string `json:"username"`
-        InsertDate string `json:"insert_date"`
-        LastUpdate string `json:"last_update"`
-        IsActive bool `json:"is_active"`
-        Attributes map[string]interface{} `json:"content,omitempty"`
-        Groups []string `json:"groups"`
+    envelope := CustodiaEnvelope{
+        Result: "success",
+        ResultCode: 200,
+        Message: nil,
+    }
+    dummyUUID := uuid.New()
+
+    createResp := map[string]interface{}{
+        "user_id": dummyUUID.String(),
+        "schema_id": dummyUUID.String(),
+        "username": "unittest",
+        "insert_date": "2015-04-24T21:48:16.332Z",
+        "last_update": "2015-04-24T21:48:16.332Z",
+        "is_active": false,
+        "groups": []string{},
     }
 
-    // UserResponse will be marshalled to create and API-like response
-    type UserResponse struct {
-        User ResponseInnerUser `json:"user"`
+    updateResp := map[string]interface{}{
+        "user_id": dummyUUID.String(),
+        "schema_id": dummyUUID.String(),
+        "username": "unittest",
+        "insert_date": "2015-04-24T21:48:16.332Z",
+        "last_update": "2015-04-24T21:48:16.332Z",
+        "is_active": true,
+        "groups": []string{},
+        "attributes": createResp["attributes"],
     }
 
-    // UsersResponse will be marshalled to crete an API-like response
-    type UsersResponse struct {
-        Count int `json:"count"`
-        TotalCount int `json:"total_count"`
-        Limit int `json:"limit"`
-        Offset int `json:"offset"`
-        Users []ResponseInnerUser `json:"users"`
-    }
-
-    // init stuff
-    dummyUser := ResponseInnerUser{
-        UserId: uuid.New().String(),
-        UserSchemaId: uuid.New().String(),
-        Username: "unittest",
-        InsertDate: "2015-02-24T21:48:16.332",
-        LastUpdate: "2015-02-24T21:48:16.332",
-        IsActive: false,
-        Groups: []string{},
-    }
-    dummyAttrs := map[string]interface{}{
+    dummyAttributes := map[string]interface{}{
         "integerField": 42,
         "flaotField": 3.14,
         "stringField": "antani",
@@ -61,67 +53,64 @@ func TestUserCRUDL(t *testing.T) {
         "datetimeField": "2001-03-08T23:31:42",
         "base64Field": "VGhpcyBpcyBhIGJhc2UtNjQgZW5jb2RlZCBzdHJpbmcu",
         "jsonField": `{"success": true}`,
-        "blobField": uuid.New().String(),
+        "blobField": dummyUUID.String(),
         "arrayIntegerField": `[0, 1, 1, 2, 3, 5]`,
         "arrayFloatField": `[1.1, 2.2, 3.3, 4.4]`,
         "arrayStringField": `["Hello", "world", "!"]`,
     }
-    dummyUser.Attributes = dummyAttrs
 
-    // shortcuts
-    userSchemaId := dummyUser.UserSchemaId
-    userId := dummyUser.UserId
-
-    writeDocResponse := func(w http.ResponseWriter) {
-        data, _ := json.Marshal(UserResponse{dummyUser})
-        envelope := CustodiaEnvelope{
-            Result: "success",
-            ResultCode: 200,
-            Message: nil,
-            Data: data,
-        }
-        out, _ := json.Marshal(envelope)
-
-        w.WriteHeader(http.StatusOK)
-        w.Write(out)
-    }
+    createResp["attributes"] = dummyAttributes
+    updateResp["attributes"] = dummyAttributes
 
     // mock calls
     mockHandler := func(w http.ResponseWriter, r *http.Request) {
-        if r.URL.Path == fmt.Sprintf("/api/v1/user_schemas/%s/users",
-            userSchemaId) && r.Method == "POST" {
+        if r.URL.Path == fmt.Sprintf(
+            "/api/v1/user_schemas/%s/users", dummyUUID,
+        ) && r.Method == "POST" {
             // mock CREATE response
-            writeDocResponse(w)
-        } else if r.URL.Path == fmt.Sprintf("/api/v1/users/%s",
-            userId) && r.Method == "GET" {
+            w.WriteHeader(http.StatusCreated)
+            data, _ := json.Marshal(createResp)
+            envelope.Data = data
+            out, _ := json.Marshal(envelope)
+            w.Write(out)
+        } else if r.URL.Path == fmt.Sprintf("/api/v1/users/%s", dummyUUID) &&
+            r.Method == "GET" {
             // mock READ response
-            writeDocResponse(w)
-        } else if r.URL.Path == fmt.Sprintf("/api/v1/users/%s",
-            userId) && r.Method == "PUT" {
+            w.WriteHeader(http.StatusOK)
+            data, _ := json.Marshal(createResp)
+            envelope.Data = data
+            out, _ := json.Marshal(envelope)
+            w.Write(out)
+        } else if r.URL.Path == fmt.Sprintf("/api/v1/users/%s", dummyUUID) &&
+            r.Method == "PUT" {
             // mock UPDATE response
-            dummyUser.IsActive = true
-            dummyAttrs["stringField"] = "brematurata"
-            writeDocResponse(w)
-        } else if r.URL.Path == fmt.Sprintf("/api/v1/users/%s",
-            userId) && r.Method == "DELETE" {
+            dummyAttributes["stringField"] = "brematurata"
+            w.WriteHeader(http.StatusOK)
+            data, _ := json.Marshal(updateResp)
+            envelope.Data = data
+            out, _ := json.Marshal(envelope)
+            w.Write(out)
+        } else if r.URL.Path == fmt.Sprintf("/api/v1/users/%s", dummyUUID) &&
+            r.Method == "DELETE" {
             // mock DELETE response
             envelope := CustodiaEnvelope{Result: "success", ResultCode: 200}
             out, _ := json.Marshal(envelope)
             w.WriteHeader(http.StatusOK)
             w.Write(out)
-        } else if r.URL.Path == fmt.Sprintf("/api/v1/user_schemas/%s/users",
-            userSchemaId) && r.Method == "GET" {
+        } else if r.URL.Path == fmt.Sprintf(
+            "/api/v1/user_schemas/%s/users", dummyUUID,
+        ) && r.Method == "GET" {
             // mock LIST response
-            usersResp := UsersResponse{
-                Count: 1,
-                TotalCount: 1,
-                Limit: 100,
-                Offset: 0,
-                Users: []ResponseInnerUser{dummyUser},
+            usersResp := map[string]interface{}{
+                "count": 1,
+                "total_count": 1,
+                "limit": 100,
+                "offset": 0,
+                "users": []map[string]interface{}{
+                    createResp,
+                },
             }
-            data, _ := json.Marshal(usersResp)
-            envelope := CustodiaEnvelope{Result: "success", ResultCode: 200}
-            envelope.Data = data
+            envelope.Data, _ = json.Marshal(usersResp)
             out, _ := json.Marshal(envelope)
             w.WriteHeader(http.StatusOK)
             w.Write(out)
@@ -144,7 +133,7 @@ func TestUserCRUDL(t *testing.T) {
     // test CREATE: we submit no content, since the response is mocked
     // we init instead a UserSchema with just the right ids
     userSchema := UserSchema{
-        Id: dummyUser.UserSchemaId,
+        Id: dummyUUID,
         Description: "unittest",
         IsActive: true,
         Structure: []SchemaField{},
@@ -159,9 +148,9 @@ func TestUserCRUDL(t *testing.T) {
             want interface{}
             got interface{}
         }{
-            {dummyUser.UserId, user.Id},
-            {dummyUser.UserSchemaId, userSchema.Id},
-            {dummyUser.Username, user.Username},
+            {dummyUUID.String(), user.Id.String()},
+            {dummyUUID.String(), userSchema.Id.String()},
+            {"unittest", user.Username},
             {2015, user.InsertDate.Year()},
             {2, int(user.LastUpdate.Month())},
             {false, user.IsActive},
@@ -179,7 +168,7 @@ func TestUserCRUDL(t *testing.T) {
     }
 
     // test UPDATE
-    user, err = custodia.UpdateUser(dummyUser.UserId, true, attributes)
+    user, err = custodia.UpdateUser(dummyUUID, true, dummyAttributes)
 
     if err != nil {
         t.Errorf("unexpected error: %v", err)
@@ -188,9 +177,9 @@ func TestUserCRUDL(t *testing.T) {
             want interface{}
             got interface{}
         }{
-            {dummyUser.UserId, user.Id},
-            {dummyUser.UserSchemaId, userSchema.Id},
-            {dummyUser.Username, user.Username},
+            {dummyUUID.String(), user.Id.String()},
+            {dummyUUID.String(), userSchema.Id.String()},
+            {"unittest", user.Username},
             {2015, user.InsertDate.Year()},
             {2, int(user.LastUpdate.Month())},
             {true, user.IsActive},
@@ -208,7 +197,7 @@ func TestUserCRUDL(t *testing.T) {
     }
 
     // test DELETE
-    err = custodia.DeleteUser(dummyUser.UserId, false, false)
+    err = custodia.DeleteUser(dummyUUID, false, false)
     if err != nil {
         t.Errorf("error while deleting user. Details: %v", err)
     }
@@ -216,7 +205,7 @@ func TestUserCRUDL(t *testing.T) {
     // test LIST
     // test we gave a wrong argument
     params := map[string]interface{}{"antani": 42}
-    _, err = custodia.ListUsers(dummyUser.UserSchemaId, params)
+    _, err = custodia.ListUsers(dummyUUID, params)
     if err == nil {
         t.Errorf("ListUsers is not giving error with wrong param %v",
             params)
@@ -231,7 +220,7 @@ func TestUserCRUDL(t *testing.T) {
         "last_update__gt": time.Time{},
         "last_update__lt": time.Time{},
     }
-    users, err := custodia.ListUsers(dummyUser.UserSchemaId, goodParams)
+    users, err := custodia.ListUsers(dummyUUID, goodParams)
 
     if err != nil {
         t.Errorf("error while listing users: %v", err)
