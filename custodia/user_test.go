@@ -157,9 +157,9 @@ func TestUserCRUDL(t *testing.T) {
             {reflect.TypeOf(map[string]interface{}{}), reflect.TypeOf(user.Attributes)},
             {reflect.TypeOf([]string{}), reflect.TypeOf(user.Groups)},
         }
-        for _, test := range tests {
+        for i, test := range tests {
             if !reflect.DeepEqual(test.want, test.got) {
-                t.Errorf("Users CREATE: bad value, got: %v want: %v",
+                t.Errorf("CreateUser #%d: bad value, got: %v want: %v", i,
                     test.got, test.want)
             }
         }
@@ -186,9 +186,9 @@ func TestUserCRUDL(t *testing.T) {
             {reflect.TypeOf(map[string]interface{}{}), reflect.TypeOf(user.Attributes)},
             {reflect.TypeOf([]string{}), reflect.TypeOf(user.Groups)},
         }
-        for _, test := range tests {
+        for i, test := range tests {
             if !reflect.DeepEqual(test.want, test.got) {
-                t.Errorf("Users CREATE: bad value, got: %v want: %v",
+                t.Errorf("UpdateUser #%d: bad value, got: %v want: %v", i,
                     test.got, test.want)
             }
         }

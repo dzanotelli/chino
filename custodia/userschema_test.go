@@ -13,99 +13,117 @@ import (
 )
 
 func TestUserSchemaCRUDL(t *testing.T) {
-    // ResponseInnerUserSchema will be included in responses
-    type ResponseInnerUserSchema struct {
-        UserSchemaId string `json:"user_schema_id"`
-        Description string `json:"description"`
-        Groups []string `json:"groups"`
-        InsertDate string `json:"insert_date"`
-        LastUpdate string `json:"last_update"`
-        IsActive bool `json:"is_active"`
-        Structure []SchemaField `json:"structure"`
+    envelope := CustodiaEnvelope{
+        Result: "success",
+        ResultCode: 200,
+        Message: nil,
+    }
+    dummyUUID := uuid.New()
+
+    createResp := map[string]interface{}{
+        "user_schema_id": dummyUUID.String(),
+        "description": "unittest",
+        "groups": []string{},
+        "insert_date": "2015-04-24T21:48:16.332Z",
+        "last_update": "2015-04-24T21:48:16.332Z",
+        "is_active": false,
+    }
+    updateResp := map[string]interface{}{
+        "user_schema_id": dummyUUID.String(),
+        "description": "changed",
+        "groups": []string{},
+        "insert_date": "2015-04-24T21:48:16.332Z",
+        "last_update": "2015-04-24T21:48:16.332Z",
+        "is_active": true,
     }
 
-    // SchemaResponse will be marshalled to create an API-like response
-    type UserSchemaResponse struct {
-        Schema ResponseInnerUserSchema `json:"user_schema"`
-    }
-
-    // SchemasResponse will be marshalled to create an API-like response
-    type UserSchemasResponse struct {
-        Count int `json:"count"`
-        TotalCount int `json:"total_count"`
-        Limit int `json:"limit"`
-        Offset int `json:"offset"`
-        UserSchemas []ResponseInnerUserSchema `json:"user_schemas"`
-    }
-
-    dummyUserSchema := ResponseInnerUserSchema{
-        UserSchemaId: uuid.New().String(),
-        Description: "unittest",
-        InsertDate: "2015-02-24T21:48:16.332",
-        LastUpdate: "2015-02-24T21:48:16.332",
-        IsActive: false,
-        // Structure: json.RawMessage{},
-        Structure: []SchemaField{
-            {Name: "IntField", Type: "integer", Indexed: true, Default: 42},
-            {Name: "StrField", Type: "string", Indexed: true, Default: "asd"},
-            {Name: "FloatField", Type: "float", Indexed: false, Default: 3.14},
-            {Name: "BoolField", Type: "bool", Indexed: false},
-            {Name: "DateField", Type: "date", Default: "2023-03-15"},
-            {Name: "TimeField", Type: "time", Default: "11:43:04.058"},
-            {Name: "DateTimeField", Type: "datetime",
-                Default: "2023-03-15T11:43:04.058"},
+    structure := []interface{}{
+        map[string]interface{}{
+            "name": "IntField",
+            "type": "integer",
+            "indexed": true,
+            "default": 42,
+        },
+        map[string]interface{}{
+            "name": "StrField",
+            "type": "string",
+            "indexed": true,
+            "default": "asd",
+        },
+        map[string]interface{}{
+            "name": "FloatField",
+            "type": "number",
+            "indexed": true,
+            "default": 3.14,
+        },
+        map[string]interface{}{
+            "name": "BoolField",
+            "type": "boolean",
+            "indexed": false,
+        },
+        map[string]interface{}{
+            "name": "DateField",
+            "type": "date",
+            "default": "2023-03-15",
+        },
+        map[string]interface{}{
+            "name": "TimeField",
+            "type": "time",
+            "default": "11:43:04.058",
+        },
+        map[string]interface{}{
+            "name": "DatetimeField",
+            "type": "datetime",
+            "default": "2023-03-15T11:43:04.058",
         },
     }
+    createResp["structure"] = structure
+    updateResp["structure"] = structure
 
-    writeUserSchemaResponse := func(w http.ResponseWriter) {
-        data, _ := json.Marshal(UserSchemaResponse{dummyUserSchema})
-        envelope := CustodiaEnvelope{
-            Result: "success",
-            ResultCode: 200,
-            Message: nil,
-            Data: data,
-        }
-        out, _ := json.Marshal(envelope)
-
-        w.WriteHeader(http.StatusOK)
-        w.Write(out)
-    }
 
     // mock calls
     mockHandler := func(w http.ResponseWriter, r *http.Request) {
         if r.URL.Path == "/api/v1/user_schemas" && r.Method == "POST" {
             // mock CREATE response
-            writeUserSchemaResponse(w)
-        } else if r.URL.Path == fmt.Sprintf("/api/v1/user_schemas/%s",
-            dummyUserSchema.UserSchemaId) && r.Method == "GET" {
+            w.WriteHeader(http.StatusCreated)
+            envelope.Data, _ = json.Marshal(createResp)
+            out, _ := json.Marshal(envelope)
+            w.Write(out)
+        } else if r.URL.Path == fmt.Sprintf(
+            "/api/v1/user_schemas/%s", dummyUUID,
+        ) && r.Method == "GET" {
             // mock READ response
-            writeUserSchemaResponse(w)
-        } else if r.URL.Path == fmt.Sprintf("/api/v1/user_schemas/%s",
-            dummyUserSchema.UserSchemaId) && r.Method == "PUT" {
+            w.WriteHeader(http.StatusOK)
+            envelope.Data, _ = json.Marshal(createResp)
+            out, _ := json.Marshal(envelope)
+            w.Write(out)
+        } else if r.URL.Path == fmt.Sprintf(
+            "/api/v1/user_schemas/%s", dummyUUID,
+        ) && r.Method == "PUT" {
             // mock UPDATE response
-            dummyUserSchema.Description = "changed"
-            dummyUserSchema.IsActive = true
-            // dummyUserSchema.Structure[0].Default = 21
-            writeUserSchemaResponse(w)
-        } else if r.URL.Path == fmt.Sprintf("/api/v1/user_schemas/%s",
-            dummyUserSchema.UserSchemaId) && r.Method == "DELETE" {
+            w.WriteHeader(http.StatusOK)
+            envelope.Data, _ = json.Marshal(updateResp)
+            out, _ := json.Marshal(envelope)
+            w.Write(out)
+        } else if r.URL.Path == fmt.Sprintf(
+            "/api/v1/user_schemas/%s", dummyUUID,
+        ) && r.Method == "DELETE" {
             // mock DELETE response
             envelope := CustodiaEnvelope{Result: "success", ResultCode: 200}
             out, _ := json.Marshal(envelope)
             w.WriteHeader(http.StatusOK)
             w.Write(out)
         } else if r.URL.Path == "/api/v1/user_schemas" &&  r.Method == "GET" {
-            // mock LIST response
-            schemasResp := UserSchemasResponse{
-                Count: 1,
-                TotalCount: 1,
-                Limit: 100,
-                Offset: 0,
-                UserSchemas: []ResponseInnerUserSchema{dummyUserSchema},
+            listResp := map[string]interface{}{
+                "count": 1,
+                "total_count": 1,
+                "limit": 100,
+                "offset": 0,
+                "user_schemas": []interface{}{
+                    createResp,
+                },
             }
-            data, _ := json.Marshal(schemasResp)
-            envelope := CustodiaEnvelope{Result: "success", ResultCode: 200}
-            envelope.Data = data
+            envelope.Data, _ = json.Marshal(listResp)
             out, _ := json.Marshal(envelope)
             w.WriteHeader(http.StatusOK)
             w.Write(out)
@@ -127,9 +145,9 @@ func TestUserSchemaCRUDL(t *testing.T) {
     // test CREATE: we submit an empty field list, since the response is mocked
     // and we will still get a working structure. The purpose here is to test
     // that the received data are correctly populating the objects
-    structure := []SchemaField{}
+    reqStruct := []SchemaField{}
 
-    userSchema, err := custodia.CreateUserSchema("unittest", true, structure);
+    userSchema, err := custodia.CreateUserSchema("unittest", true, reqStruct);
 
     if err != nil {
         t.Errorf("unexpected error: %v", err)
@@ -138,17 +156,17 @@ func TestUserSchemaCRUDL(t *testing.T) {
             want interface{}
             got interface{}
         }{
-            {dummyUserSchema.UserSchemaId, userSchema.Id},
-            {dummyUserSchema.Description, userSchema.Description},
-            {dummyUserSchema.Groups, userSchema.Groups},
+            {dummyUUID.String(), userSchema.Id.String()},
+            {"unittest", userSchema.Description},
+            {[]string{}, userSchema.Groups},
             {2015, userSchema.InsertDate.Year()},
             {2015, userSchema.LastUpdate.Year()},
             {false, userSchema.IsActive},
         }
-        for _, test := range tests {
+        for i, test := range tests {
             if !reflect.DeepEqual(test.want, test.got) {
-                t.Errorf("UserSchema CREATE: bad value, got: %v want: %v",
-                    test.got, test.want)
+                t.Errorf("CreateUserSchema #%d: bad value, got: %v want: %v",
+                    i, test.got, test.want)
             }
         }
     } else {
@@ -156,7 +174,7 @@ func TestUserSchemaCRUDL(t *testing.T) {
     }
 
     // test READ
-    userSchema, err = custodia.ReadUserSchema(dummyUserSchema.UserSchemaId)
+    userSchema, err = custodia.ReadUserSchema(dummyUUID)
     if err != nil {
         t.Errorf("unexpected error: %v", err)
     } else if userSchema != nil {
@@ -164,16 +182,16 @@ func TestUserSchemaCRUDL(t *testing.T) {
             want interface{}
             got interface{}
         }{
-            {dummyUserSchema.UserSchemaId, userSchema.Id},
-            {dummyUserSchema.Description, userSchema.Description},
-            {dummyUserSchema.Groups, userSchema.Groups},
+            {dummyUUID.String(), userSchema.Id.String()},
+            {"unittest", userSchema.Description},
+            {[]string{}, userSchema.Groups},
             {2015, userSchema.InsertDate.Year()},
             {2015, userSchema.LastUpdate.Year()},
             {false, userSchema.IsActive},
         }
-        for _, test := range tests {
+        for i, test := range tests {
             if !reflect.DeepEqual(test.want, test.got) {
-                t.Errorf("UserSchema CREATE: bad value, got: %v want: %v",
+                t.Errorf("ReadUserSchema #%d: bad value, got: %v want: %v", i,
                     test.got, test.want)
             }
         }
@@ -182,8 +200,8 @@ func TestUserSchemaCRUDL(t *testing.T) {
     }
 
     // test UPDATE
-    userSchema, err = custodia.UpdateUserSchema(dummyUserSchema.UserSchemaId,
-        "antani2", true, dummyUserSchema.Structure)
+    userSchema, err = custodia.UpdateUserSchema(dummyUUID, "antani2", true,
+        reqStruct)
     if err != nil {
         t.Errorf("unexpected error: %v", err)
     } else if userSchema != nil {
@@ -191,17 +209,17 @@ func TestUserSchemaCRUDL(t *testing.T) {
             want interface{}
             got interface{}
         }{
-            {dummyUserSchema.UserSchemaId, userSchema.Id},
-            {dummyUserSchema.Description, userSchema.Description},
-            {dummyUserSchema.Groups, userSchema.Groups},
+            {dummyUUID.String(), userSchema.Id},
+            {"changed", userSchema.Description},
+            {[]string{}, userSchema.Groups},
             {2015, userSchema.InsertDate.Year()},
             {2015, userSchema.LastUpdate.Year()},
             {true, userSchema.IsActive},
         }
-        for _, test := range tests {
+        for i, test := range tests {
             if !reflect.DeepEqual(test.want, test.got) {
-                t.Errorf("UserSchema CREATE: bad value, got: %v want: %v",
-                    test.got, test.want)
+                t.Errorf("UpdateUserSchema #%d: bad value, got: %v want: %v",
+                    i, test.got, test.want)
             }
         }
     } else {
@@ -209,7 +227,7 @@ func TestUserSchemaCRUDL(t *testing.T) {
     }
 
     // test DELETE
-    err = custodia.DeleteUserSchema(dummyUserSchema.UserSchemaId, false)
+    err = custodia.DeleteUserSchema(dummyUUID, false)
     if err != nil {
         t.Errorf("error while deleting user schema. Details: %v", err)
     }
