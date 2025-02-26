@@ -18,15 +18,14 @@ func TestSearch(t *testing.T) {
 		ResultCode: 200,
 		Message: nil,
 	}
-
-	dummyUUID := uuid.New().String()
+	dummyUUID := uuid.New()
 
 	docsResponse := map[string]interface{}{
 		"documents": []interface{}{
 			map[string]interface{}{
-				"document_id": dummyUUID,
-				"schema_id": dummyUUID,
-				"repository_id": dummyUUID,
+				"document_id": dummyUUID.String(),
+				"schema_id": dummyUUID.String(),
+				"repository_id": dummyUUID.String(),
 				"insert_date": "2015-02-07T12:14:46.754",
 				"last_update": "2015-03-13T18:06:21.242",
 				"is_active": true,
@@ -44,8 +43,8 @@ func TestSearch(t *testing.T) {
 	usersResponse := map[string]interface{}{
 		"users": []interface{}{
 			map[string]interface{}{
-				"user_id": dummyUUID,
-				"schema_id": dummyUUID,
+				"user_id": dummyUUID.String(),
+				"schema_id": dummyUUID.String(),
 				"username": "unittest",
 				"insert_date": "2015-02-07T12:14:46.754",
 				"last_update": "2015-03-13T18:06:21.242",
@@ -60,13 +59,17 @@ func TestSearch(t *testing.T) {
 	}
 
 	mockHandler := func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/api/v1/search/documents/" + dummyUUID {
+		if r.URL.Path == fmt.Sprintf(
+			"/api/v1/search/documents/%s", dummyUUID,
+		) && r.Method == "POST" {
 			data, _ := json.Marshal(docsResponse)
 			envelope.Data = data
 			out, _ := json.Marshal(envelope)
 			w.WriteHeader(http.StatusOK)
 			w.Write(out)
-		} else if r.URL.Path == "/api/v1/search/users/" + dummyUUID {
+		} else if r.URL.Path == fmt.Sprintf(
+			"/api/v1/search/users/%s", dummyUUID,
+		) && r.Method == "POST" {
 			data, _ := json.Marshal(usersResponse)
 			envelope.Data = data
 			out, _ := json.Marshal(envelope)
@@ -118,9 +121,9 @@ func TestSearch(t *testing.T) {
 			{1, resp.TotalCount},
 			{1, resp.Limit},
 			{0, resp.Offset},
-			{dummyUUID, resp.Documents[0].Id},
-			{dummyUUID, resp.Documents[0].SchemaId},
-			{dummyUUID, resp.Documents[0].RepositoryId},
+			{dummyUUID.String(), resp.Documents[0].Id.String()},
+			{dummyUUID.String(), resp.Documents[0].SchemaId.String()},
+			{dummyUUID.String(), resp.Documents[0].RepositoryId.String()},
 			{2015, resp.Documents[0].InsertDate.Year()},
 			{2, int(resp.Documents[0].InsertDate.Month())},
 			{7, resp.Documents[0].InsertDate.Day()},
@@ -163,8 +166,8 @@ func TestSearch(t *testing.T) {
 			{1, resp.TotalCount},
 			{1, resp.Limit},
 			{0, resp.Offset},
-			{dummyUUID, resp.Users[0].Id},
-			{dummyUUID, resp.Users[0].UserSchemaId},
+			{dummyUUID.String(), resp.Users[0].Id.String()},
+			{dummyUUID.String(), resp.Users[0].UserSchemaId.String()},
 			{"unittest", resp.Users[0].Username},
 			{2015, resp.Users[0].InsertDate.Year()},
 			{2, int(resp.Users[0].InsertDate.Month())},
