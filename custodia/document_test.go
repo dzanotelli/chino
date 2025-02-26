@@ -36,41 +36,7 @@ func TestDocumentCRUDL(t *testing.T) {
         "insert_date": "2025-04-14T05:09:54.915Z",
         "last_update": "2025-04-14T05:09:54.915Z",
         "is_active": false,
-    }
-    // // ResponseInnerDocument will be included in responses
-    // type ResponseInnerDocument struct {
-    //     DocumentId string `json:"document_id"`
-    //     SchemaId string `json:"schema_id"`
-    //     RepositoryId string `json:"repository_id"`
-    //     InsertDate string `json:"insert_date"`
-    //     LastUpdate string `json:"last_update"`
-    //     IsActive bool `json:"is_active"`
-    //     Content map[string]interface{} `json:"content,omitempty"`
-    // }
-
-    // // DocumentResponse will be marshalled to create and API-like response
-    // type DocumentResponse struct {
-    //     Document ResponseInnerDocument `json:"document"`
-    // }
-
-    // // DocumentsResponse will be marshalled to crete an API-like response
-    // type DocumentsResponse struct {
-    //     Count int `json:"count"`
-    //     TotalCount int `json:"total_count"`
-    //     Limit int `json:"limit"`
-    //     Offset int `json:"offset"`
-    //     Documents []ResponseInnerDocument `json:"documents"`
-    // }
-
-    // // init stuff
-    // dummyDoc := ResponseInnerDocument{
-    //     DocumentId: uuid.New().String(),
-    //     SchemaId: uuid.New().String(),
-    //     RepositoryId: uuid.New().String(),
-    //     InsertDate: "2015-02-24T21:48:16.332",
-    //     LastUpdate: "2015-02-24T21:48:16.332",
-    //     IsActive: false,
-    // }
+    }    // // ResponseInnerDocument will be included in responses
     dummyContent := map[string]interface{}{
         "integerField": 42,
         "flaotField": 3.14,
@@ -83,31 +49,12 @@ func TestDocumentCRUDL(t *testing.T) {
         "base64Field": "VGhpcyBpcyBhIGJhc2UtNjQgZW5jb2RlZCBzdHJpbmcu",
         "jsonField": `{"success": true}`,
         "blobField": dummyUUID.String(),
-        "arrayIntegerField": `[0, 1, 1, 2, 3, 5]`,
+        "arrayIntegerField": `[0, 1, 2, 3, 5]`,
         "arrayFloatField": `[1.1, 2.2, 3.3, 4.4]`,
         "arrayStringField": `["Hello", "world", "!"]`,
     }
-    // dummyDoc.Content = dummyContent
     docCreateResponse["content"] = dummyContent
     docUpdateResponse["content"] = dummyContent
-
-    // // shortcuts
-    // schemaId := dummyDoc.SchemaId
-    // docId := dummyDoc.DocumentId
-
-    // writeDocResponse := func(w http.ResponseWriter) {
-    //     data, _ := json.Marshal(DocumentResponse{dummyDoc})
-    //     envelope := CustodiaEnvelope{
-    //         Result: "success",
-    //         ResultCode: 200,
-    //         Message: nil,
-    //         Data: data,
-    //     }
-    //     out, _ := json.Marshal(envelope)
-
-    //     w.WriteHeader(http.StatusOK)
-    //     w.Write(out)
-    // }
 
     // mock calls
     mockHandler := func(w http.ResponseWriter, r *http.Request) {
@@ -115,14 +62,20 @@ func TestDocumentCRUDL(t *testing.T) {
             dummyUUID) && r.Method == "POST" {
             // mock CREATE response
             w.WriteHeader(http.StatusOK)
-            envelope.Data, _ = json.Marshal(docCreateResponse)
+            data := map[string]interface{}{
+                "document": docCreateResponse,
+            }
+            envelope.Data, _ = json.Marshal(data)
 			out, _ := json.Marshal(envelope)
 			w.Write(out)
         } else if r.URL.Path == fmt.Sprintf("/api/v1/documents/%s",
             dummyUUID) && r.Method == "GET" {
             // mock READ response
             w.WriteHeader(http.StatusOK)
-            envelope.Data, _ = json.Marshal(docCreateResponse)
+            data := map[string]interface{}{
+                "document": docCreateResponse,
+            }
+            envelope.Data, _ = json.Marshal(data)
 			out, _ := json.Marshal(envelope)
 			w.Write(out)
         } else if r.URL.Path == fmt.Sprintf("/api/v1/documents/%s",
@@ -130,7 +83,10 @@ func TestDocumentCRUDL(t *testing.T) {
             // mock UPDATE response
             w.WriteHeader(http.StatusOK)
             dummyContent["stringField"] = "brematurata"
-            envelope.Data, _ = json.Marshal(docUpdateResponse)
+            data := map[string]interface{}{
+                "document": docUpdateResponse,
+            }
+            envelope.Data, _ = json.Marshal(data)
 			out, _ := json.Marshal(envelope)
 			w.Write(out)
         } else if r.URL.Path == fmt.Sprintf("/api/v1/documents/%s",
@@ -228,6 +184,18 @@ func TestDocumentCRUDL(t *testing.T) {
     if err != nil {
         t.Errorf("unexpected error: %v", err)
     } else if doc != nil {
+        // some values need type conversion
+        convArrayString, _ := common.ConvertSliceItems[string](
+            doc.Content["arrayStringField"],
+        )
+        convArrayInteger, _ := common.ConvertSliceItems[int](
+            doc.Content["arrayIntegerField"],
+        )
+        convArrayFloat, _ := common.ConvertSliceItems[float64](
+            doc.Content["arrayFloatField"],
+        )
+
+        // setup tests now
         var tests = []struct {
             want interface{}
             got interface{}
@@ -255,23 +223,25 @@ func TestDocumentCRUDL(t *testing.T) {
                 doc.Content["base64Field"]},
             {`{"success": true}`, doc.Content["jsonField"]},
             {dummyUUID.String(), doc.Content["blobField"].(string)},
-            {[]int{0, 1, 2, 3, 4, 5}, doc.Content["arrayIntegerField"]},
-            {[]float64{1.1, 2.2, 3.3, 4.4}, doc.Content["arrayFloatField"]},
-            {[]string{"Hello", "world", "!"}, doc.Content["arrayStringField"]},
+            {[]int{0, 1, 2, 3, 4, 5}, convArrayInteger},
+            {[]float64{1.1, 2.2, 3.3, 4.4}, convArrayFloat},
+            {[]string{"Hello", "world", "!"}, convArrayString},
             // for date/time/datetime we check all
             {1970, doc.Content["dateField"].(time.Time).Year()},
-            {1, doc.Content["dateField"].(time.Time).Month()},
+            {1, int(doc.Content["dateField"].(time.Time).Month())},
             {1, doc.Content["dateField"].(time.Time).Day()},
             {0, doc.Content["timeField"].(time.Time).Hour()},
             {1, doc.Content["timeField"].(time.Time).Minute()},
             {30, doc.Content["timeField"].(time.Time).Second()},
             {2001, doc.Content["datetimeField"].(time.Time).Year()},
-            {3, doc.Content["datetimeField"].(time.Time).Month()},
+            {3, int(doc.Content["datetimeField"].(time.Time).Month())},
             {8, doc.Content["datetimeField"].(time.Time).Day()},
             {23, doc.Content["datetimeField"].(time.Time).Hour()},
             {31, doc.Content["datetimeField"].(time.Time).Minute()},
             {42, doc.Content["datetimeField"].(time.Time).Second()},
         }
+        // add othere tests that need type conversion before
+
         for i, test := range tests {
             if !reflect.DeepEqual(test.want, test.got) {
                 t.Errorf("CreateDocument %d: bad value, got: %v want: %v",

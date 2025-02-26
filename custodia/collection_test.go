@@ -382,9 +382,9 @@ func TestCollectionAndDocuments(t *testing.T) {
             want interface{}
             got  interface{}
         }{
-            {dummyUUID.String(), documents[0].Id},
-            {dummyUUID.String(), documents[0].RepositoryId},
-            {dummyUUID.String(), documents[0].SchemaId},
+            {dummyUUID.String(), documents[0].Id.String()},
+            {dummyUUID.String(), documents[0].RepositoryId.String()},
+            {dummyUUID.String(), documents[0].SchemaId.String()},
             {2015, documents[0].InsertDate.Year()},
             {true, documents[0].IsActive},
             // FIXME: need to fix how Document.Content is handled:

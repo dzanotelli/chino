@@ -55,9 +55,15 @@ func (ca *CustodiaAPIv1) CreateDocument(schema *Schema, isActive bool,
 		return nil, err
 	}
 
-	// if everything is ok, we can safely set the given content as the
-	// returned document content, since the API doesn't return it
-	docEnvelope.Document.Content = content
+	// convert values to concrete types
+	converted, ee := convertData(docEnvelope.Document.Content, schema)
+	if len(ee) > 0 {
+		err := fmt.Errorf("conversion errors: %w", errors.Join(ee...))
+		return docEnvelope.Document, err
+	}
+
+	// all good, assign the new content to doc and return it
+	docEnvelope.Document.Content = converted
 
 	return docEnvelope.Document, nil
 }

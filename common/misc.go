@@ -1,6 +1,8 @@
 package common
 
 import (
+	"fmt"
+
 	"github.com/google/uuid"
 )
 
@@ -20,4 +22,24 @@ func GetFakeAuth() *ClientAuth {
 	fakeAuth.SwitchTo(CustomerAuth)
 
 	return fakeAuth
+}
+
+
+func ConvertSliceItems[T any](inputList interface{}) ([]T, error) {
+	var output []T
+
+	// input is a list
+	list, ok := inputList.([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("failed to convert slice: %v", inputList)
+	}
+
+	for _, item := range list {
+		converted, ok := item.(T)
+		if !ok {
+			return nil, fmt.Errorf("failed to convert slice item: %v", item)
+		}
+		output = append(output, converted)
+	}
+	return output, nil
 }
