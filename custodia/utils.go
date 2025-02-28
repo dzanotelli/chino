@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 
-	// "reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -14,7 +13,6 @@ import (
 	"github.com/dzanotelli/chino/common"
 	"github.com/google/uuid"
 	"github.com/simplereach/timeutils"
-	// "golang.org/x/text/cases"
 )
 
 const TypeInt, TypeArrayInt = "integer", "array[integer]"
@@ -23,11 +21,6 @@ const TypeStr, TypeText, TypeArrayStr = "string", "text", "array[string]"
 const TypeBool = "boolean"
 const TypeDate, TypeTime, TypeDateTime = "date", "time", "datetime"
 const TypeBase64, TypeJson, TypeBlob = "base64", "json", "blob"
-
-// type Enum struct {
-// 	Index int
-// 	Choices []string
-// }
 
 // Return the index of the first found occurence of word in data
 // or -1 if not found
@@ -39,45 +32,6 @@ func indexOf(word string, data []string) (int) {
     }
     return -1
 }
-
-
-// func struct2json(fields *struct{}) string {
-// 	out = "{"
-// 	fieldTemplate :=
-
-
-// 	for field := range fields {
-// 		fName := reflect.TypeOf(field).Tags.get("name")
-// 		fIndexed := reflect.TypeOf(field).Tags.get("indexed")
-// 		fDefault := reflect.TypeOf(field).Tags.get("default")
-// 		fType := ""
-
-// 		switch reflect.TypeOf(field) {
-// 		case int, int8, int16, int32, int64:
-// 			fType = "integer"
-// 		case string:
-// 			if reflect.TypeOf(field).Tags.get("text") {
-// 				fType = "text"
-// 			} else {
-// 				fType = "string"
-// 			}
-// 		}
-// 		out += fmt.Sprintf("\"name\":\"%s\",\"type\":\"%s\"", &fName, fType)
-// 		if fIndexed {
-// 			out += fmt.Sprintf(",\"indexed\":true")
-// 		}
-// 		if fDefault {
-// 			// FIXME: quotes or not depending on type
-// 			out += fmt.Sprintf(",\"default\":true")
-// 		}
-
-// 	}
-
-// 	return out
-// }
-
-
-
 
 func validateContent(data map[string]interface{},
 	structure map[string]SchemaField) []error {

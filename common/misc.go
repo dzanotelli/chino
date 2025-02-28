@@ -25,10 +25,10 @@ func GetFakeAuth() *ClientAuth {
 }
 
 
-func ConvertSliceItems[T any](inputList interface{}) ([]T, error) {
+func ConvertSliceItemsOLD[T any](inputList interface{}) ([]T, error) {
 	var output []T
 
-	// input is a list
+	// input is a slice
 	list, ok := inputList.([]interface{})
 	if !ok {
 		return nil, fmt.Errorf("failed to convert slice: %v", inputList)
@@ -38,6 +38,45 @@ func ConvertSliceItems[T any](inputList interface{}) ([]T, error) {
 		converted, ok := item.(T)
 		if !ok {
 			return nil, fmt.Errorf("failed to convert slice item: %v", item)
+		}
+		output = append(output, converted)
+	}
+	return output, nil
+}
+func ConvertSliceItems[T any](input interface{}) ([]T, error) {
+	list, ok := input.([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("expected []interface{}, got: %T", input)
+	}
+
+	var output []T
+	for _, item := range list {
+		var converted T
+		switch v := any(item).(type) {
+		case float64:
+			// Se T è un int, dobbiamo convertire il float64 in int
+			if _, isInt := any(converted).(int); isInt {
+				converted = any(int(v)).(T)
+			} else if _, isInt64 := any(converted).(int64); isInt64 {
+				converted = any(int64(v)).(T)
+			} else if _, isFloat := any(converted).(float64); isFloat {
+				converted = any(v).(T) // È già un float64, va bene
+			} else {
+				return nil, fmt.Errorf("unsupported number conversion for type %T", converted)
+			}
+		case string:
+			if _, isString := any(converted).(string); isString {
+				converted = any(v).(T)
+			} else {
+				return nil, fmt.Errorf("expected string but got different type")
+			}
+		default:
+			// Tentiamo il cast diretto
+			var ok bool
+			converted, ok = any(v).(T)
+			if !ok {
+				return nil, fmt.Errorf("failed to convert item: %v", item)
+			}
 		}
 		output = append(output, converted)
 	}

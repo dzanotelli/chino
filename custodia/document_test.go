@@ -49,7 +49,7 @@ func TestDocumentCRUDL(t *testing.T) {
         "base64Field": "VGhpcyBpcyBhIGJhc2UtNjQgZW5jb2RlZCBzdHJpbmcu",
         "jsonField": `{"success": true}`,
         "blobField": dummyUUID.String(),
-        "arrayIntegerField": `[0, 1, 2, 3, 5]`,
+        "arrayIntegerField": `[0, 1, 2, 3, 4, 5]`,
         "arrayFloatField": `[1.1, 2.2, 3.3, 4.4]`,
         "arrayStringField": `["Hello", "world", "!"]`,
     }
@@ -184,11 +184,12 @@ func TestDocumentCRUDL(t *testing.T) {
     if err != nil {
         t.Errorf("unexpected error: %v", err)
     } else if doc != nil {
+        fmt.Printf("-----> %v (%T)", doc.Content["arrayIntegerField"], doc.Content["arrayIntegerField"])
         // some values need type conversion
         convArrayString, _ := common.ConvertSliceItems[string](
             doc.Content["arrayStringField"],
         )
-        convArrayInteger, _ := common.ConvertSliceItems[int](
+        convArrayInteger, _ := common.ConvertSliceItems[int64](
             doc.Content["arrayIntegerField"],
         )
         convArrayFloat, _ := common.ConvertSliceItems[float64](
@@ -213,17 +214,11 @@ func TestDocumentCRUDL(t *testing.T) {
             {"this is not a very long string, but should be",
                 doc.Content["textField"]},
             {true, doc.Content["boolField"]},
-            {time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC),
-                doc.Content["dateField"]},
-            {time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC),
-                doc.Content["timeField"]},
-            {time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC),
-                doc.Content["datetimeField"]},
             {"VGhpcyBpcyBhIGJhc2UtNjQgZW5jb2RlZCBzdHJpbmcu",
                 doc.Content["base64Field"]},
             {`{"success": true}`, doc.Content["jsonField"]},
             {dummyUUID.String(), doc.Content["blobField"].(string)},
-            {[]int{0, 1, 2, 3, 4, 5}, convArrayInteger},
+            {[]int64{0, 1, 2, 3, 4, 5}, convArrayInteger},
             {[]float64{1.1, 2.2, 3.3, 4.4}, convArrayFloat},
             {[]string{"Hello", "world", "!"}, convArrayString},
             // for date/time/datetime we check all
@@ -244,142 +239,31 @@ func TestDocumentCRUDL(t *testing.T) {
 
         for i, test := range tests {
             if !reflect.DeepEqual(test.want, test.got) {
-                t.Errorf("CreateDocument %d: bad value, got: %v want: %v",
-                    i, test.got, test.want)
+                t.Errorf("CreateDocument %d: bad value, got: %v (%T) want: " +
+                    "%v (%T)", i, test.got, test.got, test.want, test.want)
             }
         }
-
-
-
-
-
-        // // test the content
-        // if doc.Content["integerField"] != int64(42) {
-        //     t.Errorf("content: bad integerField, got: %v want: %v",
-        //         doc.Content["integerField"], int64(42))
-        // }
-        // if doc.Content["flaotField"] != 3.14 {
-        //     t.Errorf("content: bad flaotField, got: %v want: %v",
-        //         doc.Content["flaotField"], 3.14 )
-        // }
-        // if doc.Content["stringField"] != "antani" {
-        //     t.Errorf("content: bad stringField, got: %v want: %v",
-        //         doc.Content["stringField"], "antani")
-        // }
-        // if doc.Content["textField"] !=
-        //     "this is not a very long string, but should be" {
-        //     t.Errorf("content: bad textField, got: %v want: %v",
-        //         doc.Content["textField"],
-        //         "this is not a very long string, but should be")
-        // }
-        // if doc.Content["boolField"] != true {
-        //     t.Errorf("content: bad boolField, got: %v want: %v",
-        //         doc.Content["boolField"], true)
-        // }
-
-        // // for date we check just the yyyy-mm-dd part (ignoring time)
-        // dateField, _ := doc.Content["dateField"].(time.Time)
-        // if dateField.Year() != 1970 {
-        //     t.Errorf("content: bad dateField year, got: %v want: 1970",
-        //         dateField.Year())
-        // }
-        // if dateField.Month() != 1 {
-        //     t.Errorf("content: bad dateField month, got: %v want: 1",
-        //         dateField.Month())
-        // }
-        // if dateField.Day() != 1 {
-        //     t.Errorf("content: bad dateField day, got: %v want: 1",
-        //         dateField.Day())
-        // }
-
-        // // for time we check just the HH:MM:SS part (ignoring date)
-        // timeField, _ := doc.Content["timeField"].(time.Time)
-        // if timeField.Hour() != 0 {
-        //     t.Errorf("content: bad timeField hour, got: %v want: 0",
-        //         timeField.Hour())
-        // }
-        // if timeField.Minute() != 1 {
-        //     t.Errorf("content: bad timeField minute, got: %v want: 1",
-        //         timeField.Minute())
-        // }
-        // if timeField.Second() != 30 {
-        //     t.Errorf("content: bad timeField second, got: %v want: 30",
-        //         timeField.Second())
-        // }
-
-        // // for datetime we check all
-        // dateTimeField, _ := doc.Content["datetimeField"].(time.Time)
-        // if dateTimeField.Year() != 2001 {
-        //     t.Errorf("content: bad dateTimeField year, got: %v want: 2001",
-        //         dateTimeField.Year())
-        // }
-        // if dateTimeField.Month() != 3 {
-        //     t.Errorf("content: bad dateTimeField month, got: %v want: 3",
-        //         dateTimeField.Month())
-        // }
-        // if dateTimeField.Day() != 8 {
-        //     t.Errorf("content: bad dateTimeField day, got: %v want: 8",
-        //         dateTimeField.Day())
-        // }
-        // if dateTimeField.Hour() != 23 {
-        //     t.Errorf("content: bad dateTimeField hour, got: %v want: 23",
-        //         dateTimeField.Hour())
-        // }
-        // if dateTimeField.Minute() != 31 {
-        //     t.Errorf("content: bad dateTimeField minute, got: %v want: 31",
-        //         dateTimeField.Minute())
-        // }
-        // if dateTimeField.Second() != 42 {
-        //     t.Errorf("content: bad dateTimeField second, got: %v want: 42",
-        //         dateTimeField.Second())
-        // }
-
-        // base64, json, and blob are just string fields. We don't care if the
-        // string in it actually converts to real data. This is a problem of
-        // the user, his duty to encode/decode data correctly
-        // if doc.Content["base64Field"] !=
-        //     "VGhpcyBpcyBhIGJhc2UtNjQgZW5jb2RlZCBzdHJpbmcu" {
-        //     t.Errorf("content: bad base64Field, got: %v want: %v",
-        //     doc.Content["base64Field"],
-        //     "VGhpcyBpcyBhIGJhc2UtNjQgZW5jb2RlZCBzdHJpbmcu")
-        // }
-        // if doc.Content["jsonField"] != `{"success": true}` {
-        //     t.Errorf("content: bad jsonField, got: %v want: {\"success\": true}",
-        //         doc.Content["jsonField"])
-        // }
-        // wantBlobField, _ := dummyContent["blobField"].(string)
-        // if doc.Content["blobField"] != wantBlobField {
-        //     t.Errorf("content: bad blobField, got: %v want: %v",
-        //         doc.Content["blobField"], wantBlobField)
-        // }
-
-        // // test array fields
-        // if reflect.DeepEqual(doc.Content["arrayIntegerField"],
-        //     []int{0, 1, 2, 3, 4, 5}) {
-        //     t.Errorf("content: bad arrayIntegerField, got: %v want: %v",
-        //         doc.Content["arrayIntegerField"], []int{0, 1, 2, 3, 4, 5})
-        // }
-        // if reflect.DeepEqual(doc.Content["arrayFloatField"],
-        //     []float64{1.1, 2.2, 3.3, 4.4}) {
-        //     t.Errorf("content: bad arrayIntegerField, got: %v want: %v",
-        //         doc.Content["arrayFloatField"], []float64{1.1, 2.2, 3.3, 4.4})
-        // }
-        // if reflect.DeepEqual(doc.Content["arrayStringField"],
-        //     []string{"Hello", "world", "!"}) {
-        //     t.Errorf("content: bad arrayIntegerField, got: %v want: %v",
-        //         doc.Content["arrayStringField"],
-        //         []string{"Hello", "world", "!"})
-        // }
     } else {
         t.Errorf("unexpected: both document and error are nil!")
     }
 
     // test UPDATE
     // we still pass empty content, non influential, response is mocked
-    doc, err = custodia.UpdateDocument(doc.Id, true, content)
+    doc, err = custodia.UpdateDocument(schema, doc.Id, true, content)
     if err != nil {
         t.Errorf("unexpected error: %v", err)
     } else if doc != nil {
+        // some values need type conversion
+        convArrayString, _ := common.ConvertSliceItems[string](
+            doc.Content["arrayStringField"],
+        )
+        convArrayInteger, _ := common.ConvertSliceItems[int64](
+            doc.Content["arrayIntegerField"],
+        )
+        convArrayFloat, _ := common.ConvertSliceItems[float64](
+            doc.Content["arrayFloatField"],
+        )
+
         var tests = []struct {
             want interface{}
             got  interface{}
@@ -387,8 +271,8 @@ func TestDocumentCRUDL(t *testing.T) {
             {dummyUUID.String(), document.RepositoryId.String()},
             {dummyUUID.String(), document.SchemaId.String()},
             {dummyUUID.String(), document.Id.String()},
-            {2025, document.InsertDate.Year()},  // changed
-            {2025, document.LastUpdate.Year()},  // changed
+            {2025, doc.InsertDate.Year()},  // changed
+            {2025, doc.LastUpdate.Year()},  // changed
             {want: false, got: doc.IsActive},    // changed
             // check the content
             {want: "brematurata", got: doc.Content["stringField"]}, // changed
@@ -398,28 +282,25 @@ func TestDocumentCRUDL(t *testing.T) {
             {"this is not a very long string, but should be",
                 doc.Content["textField"]},
             {true, doc.Content["boolField"]},
-            {time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC),
-                doc.Content["dateField"]},
-            {time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC),
-                doc.Content["timeField"]},
-            {time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC),
-                doc.Content["datetimeField"]},
             {"VGhpcyBpcyBhIGJhc2UtNjQgZW5jb2RlZCBzdHJpbmcu",
                 doc.Content["base64Field"]},
             {`{"success": true}`, doc.Content["jsonField"]},
             {dummyUUID.String(), doc.Content["blobField"].(string)},
-            {[]int{0, 1, 2, 3, 4, 5}, doc.Content["arrayIntegerField"]},
-            {[]float64{1.1, 2.2, 3.3, 4.4}, doc.Content["arrayFloatField"]},
-            {[]string{"Hello", "world", "!"}, doc.Content["arrayStringField"]},
+            // {[]int64{0, 1, 2, 3, 4, 5}, doc.Content["arrayIntegerField"]},
+            // {[]float64{1.1, 2.2, 3.3, 4.4}, doc.Content["arrayFloatField"]},
+            // {[]string{"Hello", "world", "!"}, doc.Content["arrayStringField"]},
+            {[]int64{0, 1, 2, 3, 4, 5}, convArrayInteger},
+            {[]float64{1.1, 2.2, 3.3, 4.4}, convArrayFloat},
+            {[]string{"Hello", "world", "!"}, convArrayString},
             // for date/time/datetime we check all
             {1970, doc.Content["dateField"].(time.Time).Year()},
-            {1, doc.Content["dateField"].(time.Time).Month()},
+            {1, int(doc.Content["dateField"].(time.Time).Month())},
             {1, doc.Content["dateField"].(time.Time).Day()},
             {0, doc.Content["timeField"].(time.Time).Hour()},
             {1, doc.Content["timeField"].(time.Time).Minute()},
             {30, doc.Content["timeField"].(time.Time).Second()},
             {2001, doc.Content["datetimeField"].(time.Time).Year()},
-            {3, doc.Content["datetimeField"].(time.Time).Month()},
+            {3, int(doc.Content["datetimeField"].(time.Time).Month())},
             {8, doc.Content["datetimeField"].(time.Time).Day()},
             {23, doc.Content["datetimeField"].(time.Time).Hour()},
             {31, doc.Content["datetimeField"].(time.Time).Minute()},
@@ -427,8 +308,8 @@ func TestDocumentCRUDL(t *testing.T) {
         }
         for i, test := range tests {
             if !reflect.DeepEqual(test.want, test.got) {
-                t.Errorf("UpdateDocument %d: bad value, got: %v want: %v",
-                    i, test.got, test.want)
+                t.Errorf("UpdateDocument %d: bad value, got: %v (%T) want: " +
+                    "%v (%T)", i, test.got, test.got, test.want, test.want)
             }
         }
     } else {
@@ -473,17 +354,17 @@ func TestDocumentCRUDL(t *testing.T) {
             got interface{}
         }{
             {true, documents[0].IsActive},
-            {dummyUUID.String(), documents[0].SchemaId},
-            {dummyUUID.String(), documents[0].Id},
+            {dummyUUID.String(), documents[0].SchemaId.String()},
+            {dummyUUID.String(), documents[0].Id.String()},
             {2015, documents[0].InsertDate.Year()},
             {2015, documents[0].LastUpdate.Year()},
-            {int(42), documents[0].Content["integerField"]},
-            {true, documents[1].IsActive},
+            {int64(42), documents[0].Content["integerField"]},
+            {false, documents[1].IsActive},
             {dummyUUID.String(), documents[0].SchemaId},
             {dummyUUID.String(), documents[0].Id},
             {2025, documents[1].InsertDate.Year()},
             {2025, documents[1].LastUpdate.Year()},
-            {int(42), documents[1].Content["integerField"]},
+            {int64(42), documents[1].Content["integerField"]},
         }
         for i, test := range tests {
             if !reflect.DeepEqual(test.want, test.got) {

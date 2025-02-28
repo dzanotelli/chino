@@ -103,8 +103,8 @@ func (ca *CustodiaAPIv1) ReadDocument(schema Schema, documentId uuid.UUID) (
 }
 
 // [U]pdate an existent document
-func (ca *CustodiaAPIv1) UpdateDocument(documentId uuid.UUID, isActive bool,
-	content map[string]interface{}) (*Document, error) {
+func (ca *CustodiaAPIv1) UpdateDocument(schema Schema, documentId uuid.UUID,
+	isActive bool, content map[string]interface{}) (*Document, error) {
 	url := fmt.Sprintf("/documents/%s", documentId)
 
 	// create a doc with just the values we can send, and marshal it
@@ -123,7 +123,15 @@ func (ca *CustodiaAPIv1) UpdateDocument(documentId uuid.UUID, isActive bool,
 		return nil, err
 	}
 
+	// convert values to concrete types
+	converted, ee := convertData(docEnvelope.Document.Content, &schema)
+	if len(ee) > 0 {
+		err := fmt.Errorf("conversion errors: %w", errors.Join(ee...))
+		return docEnvelope.Document, err
+	}
+
 	// PUT call returns the whole documents, along with its content
+	docEnvelope.Document.Content = converted
 	return docEnvelope.Document, nil
 }
 
