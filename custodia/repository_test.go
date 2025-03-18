@@ -94,21 +94,30 @@ func TestRepositoryCRUDL(t *testing.T) {
         if r.URL.Path == "/api/v1/repositories" && r.Method == "POST" {
             // mock CREATE repository
             w.WriteHeader(http.StatusOK)
-			envelope.Data, _ = json.Marshal(repoCreateResp)
+            data := map[string]interface{}{
+                "repository": repoCreateResp,
+            }
+			envelope.Data, _ = json.Marshal(data)
 			out, _ := json.Marshal(envelope)
 			w.Write(out)
         } else if r.URL.Path == fmt.Sprintf("/api/v1/repositories/%s",
             dummyUUID) && r.Method == "GET" {
             // mock READ repository
             w.WriteHeader(http.StatusOK)
-            envelope.Data, _ = json.Marshal(repoCreateResp)
+            data := map[string]interface{}{
+                "repository": repoCreateResp,
+            }
+            envelope.Data, _ = json.Marshal(data)
             out, _ := json.Marshal(envelope)
             w.Write(out)
         } else if r.URL.Path == fmt.Sprintf("/api/v1/repositories/%s",
             dummyUUID) && r.Method == "PUT" {
             // mock UPDATE repository
             w.WriteHeader(http.StatusOK)
-            envelope.Data, _ = json.Marshal(repoUpdateResp)
+            data := map[string]interface{}{
+                "repository": repoUpdateResp,
+            }
+            envelope.Data, _ = json.Marshal(data)
             out, _ := json.Marshal(envelope)
             w.Write(out)
             } else if r.URL.Path == fmt.Sprintf("/api/v1/repositories/%s",
@@ -162,7 +171,7 @@ func TestRepositoryCRUDL(t *testing.T) {
             {repo.Description, "unittest"},
             {repo.InsertDate.Year(), 2015},
             {repo.LastUpdate.Year(), 2015},
-            {repo.IsActive, false},
+            {repo.IsActive, true},
         }
 
         for i, test := range tests {
@@ -188,7 +197,7 @@ func TestRepositoryCRUDL(t *testing.T) {
             {repo.Description, "unittest"},
             {repo.InsertDate.Year(), 2015},
             {repo.LastUpdate.Year(), 2015},
-            {repo.IsActive, false},
+            {repo.IsActive, true},
         }
 
         for i, test := range tests {
@@ -237,7 +246,7 @@ func TestRepositoryCRUDL(t *testing.T) {
     if err != nil {
         t.Errorf("error while listing repositories. Details: %v", err)
     }
-    if len(repos) != 1 {
+    if len(repos) != 2 {
         t.Errorf("bad repositories lenght, got: %v want: 1", len(repos))
     }
     if repos[0].Id.String() != dummyUUID.String() {

@@ -187,7 +187,8 @@ func TestPermission(t *testing.T) {
             {"Structure", allPerms[0].Access},
             {ResourceUser, allPerms[0].OwnerType},
             {dummyUUID, allPerms[0].OwnerId},
-            {"", allPerms[0].ParentId},
+            {"00000000-0000-0000-0000-000000000000",
+                allPerms[0].ParentId.String()},
             {map[PermissionScope][]PermissionType{
                 PermissionScopeManage: {PermissionTypeRead,}},
                 allPerms[0].Permission},
@@ -195,7 +196,8 @@ func TestPermission(t *testing.T) {
             {ResourceUser, allPerms[1].OwnerType},
             {dummyUUID, allPerms[1].OwnerId},
             {dummyUUID, allPerms[1].Id},
-            {"", allPerms[1].ParentId},
+            {"00000000-0000-0000-0000-000000000000",
+                allPerms[1].ParentId.String()},
             {map[PermissionScope][]PermissionType{
                 PermissionScopeAuthorize: {PermissionTypeAuthorize,},
                 PermissionScopeManage: {PermissionTypeRead,
@@ -223,7 +225,8 @@ func TestPermission(t *testing.T) {
             {"Structure", resources[0].Access},
             {ResourceUser, resources[0].OwnerType},
             {dummyUUID, resources[0].OwnerId},
-            {"", resources[0].ParentId},
+            {"00000000-0000-0000-0000-000000000000",
+                resources[0].ParentId.String()},
             {map[PermissionScope][]PermissionType{
                 PermissionScopeManage: {PermissionTypeRead,}},
                 resources[0].Permission},
@@ -231,7 +234,8 @@ func TestPermission(t *testing.T) {
             {ResourceUser, resources[1].OwnerType},
             {dummyUUID, resources[1].OwnerId},
             {dummyUUID, resources[1].Id},
-            {"", resources[1].ParentId},
+            {"00000000-0000-0000-0000-000000000000",
+                resources[1].ParentId.String()},
             {map[PermissionScope][]PermissionType{
                 PermissionScopeAuthorize: {PermissionTypeAuthorize,},
                 PermissionScopeManage: {PermissionTypeRead,
@@ -259,7 +263,8 @@ func TestPermission(t *testing.T) {
             {"Structure", resources[0].Access},
             {ResourceUser, resources[0].OwnerType},
             {dummyUUID, resources[0].OwnerId},
-            {"", resources[0].ParentId},
+            {"00000000-0000-0000-0000-000000000000",
+                resources[0].ParentId.String()},
             {map[PermissionScope][]PermissionType{
                 PermissionScopeManage: {PermissionTypeRead,
                     PermissionTypeUpdate}},
@@ -285,7 +290,8 @@ func TestPermission(t *testing.T) {
             {"Structure", resources[0].Access},
             {ResourceGroup, resources[0].OwnerType},
             {dummyUUID, resources[0].OwnerId},
-            {"", resources[0].ParentId},
+            {"00000000-0000-0000-0000-000000000000",
+                resources[0].ParentId.String()},
             {map[PermissionScope][]PermissionType{
                 PermissionScopeManage: {PermissionTypeList,
                     PermissionTypeRead}},

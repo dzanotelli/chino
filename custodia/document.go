@@ -158,9 +158,9 @@ func (ca *CustodiaAPIv1) DeleteDocument(documentId uuid.UUID, force,
 //   insert_date__lt: time.Time
 //   last_update__gt: time.Time
 //   last_update__lt: time.Time
-func (ca *CustodiaAPIv1) ListDocuments(schemaId uuid.UUID,
+func (ca *CustodiaAPIv1) ListDocuments(schema Schema,
 	params map[string]interface{}) ([]*Document, error) {
-	url := fmt.Sprintf("/schemas/%s/documents", schemaId)
+	url := fmt.Sprintf("/schemas/%s/documents", schema.Id)
 	if len(params) > 0 {
 		url += "?"
 	}
@@ -219,6 +219,12 @@ func (ca *CustodiaAPIv1) ListDocuments(schemaId uuid.UUID,
 
 	result := []*Document{}
 	for _, doc := range docusEnvelope.Documents {
+		converted, ee := convertData(doc.Content, &schema)
+		if len(ee) > 0 {
+			err := fmt.Errorf("conversion errors: %w", errors.Join(ee...))
+			return nil, err
+		}
+		doc.Content = converted
 		result = append(result, &doc)
 	}
 

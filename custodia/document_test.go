@@ -278,7 +278,7 @@ func TestDocumentCRUDL(t *testing.T) {
             {want: "brematurata", got: doc.Content["stringField"]}, // changed
             {int64(42), doc.Content["integerField"]},
             {3.14, doc.Content["flaotField"]},
-            {"antani", doc.Content["stringField"]},
+            {"brematurata", doc.Content["stringField"]},
             {"this is not a very long string, but should be",
                 doc.Content["textField"]},
             {true, doc.Content["boolField"]},
@@ -325,7 +325,7 @@ func TestDocumentCRUDL(t *testing.T) {
     // test LIST
     // test we gave a wrong argument
     params := map[string]interface{}{"antani": 42}
-    _, err = custodia.ListDocuments(schema.Id, params)
+    _, err = custodia.ListDocuments(schema, params)
     if err == nil {
         t.Errorf("ListDocuments is not giving error with wrong param %v",
             params)
@@ -339,7 +339,7 @@ func TestDocumentCRUDL(t *testing.T) {
 		"last_update__gt": time.Time{},
 		"last_update__lt": time.Time{},
 	}
-    documents, err := custodia.ListDocuments(schema.Id, goodParams)
+    documents, err := custodia.ListDocuments(schema, goodParams)
     if err != nil {
         t.Errorf("error while listing documents. Details: %v", err)
     } else {
@@ -360,16 +360,17 @@ func TestDocumentCRUDL(t *testing.T) {
             {2015, documents[0].LastUpdate.Year()},
             {int64(42), documents[0].Content["integerField"]},
             {false, documents[1].IsActive},
-            {dummyUUID.String(), documents[0].SchemaId},
-            {dummyUUID.String(), documents[0].Id},
+            {dummyUUID.String(), documents[0].SchemaId.String()},
+            {dummyUUID.String(), documents[0].Id.String()},
             {2025, documents[1].InsertDate.Year()},
             {2025, documents[1].LastUpdate.Year()},
             {int64(42), documents[1].Content["integerField"]},
         }
         for i, test := range tests {
             if !reflect.DeepEqual(test.want, test.got) {
-                t.Errorf("ListDocuments %d: bad value, got: %v want: %v",
-                    i, test.got, test.want)
+                t.Errorf("ListDocuments %d: bad value, got: %v (%T) " +
+                    "want: %v (%T)", i, test.got, test.got, test.want,
+                    test.want)
             }
         }
     }
