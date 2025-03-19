@@ -69,16 +69,16 @@ func TestUserCRUDL(t *testing.T) {
         ) && r.Method == "POST" {
             // mock CREATE response
             w.WriteHeader(http.StatusCreated)
-            data, _ := json.Marshal(createResp)
-            envelope.Data = data
+            data := map[string]any{"user": createResp}
+            envelope.Data, _ = json.Marshal(data)
             out, _ := json.Marshal(envelope)
             w.Write(out)
         } else if r.URL.Path == fmt.Sprintf("/api/v1/users/%s", dummyUUID) &&
             r.Method == "GET" {
             // mock READ response
             w.WriteHeader(http.StatusOK)
-            data, _ := json.Marshal(createResp)
-            envelope.Data = data
+            data := map[string]any{"user": createResp}
+            envelope.Data, _ = json.Marshal(data)
             out, _ := json.Marshal(envelope)
             w.Write(out)
         } else if r.URL.Path == fmt.Sprintf("/api/v1/users/%s", dummyUUID) &&
@@ -86,8 +86,8 @@ func TestUserCRUDL(t *testing.T) {
             // mock UPDATE response
             dummyAttributes["stringField"] = "brematurata"
             w.WriteHeader(http.StatusOK)
-            data, _ := json.Marshal(updateResp)
-            envelope.Data = data
+            data := map[string]any{"user": updateResp}
+            envelope.Data, _ = json.Marshal(data)
             out, _ := json.Marshal(envelope)
             w.Write(out)
         } else if r.URL.Path == fmt.Sprintf("/api/v1/users/%s", dummyUUID) &&
@@ -152,7 +152,7 @@ func TestUserCRUDL(t *testing.T) {
             {dummyUUID.String(), userSchema.Id.String()},
             {"unittest", user.Username},
             {2015, user.InsertDate.Year()},
-            {2, int(user.LastUpdate.Month())},
+            {4, int(user.LastUpdate.Month())},
             {false, user.IsActive},
             {reflect.TypeOf(map[string]interface{}{}), reflect.TypeOf(user.Attributes)},
             {reflect.TypeOf([]string{}), reflect.TypeOf(user.Groups)},
@@ -181,7 +181,7 @@ func TestUserCRUDL(t *testing.T) {
             {dummyUUID.String(), userSchema.Id.String()},
             {"unittest", user.Username},
             {2015, user.InsertDate.Year()},
-            {2, int(user.LastUpdate.Month())},
+            {4, int(user.LastUpdate.Month())},
             {true, user.IsActive},
             {reflect.TypeOf(map[string]interface{}{}), reflect.TypeOf(user.Attributes)},
             {reflect.TypeOf([]string{}), reflect.TypeOf(user.Groups)},

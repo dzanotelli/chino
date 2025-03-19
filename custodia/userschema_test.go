@@ -86,7 +86,8 @@ func TestUserSchemaCRUDL(t *testing.T) {
         if r.URL.Path == "/api/v1/user_schemas" && r.Method == "POST" {
             // mock CREATE response
             w.WriteHeader(http.StatusCreated)
-            envelope.Data, _ = json.Marshal(createResp)
+            data := map[string]any{"user_schema": createResp}
+            envelope.Data, _ = json.Marshal(data)
             out, _ := json.Marshal(envelope)
             w.Write(out)
         } else if r.URL.Path == fmt.Sprintf(
@@ -94,7 +95,8 @@ func TestUserSchemaCRUDL(t *testing.T) {
         ) && r.Method == "GET" {
             // mock READ response
             w.WriteHeader(http.StatusOK)
-            envelope.Data, _ = json.Marshal(createResp)
+            data := map[string]any{"user_schema": createResp}
+            envelope.Data, _ = json.Marshal(data)
             out, _ := json.Marshal(envelope)
             w.Write(out)
         } else if r.URL.Path == fmt.Sprintf(
@@ -102,7 +104,8 @@ func TestUserSchemaCRUDL(t *testing.T) {
         ) && r.Method == "PUT" {
             // mock UPDATE response
             w.WriteHeader(http.StatusOK)
-            envelope.Data, _ = json.Marshal(updateResp)
+            data := map[string]any{"user_schema": updateResp}
+            envelope.Data, _ = json.Marshal(data)
             out, _ := json.Marshal(envelope)
             w.Write(out)
         } else if r.URL.Path == fmt.Sprintf(
@@ -153,20 +156,21 @@ func TestUserSchemaCRUDL(t *testing.T) {
         t.Errorf("unexpected error: %v", err)
     } else if userSchema != nil {
         var tests = []struct {
-            want interface{}
-            got interface{}
+            want any
+            got any
         }{
             {dummyUUID.String(), userSchema.Id.String()},
             {"unittest", userSchema.Description},
-            {[]string{}, userSchema.Groups},
+            {[]string(nil), userSchema.Groups},
             {2015, userSchema.InsertDate.Year()},
             {2015, userSchema.LastUpdate.Year()},
             {false, userSchema.IsActive},
         }
         for i, test := range tests {
             if !reflect.DeepEqual(test.want, test.got) {
-                t.Errorf("CreateUserSchema #%d: bad value, got: %v want: %v",
-                    i, test.got, test.want)
+                t.Errorf("CreateUserSchema #%d: bad value, got: %v (%T) " +
+                    "want: %v (%T)", i, test.got, test.got, test.want,
+                    test.want)
             }
         }
     } else {
@@ -184,7 +188,7 @@ func TestUserSchemaCRUDL(t *testing.T) {
         }{
             {dummyUUID.String(), userSchema.Id.String()},
             {"unittest", userSchema.Description},
-            {[]string{}, userSchema.Groups},
+            {[]string(nil), userSchema.Groups},
             {2015, userSchema.InsertDate.Year()},
             {2015, userSchema.LastUpdate.Year()},
             {false, userSchema.IsActive},
@@ -209,9 +213,9 @@ func TestUserSchemaCRUDL(t *testing.T) {
             want interface{}
             got interface{}
         }{
-            {dummyUUID.String(), userSchema.Id},
+            {dummyUUID.String(), userSchema.Id.String()},
             {"changed", userSchema.Description},
-            {[]string{}, userSchema.Groups},
+            {[]string(nil), userSchema.Groups},
             {2015, userSchema.InsertDate.Year()},
             {2015, userSchema.LastUpdate.Year()},
             {true, userSchema.IsActive},

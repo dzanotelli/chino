@@ -51,16 +51,16 @@ func (ca *CustodiaAPIv1) CreateUser(userSchema *UserSchema, isActive bool,
 		return nil, err
 	}
 	// JSON: unmarshal resp content
-	docEnvelope := UserEnvelope{}
-	if err := json.Unmarshal([]byte(resp), &docEnvelope); err != nil {
+	userEnvelope := UserEnvelope{}
+	if err := json.Unmarshal([]byte(resp), &userEnvelope); err != nil {
 		return nil, err
 	}
 
 	// if everything is ok, we can safely set the given content as the
 	// returned user content, since the API doesn't return it
-	docEnvelope.User.Attributes = attributes
+	userEnvelope.User.Attributes = attributes
 
-	return docEnvelope.User, nil
+	return userEnvelope.User, nil
 }
 
 // [R]ead an existent user
