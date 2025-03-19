@@ -12,7 +12,7 @@ import (
 type SchemaField struct {
 	Name string `json:"name"`
 	Type string `json:"type"`
-	Indexed bool `json:"bool,omitempty"`
+	Indexed bool `json:"indexed,omitempty"`
 	Default interface{} `json:"default,omitempty"`
 	Insensitive bool `json:"insensitive,omitempty"`
 }

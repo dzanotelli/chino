@@ -41,7 +41,7 @@ func TestSchemaCRUDL(t *testing.T) {
             },
             {
                 "name": "FloatField",
-                "type": "number",
+                "type": "float",
                 "default": 3.14,
             },
             {
@@ -149,7 +149,10 @@ func TestSchemaCRUDL(t *testing.T) {
         ) && r.Method == "POST" {
             // mock CREATE response
             w.WriteHeader(http.StatusCreated)
-            envelope.Data, _ = json.Marshal(createResp)
+            data := map[string]interface{}{
+                "schema": createResp,
+            }
+            envelope.Data, _ = json.Marshal(data)
             out, _ := json.Marshal(envelope)
             w.Write(out)
         } else if r.URL.Path == fmt.Sprintf(
@@ -157,7 +160,10 @@ func TestSchemaCRUDL(t *testing.T) {
         ) && r.Method == "GET" {
             // mock READ response
             w.WriteHeader(http.StatusOK)
-            envelope.Data, _ = json.Marshal(createResp)
+            data := map[string]interface{}{
+                "schema": createResp,
+            }
+            envelope.Data, _ = json.Marshal(data)
             out, _ := json.Marshal(envelope)
             w.Write(out)
         } else if r.URL.Path == fmt.Sprintf(
@@ -166,7 +172,10 @@ func TestSchemaCRUDL(t *testing.T) {
         ) && r.Method == "PUT" {
             // mock UPDATE response
             w.WriteHeader(http.StatusOK)
-            envelope.Data, _ = json.Marshal(updateResp)
+            data := map[string]interface{}{
+                "schema": updateResp,
+            }
+            envelope.Data, _ = json.Marshal(data)
             out, _ := json.Marshal(envelope)
             w.Write(out)
         } else if r.URL.Path == fmt.Sprintf(
@@ -229,17 +238,17 @@ func TestSchemaCRUDL(t *testing.T) {
             {dummyUUID.String(), schema.Id.String()},
             {"unittest", schema.Description},
             {2015, schema.InsertDate.Year()},
-            {04, schema.InsertDate.Month()},
+            {04,int( schema.InsertDate.Month())},
             {14, schema.InsertDate.Day()},
             {5, schema.InsertDate.Hour()},
-            {54, schema.InsertDate.Minute()},
-            {91, schema.InsertDate.Second()},
+            {9, schema.InsertDate.Minute()},
+            {54, schema.InsertDate.Second()},
             {2015, schema.LastUpdate.Year()},
-            {04, schema.LastUpdate.Month()},
+            {04, int(schema.LastUpdate.Month())},
             {14, schema.LastUpdate.Day()},
             {5, schema.LastUpdate.Hour()},
-            {54, schema.LastUpdate.Minute()},
-            {91, schema.LastUpdate.Second()},
+            {9, schema.LastUpdate.Minute()},
+            {54, schema.LastUpdate.Second()},
             {true, schema.IsActive},
             // test some content
             {"IntField", schema.Structure[0].Name},
@@ -250,10 +259,10 @@ func TestSchemaCRUDL(t *testing.T) {
             {"string", schema.Structure[1].Type},
             {"asd", schema.Structure[1].Default},
             {false, schema.Structure[1].Indexed},
-            {"BoolField", schema.Structure[2].Name},
-            {"boolean", schema.Structure[2].Type},
-            {false, schema.Structure[2].Indexed},
-            {false, schema.Structure[2].Default},
+            {"BoolField", schema.Structure[3].Name},
+            {"boolean", schema.Structure[3].Type},
+            {false, schema.Structure[3].Indexed},
+            {false, schema.Structure[3].Default},
         }
         for i, test := range tests {
             if !reflect.DeepEqual(test.want, test.got) {
@@ -278,17 +287,17 @@ func TestSchemaCRUDL(t *testing.T) {
             {dummyUUID.String(), schema.Id.String()},
             {"unittest", schema.Description},
             {2015, schema.InsertDate.Year()},
-            {04, schema.InsertDate.Month()},
+            {4, int(schema.InsertDate.Month())},
             {14, schema.InsertDate.Day()},
             {5, schema.InsertDate.Hour()},
-            {54, schema.InsertDate.Minute()},
-            {91, schema.InsertDate.Second()},
+            {9, schema.InsertDate.Minute()},
+            {54, schema.InsertDate.Second()},
             {2015, schema.LastUpdate.Year()},
-            {04, schema.LastUpdate.Month()},
+            {4, int(schema.LastUpdate.Month())},
             {14, schema.LastUpdate.Day()},
             {5, schema.LastUpdate.Hour()},
-            {54, schema.LastUpdate.Minute()},
-            {91, schema.LastUpdate.Second()},
+            {9, schema.LastUpdate.Minute()},
+            {54, schema.LastUpdate.Second()},
             {true, schema.IsActive},
             // test some content
             {"IntField", schema.Structure[0].Name},
@@ -299,14 +308,14 @@ func TestSchemaCRUDL(t *testing.T) {
             {"string", schema.Structure[1].Type},
             {"asd", schema.Structure[1].Default},
             {false, schema.Structure[1].Indexed},
-            {"BoolField", schema.Structure[2].Name},
-            {"boolean", schema.Structure[2].Type},
+            {"FloatField", schema.Structure[2].Name},
+            {"float", schema.Structure[2].Type},
             {false, schema.Structure[2].Indexed},
-            {false, schema.Structure[2].Default},
+            {3.14, schema.Structure[2].Default},
         }
         for i, test := range tests {
             if !reflect.DeepEqual(test.want, test.got) {
-                t.Errorf("CreateSchema %d: expected %v, got %v", i, test.want,
+                t.Errorf("ReadSchema %d: expected %v, got %v", i, test.want,
                 test.got)
             }
         }
@@ -328,18 +337,18 @@ func TestSchemaCRUDL(t *testing.T) {
             {dummyUUID.String(), schema.RepositoryId.String()},
             {dummyUUID.String(), schema.Id.String()},
             {"changed", schema.Description},  // changed to 'changed'
-            {2015, schema.InsertDate.Year()},
-            {04, schema.InsertDate.Month()},
+            {2025, schema.InsertDate.Year()},
+            {4, int(schema.InsertDate.Month())},
             {14, schema.InsertDate.Day()},
             {5, schema.InsertDate.Hour()},
-            {54, schema.InsertDate.Minute()},
-            {91, schema.InsertDate.Second()},
-            {2015, schema.LastUpdate.Year()},
-            {04, schema.LastUpdate.Month()},
+            {9, schema.InsertDate.Minute()},
+            {54, schema.InsertDate.Second()},
+            {2025, schema.LastUpdate.Year()},
+            {4, int(schema.LastUpdate.Month())},
             {14, schema.LastUpdate.Day()},
             {5, schema.LastUpdate.Hour()},
-            {54, schema.LastUpdate.Minute()},
-            {91, schema.LastUpdate.Second()},
+            {9, schema.LastUpdate.Minute()},
+            {54, schema.LastUpdate.Second()},
             {false, schema.IsActive},  // changed to 'false'
             // test some content
             {"IntField", schema.Structure[0].Name},
@@ -350,14 +359,14 @@ func TestSchemaCRUDL(t *testing.T) {
             {"string", schema.Structure[1].Type},
             {"asd", schema.Structure[1].Default},
             {false, schema.Structure[1].Indexed},
-            {"BoolField", schema.Structure[2].Name},
-            {"boolean", schema.Structure[2].Type},
-            {false, schema.Structure[2].Indexed},
-            {false, schema.Structure[2].Default},
+            {"BoolField", schema.Structure[3].Name},
+            {"boolean", schema.Structure[3].Type},
+            {false, schema.Structure[3].Indexed},
+            {false, schema.Structure[3].Default},
         }
         for i, test := range tests {
             if !reflect.DeepEqual(test.want, test.got) {
-                t.Errorf("CreateSchema %d: expected %v, got %v", i, test.want,
+                t.Errorf("UpdateSchema %d: expected %v, got %v", i, test.want,
                 test.got)
             }
         }
@@ -383,8 +392,8 @@ func TestSchemaCRUDL(t *testing.T) {
         {2, len(schemas)},
         {dummyUUID.String(), schemas[0].RepositoryId.String()},
         {dummyUUID.String(), schemas[0].Id.String()},
-        {"unittest", schemas[1].Description},
-        {true, schemas[1].IsActive},
+        {"changed", schemas[1].Description},
+        {true, schemas[0].IsActive},
         {dummyUUID.String(), schemas[1].RepositoryId.String()},
         {dummyUUID.String(), schemas[1].Id.String()},
         {"changed", schemas[1].Description},
@@ -392,7 +401,7 @@ func TestSchemaCRUDL(t *testing.T) {
     }
     for i, test := range tests {
         if !reflect.DeepEqual(test.want, test.got) {
-            t.Errorf("CreateSchema %d: expected %v, got %v", i, test.want,
+            t.Errorf("ListSchemas %d: expected %v, got %v", i, test.want,
             test.got)
         }
     }
