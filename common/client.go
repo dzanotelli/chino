@@ -340,10 +340,6 @@ func (c *Client) Call(method, path string, params map[string]interface{}) (
 	// perform the call
 	client := &http.Client{}
     resp, err := client.Do(req)
-	if err != nil {
-		return resp, err
-	}
-
 	return resp, err
 }
 

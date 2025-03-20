@@ -6,14 +6,13 @@ import (
 	"errors"
 	"fmt"
 
-	// "reflect"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/dzanotelli/chino/common"
+	"github.com/google/uuid"
 	"github.com/simplereach/timeutils"
-	// "golang.org/x/text/cases"
 )
 
 const TypeInt, TypeArrayInt = "integer", "array[integer]"
@@ -22,11 +21,6 @@ const TypeStr, TypeText, TypeArrayStr = "string", "text", "array[string]"
 const TypeBool = "boolean"
 const TypeDate, TypeTime, TypeDateTime = "date", "time", "datetime"
 const TypeBase64, TypeJson, TypeBlob = "base64", "json", "blob"
-
-// type Enum struct {
-// 	Index int
-// 	Choices []string
-// }
 
 // Return the index of the first found occurence of word in data
 // or -1 if not found
@@ -39,46 +33,7 @@ func indexOf(word string, data []string) (int) {
     return -1
 }
 
-
-// func struct2json(fields *struct{}) string {
-// 	out = "{"
-// 	fieldTemplate :=
-
-
-// 	for field := range fields {
-// 		fName := reflect.TypeOf(field).Tags.get("name")
-// 		fIndexed := reflect.TypeOf(field).Tags.get("indexed")
-// 		fDefault := reflect.TypeOf(field).Tags.get("default")
-// 		fType := ""
-
-// 		switch reflect.TypeOf(field) {
-// 		case int, int8, int16, int32, int64:
-// 			fType = "integer"
-// 		case string:
-// 			if reflect.TypeOf(field).Tags.get("text") {
-// 				fType = "text"
-// 			} else {
-// 				fType = "string"
-// 			}
-// 		}
-// 		out += fmt.Sprintf("\"name\":\"%s\",\"type\":\"%s\"", &fName, fType)
-// 		if fIndexed {
-// 			out += fmt.Sprintf(",\"indexed\":true")
-// 		}
-// 		if fDefault {
-// 			// FIXME: quotes or not depending on type
-// 			out += fmt.Sprintf(",\"default\":true")
-// 		}
-
-// 	}
-
-// 	return out
-// }
-
-
-
-
-func validateContent(data map[string]interface{},
+func validateContent(data map[string]any,
 	structure map[string]SchemaField) []error {
 	var errors []error
 	var err error
@@ -92,7 +47,7 @@ func validateContent(data map[string]interface{},
 		}
 
 		// field exist, check that is of the right type
-		var val interface{}
+		var val any
 		switch field.Type {
 		case TypeInt:
 			val, ok = value.(int64)
@@ -196,9 +151,9 @@ func validateContent(data map[string]interface{},
 }
 
 // Manually parse a JSON array of int, floats or strings
-func parseJSONArray(strArray string, itemType string) ([]interface{},
+func parseJSONArray(strArray string, itemType string) ([]any,
 	error) {
-	var result []interface{}
+	var result []any
 	var ee []error
 	var err error
 
@@ -248,8 +203,8 @@ func parseJSONArray(strArray string, itemType string) ([]interface{},
 	return result, err
 }
 
-func convertField(value interface{}, field SchemaField) (interface{}, error) {
-	var converted interface{}
+func convertField(value any, field SchemaField) (any, error) {
+	var converted any
 	var e, err error
 	var ok bool
 
@@ -296,14 +251,15 @@ type StructureMapper interface {
 	getStructureAsMap() map[string]SchemaField
 }
 
-func convertData(data map[string]interface{}, schema StructureMapper) (
-	map[string]interface{}, []error) {
-	converted := map[string]interface{}{}
+func convertData(data map[string]any, schema StructureMapper) (
+	map[string]any, []error) {
+	converted := map[string]any{}
 	errors := []error{}
 	structure := schema.getStructureAsMap()
 
 	// get id and description of schema/userschema
-	var id, descr string
+	var id uuid.UUID
+	var descr string
 	switch concreteSchema := schema.(type) {
 	case *UserSchema:
 		id = concreteSchema.Id

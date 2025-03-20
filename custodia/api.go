@@ -51,7 +51,7 @@ func (ca *CustodiaAPIv1) Call(method, path string,
 		return "", err
 	}
 
-	if httpResp.StatusCode != http.StatusOK {
+	if httpResp.StatusCode < 200 || httpResp.StatusCode > 299 {
 		err := fmt.Errorf("error %v: %s", resp.ResultCode, resp.Message)
 		return "", err
 	}

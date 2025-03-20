@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/simplereach/timeutils"
 )
 
 type Collection struct {
-	Id   string `json:"collection_id"`
+	Id   uuid.UUID `json:"collection_id"`
 	Name string `json:"name"`
 	InsertDate timeutils.Time `json:"insert_date"`
 	LastUpdate timeutils.Time `json:"last_update"`
@@ -19,17 +20,15 @@ type CollectionEnvelope struct {
 	Collections []Collection `json:"collections"`
 }
 
-
 func (c Collection) String() string {
 	return fmt.Sprintf("<Collection %s %s>", c.Name, c.Id)
 }
 
-
 // [C]reate a new collection
 func (ca *CustodiaAPIv1) CreateCollection(name string) (*Collection, error) {
 	url := "/collections"
-	data := map[string]interface{}{"name": name}
-	params := map[string]interface{}{"_data": data}
+	data := map[string]any{"name": name}
+	params := map[string]any{"_data": data}
 	resp, err := ca.Call("POST", url, params)
 	if err != nil {
 		return nil, err
@@ -45,8 +44,9 @@ func (ca *CustodiaAPIv1) CreateCollection(name string) (*Collection, error) {
 }
 
 // [R]ead an existent collection
-func (ca *CustodiaAPIv1) ReadCollection(id string) (*Collection, error) {
-	url := fmt.Sprintf("/collections/%s", id)
+func (ca *CustodiaAPIv1) ReadCollection(collectionId uuid.UUID) (*Collection,
+	error) {
+	url := fmt.Sprintf("/collections/%s", collectionId)
 	resp, err := ca.Call("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -62,11 +62,12 @@ func (ca *CustodiaAPIv1) ReadCollection(id string) (*Collection, error) {
 }
 
 // [U]pdate an existent collection
-func (ca *CustodiaAPIv1) UpdateCollection(id string, name string) (
+func (ca *CustodiaAPIv1) UpdateCollection(collectionId uuid.UUID,
+	name string) (
 	*Collection, error) {
-	url := fmt.Sprintf("/collections/%s", id)
-	data := map[string]interface{}{"name": name}
-	params := map[string]interface{}{"_data": data}
+	url := fmt.Sprintf("/collections/%s", collectionId)
+	data := map[string]any{"name": name}
+	params := map[string]any{"_data": data}
 	resp, err := ca.Call("PUT", url, params)
 	if err != nil {
 		return nil, err
@@ -82,8 +83,9 @@ func (ca *CustodiaAPIv1) UpdateCollection(id string, name string) (
 }
 
 // [D]elete an existent collection
-func (ca *CustodiaAPIv1) DeleteCollection(id string, force bool) (error) {
-	url := fmt.Sprintf("/collections/%s", id)
+func (ca *CustodiaAPIv1) DeleteCollection(collectionId uuid.UUID, force bool) (
+	error) {
+	url := fmt.Sprintf("/collections/%s", collectionId)
 	if force {
 		url += "?force=true"
 	}
@@ -117,7 +119,7 @@ func (ca *CustodiaAPIv1) ListCollections() ([]*Collection, error) {
 }
 
 // List the collections of a document
-func (ca *CustodiaAPIv1) ListDocumentCollections(documentId string) (
+func (ca *CustodiaAPIv1) ListDocumentCollections(documentId uuid.UUID) (
 	[]*Collection, error) {
 	url := fmt.Sprintf("/collections/documents/%s", documentId)
 	resp, err := ca.Call("GET", url, nil)
@@ -139,7 +141,7 @@ func (ca *CustodiaAPIv1) ListDocumentCollections(documentId string) (
 }
 
 // List the documents of a collection
-func (ca *CustodiaAPIv1) ListCollectionDocuments(collectionId string,
+func (ca *CustodiaAPIv1) ListCollectionDocuments(collectionId uuid.UUID,
 	fullDocument bool) ([]*Document, error) {
 	url := fmt.Sprintf("/collections/%s/documents", collectionId)
 	if fullDocument {
@@ -168,8 +170,8 @@ func (ca *CustodiaAPIv1) ListCollectionDocuments(collectionId string,
 }
 
 // Add a document to a collection
-func (ca *CustodiaAPIv1) AddDocumentToCollection(documentId string,
-	collectionId string) error {
+func (ca *CustodiaAPIv1) AddDocumentToCollection(documentId uuid.UUID,
+	collectionId uuid.UUID) error {
 	url := fmt.Sprintf("/collections/%s/documents/%s", collectionId,
 		documentId)
 	_, err := ca.Call("POST", url, nil)
@@ -180,8 +182,8 @@ func (ca *CustodiaAPIv1) AddDocumentToCollection(documentId string,
 }
 
 // Remove a document from a collection
-func (ca *CustodiaAPIv1) RemoveDocumentFromCollection(documentId string,
-	collectionId string) error {
+func (ca *CustodiaAPIv1) RemoveDocumentFromCollection(documentId uuid.UUID,
+	collectionId uuid.UUID) error {
 	url := fmt.Sprintf("/collections/%s/documents/%s", collectionId,
 		documentId)
 	_, err := ca.Call("DELETE", url, nil)
@@ -195,8 +197,8 @@ func (ca *CustodiaAPIv1) RemoveDocumentFromCollection(documentId string,
 func (ca *CustodiaAPIv1) SearchCollection(name string, contains bool) (
 	[]*Collection, error) {
 	url := "/collections/search"
-	data := map[string]interface{}{"name": name, "contains": contains}
-	params := map[string]interface{}{"_data": data}
+	data := map[string]any{"name": name, "contains": contains}
+	params := map[string]any{"_data": data}
 
 	resp, err := ca.Call("POST", url, params)
 	if err != nil {

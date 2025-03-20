@@ -142,7 +142,7 @@ func (ca *CustodiaAPIv1) CreateApplication(name string, grantType GrantType,
 		RedirectUrl: redirectUrl,
 	}
 	url := "/auth/applications"
-	params := map[string]interface{}{"_data": application}
+	params := map[string]any{"_data": application}
 	resp, err := ca.Call("POST", url, params)
 	if err != nil {
 		return nil, err
@@ -191,7 +191,7 @@ func (ca *CustodiaAPIv1) UpdateApplication(id string, name string,
 		RedirectUrl: redirectUrl,
 	}
 	url := fmt.Sprintf("/auth/applications/%s", id)
-	params := map[string]interface{}{"_data": application}
+	params := map[string]any{"_data": application}
 	resp, err := ca.Call("PUT", url, params)
 	if err != nil {
 		return nil, err
@@ -259,7 +259,7 @@ func (ca *CustodiaAPIv1) LoginUser(username string, password string,
 		data["client_secret"] = application.Secret
 	}
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"_data": data,
 		"Content-Type": "multipart/form-data",
 	}
@@ -303,7 +303,7 @@ func (ca *CustodiaAPIv1) LoginAuthCode(code string,
 		data["client_secret"] = application.Secret
 	}
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"_data": data,
 		"Content-Type": "multipart/form-data",
 	}
@@ -345,7 +345,7 @@ func (ca *CustodiaAPIv1) RefreshToken(application Application) (error) {
 		data["client_secret"] = application.Secret
 	}
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"_data": data,
 		"Content-Type": "multipart/form-data",
 	}
@@ -365,7 +365,7 @@ func (ca *CustodiaAPIv1) RefreshToken(application Application) (error) {
 	expiration := int(time.Now().Unix()) + respData.ExpiresIn
 
 	err = ca.client.GetAuth().Update(
-		map[string]interface{}{
+		map[string]any{
 			"accessToken": respData.AccessToken,
 			"refreshToken": respData.RefreshToken,
 			"accessTokenExpire": expiration,
@@ -389,7 +389,7 @@ func (ca *CustodiaAPIv1) RevokeToken(auth common.ClientAuth,
 		"client_secret": application.Secret,
 	}
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"_data": data,
 		"Content-Type": "multipart/form-data",
 	}
@@ -410,7 +410,7 @@ func (ca *CustodiaAPIv1) IntrospectToken(token string) (*TokenInfo, error) {
 		"token": token,
 	}
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"_data": data,
 		"Content-Type": "application/x-www-form-urlencoded",
 	}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 
 	"github.com/dzanotelli/chino/common"
@@ -12,88 +13,83 @@ import (
 )
 
 
-
 func TestRepositoryCRUDL(t *testing.T) {
-    // ResponseInnerRepository will be included in responses
-    type ResponseInnerRepository struct {
-        RepositoryId string `json:"repository_id"`
-        Description string `json:"description"`
-        InsertDate string `json:"insert_date"`
-        LastUpdate string `json:"last_update"`
-        IsActive bool `json:"is_active"`
+    envelope := CustodiaEnvelope{
+        Result: "success",
+        ResultCode: 200,
+        Message: nil,
     }
+    dummyUUID := uuid.New()
 
-    // RepoResponse will be marshalled to create an API-like reponse
-    type RepoResponse struct {
-        Repository ResponseInnerRepository `json:"repository"`
+    repoCreateResp := map[string]any{
+        "repository_id": dummyUUID.String(),
+        "description": "unittest",
+        "insert_date": "2015-04-14T05:09:54.915Z",
+        "last_update": "2015-04-14T05:09:54.915Z",
+        "is_active": true,
     }
-
-    // ReposResponse will be marshalled to create an API-like reponse
-    type ReposResponse struct {
-        Count int `json:"count"`
-        TotalCount int `json:"total_count"`
-        Limit int `json:"limit"`
-        Offset int `json:"offset"`
-        Repositories []ResponseInnerRepository
-    }
-
-    // init stuff
-    dummyRepository := ResponseInnerRepository{
-        RepositoryId: uuid.New().String(),
-        Description: "unittest",
-        InsertDate: "2015-02-24T21:48:16.332",
-        LastUpdate: "2015-02-24T21:48:16.332",
-        IsActive: false,
-    }
-
-    writeRepoResponse := func(w http.ResponseWriter) {
-        data, _ := json.Marshal(RepoResponse{dummyRepository})
-        envelope := CustodiaEnvelope{
-            Result: "success",
-            ResultCode: 200,
-            Message: nil,
-            Data: data,
-        }
-        out, _ := json.Marshal(envelope)
-
-        w.WriteHeader(http.StatusOK)
-        w.Write(out)
+    repoUpdateResp := map[string]any{
+        "repository_id": dummyUUID.String(),
+        "description": "changed",
+        "insert_date": "2025-04-14T05:09:54.915Z",
+        "last_update": "2025-04-14T05:09:54.915Z",
+        "is_active": false,
     }
 
     // mock calls
     mockHandler := func(w http.ResponseWriter, r *http.Request) {
         if r.URL.Path == "/api/v1/repositories" && r.Method == "POST" {
-            // mock CREATE response
-            writeRepoResponse(w)
-        } else if r.URL.Path == fmt.Sprintf("/api/v1/repositories/%s",
-            dummyRepository.RepositoryId) && r.Method == "GET" {
-            // mock READ response
-            writeRepoResponse(w)
-        } else if r.URL.Path == fmt.Sprintf("/api/v1/repositories/%s",
-            dummyRepository.RepositoryId) && r.Method == "PUT" {
-            // mock UPDATE response
-            dummyRepository.Description = "changed"
-            dummyRepository.IsActive = false
-            writeRepoResponse(w)
-        } else if r.URL.Path == fmt.Sprintf("/api/v1/repositories/%s",
-            dummyRepository.RepositoryId) && r.Method == "DELETE" {
+            // mock CREATE repository
+            data := map[string]any{
+                "repository": repoCreateResp,
+            }
+			envelope.Data, _ = json.Marshal(data)
+			out, _ := json.Marshal(envelope)
+            w.WriteHeader(http.StatusCreated)
+			w.Write(out)
+        } else if r.URL.Path == fmt.Sprintf(
+            "/api/v1/repositories/%s", dummyUUID,
+        ) && r.Method == "GET" {
+            // mock READ repository
+            data := map[string]any{
+                "repository": repoCreateResp,
+            }
+            envelope.Data, _ = json.Marshal(data)
+            out, _ := json.Marshal(envelope)
+            w.WriteHeader(http.StatusOK)
+            w.Write(out)
+        } else if r.URL.Path == fmt.Sprintf(
+            "/api/v1/repositories/%s", dummyUUID,
+        ) && r.Method == "PUT" {
+            // mock UPDATE repository
+            data := map[string]any{
+                "repository": repoUpdateResp,
+            }
+            envelope.Data, _ = json.Marshal(data)
+            out, _ := json.Marshal(envelope)
+            w.WriteHeader(http.StatusOK)
+            w.Write(out)
+            } else if r.URL.Path == fmt.Sprintf("/api/v1/repositories/%s",
+            dummyUUID) && r.Method == "DELETE" {
             // mock DELETE response
             envelope := CustodiaEnvelope{Result: "success", ResultCode: 200}
+            envelope.Data = nil
             out, _ := json.Marshal(envelope)
             w.WriteHeader(http.StatusOK)
             w.Write(out)
         } else if r.URL.Path == "/api/v1/repositories" && r.Method == "GET" {
             // mock LIST response
-            repositoriesResp := ReposResponse {
-                Count: 1,
-                TotalCount: 1,
-                Limit: 100,
-                Offset: 0,
-                Repositories: []ResponseInnerRepository{dummyRepository},
+            data := map[string]any{
+                "count": 1,
+                "total_count": 1,
+                "limit": 100,
+                "offset": 0,
+                "repositories": []map[string]any{
+                    repoCreateResp,
+                    repoUpdateResp,
+                },
             }
-            data, _ := json.Marshal(repositoriesResp)
-            envelope := CustodiaEnvelope{Result: "success", ResultCode: 200}
-            envelope.Data = data
+            envelope.Data, _ = json.Marshal(data)
             out, _ := json.Marshal(envelope)
             w.WriteHeader(http.StatusOK)
             w.Write(out)
@@ -116,90 +112,80 @@ func TestRepositoryCRUDL(t *testing.T) {
     if err != nil {
         t.Errorf("unexpected error: %v", err)
     } else if repo != nil {
-        if (*repo).Id != dummyRepository.RepositoryId {
-            t.Errorf("bad RepositoryId, got: %v want: %v",
-                     repo.Id, dummyRepository.RepositoryId)
+        var tests = []struct {
+            want any
+            got any
+        }{
+            {repo.Id.String(), dummyUUID.String()},
+            {repo.Description, "unittest"},
+            {repo.InsertDate.Year(), 2015},
+            {repo.LastUpdate.Year(), 2015},
+            {repo.IsActive, true},
         }
-        if (*repo).Description != dummyRepository.Description {
-            t.Errorf("bad Description, got: %v want: %s",
-                     repo.Description,
-                     dummyRepository.Description)
-        }
-        if (*repo).InsertDate.Year() != 2015 {
-            t.Errorf("bad insert_date year, got: %v want: 2015",
-                (*repo).InsertDate.Year())
-        }
-        if (*repo).LastUpdate.Year() != 2015 {
-            t.Errorf("bad last_update year, got: %v want: 2015",
-                (*repo).InsertDate.Year())
-        }
-        if (*repo).IsActive != false {
-            t.Errorf("bad isActive, got: %v want: false", (*repo).IsActive)
+
+        for i, test := range tests {
+            if !reflect.DeepEqual(test.want, test.got) {
+                t.Errorf("CreateRepository %d: bad value, got: %v want: %v",
+                    i, test.got, test.want)
+            }
         }
     } else {
         t.Errorf("unexpected: both repository and error are nil!")
     }
 
     // test READ
-    repo, err = custodia.ReadRepository(dummyRepository.RepositoryId)
+    repo, err = custodia.ReadRepository(dummyUUID)
     if err != nil {
         t.Errorf("unexpected error: %v", err)
     } else if repo != nil {
-        if repo.Id != dummyRepository.RepositoryId {
-            t.Errorf("bad RepositoryId, got: %v want: %v",
-                     repo.Id, dummyRepository.RepositoryId)
+        var tests = []struct {
+            want any
+            got any
+        }{
+            {repo.Id.String(), dummyUUID.String()},
+            {repo.Description, "unittest"},
+            {repo.InsertDate.Year(), 2015},
+            {repo.LastUpdate.Year(), 2015},
+            {repo.IsActive, true},
         }
-        if repo.Description != dummyRepository.Description {
-            t.Errorf("bad Description, got: %v want: %s",
-                     repo.Description,
-                    dummyRepository.Description)
-        }
-        if repo.InsertDate.Year() != 2015 {
-            t.Errorf("bad insert_date year, got: %v want: 2015",
-                repo.InsertDate.Year())
-        }
-        if repo.LastUpdate.Year() != 2015 {
-            t.Errorf("bad last_update year, got: %v want: 2015",
-                repo.InsertDate.Year())
-        }
-        if repo.IsActive != false {
-            t.Errorf("bad isActive, got: %v want: false", (*repo).IsActive)
+
+        for i, test := range tests {
+            if !reflect.DeepEqual(test.want, test.got) {
+                t.Errorf("ReadRepository %d: bad value, got: %v want: %v",
+                    i, test.got, test.want)
+            }
         }
     } else {
         t.Errorf("unexpected: both repository and error are nil!")
     }
 
     // test UPDATE
-    repo, err = custodia.UpdateRepository(repo.Id, "changed", false)
+    repo, err = custodia.UpdateRepository(dummyUUID, "changed", false)
     if err != nil {
         t.Errorf("unexpected error: %v", err)
     } else if repo != nil {
-        if repo.Id != dummyRepository.RepositoryId {
-            t.Errorf("bad RepositoryId, got: %v want: %v",
-                     repo.Id, dummyRepository.RepositoryId)
+        var tests = []struct {
+            want any
+            got any
+        }{
+            {repo.Id.String(), dummyUUID.String()},
+            {repo.Description, "changed"},
+            {repo.InsertDate.Year(), 2025},
+            {repo.LastUpdate.Year(), 2025},
+            {repo.IsActive, false},
         }
-        if repo.Description != dummyRepository.Description {
-            t.Errorf("bad Description, got: %v want: %s",
-                     repo.Description,
-                    dummyRepository.Description)
-        }
-        if repo.InsertDate.Year() != 2015 {
-            t.Errorf("bad insert_date year, got: %v want: 2015",
-                repo.InsertDate.Year())
-        }
-        if repo.LastUpdate.Year() != 2015 {
-            t.Errorf("bad last_update year, got: %v want: 2015",
-                repo.InsertDate.Year())
-        }
-        if repo.IsActive != false {
-            t.Errorf("bad isActive, got: %v want: false", repo.IsActive)
+        for i, test := range tests {
+            if !reflect.DeepEqual(test.want, test.got) {
+                t.Errorf("UpdateRepository %d: bad value, got: %v want: %v",
+                    i, test.got, test.want)
+            }
         }
     } else {
         t.Errorf("unexpected: both repository and error are nil!")
     }
 
     // test DELETE
-    err = custodia.DeleteRepository(repo.Id, true)
+    err = custodia.DeleteRepository(dummyUUID, true)
     if err != nil {
         t.Errorf("error while deleting repository. Details: %v", err)
     }
@@ -209,11 +195,11 @@ func TestRepositoryCRUDL(t *testing.T) {
     if err != nil {
         t.Errorf("error while listing repositories. Details: %v", err)
     }
-    if len(repos) != 1 {
+    if len(repos) != 2 {
         t.Errorf("bad repositories lenght, got: %v want: 1", len(repos))
     }
-    if repos[0].Id != dummyRepository.RepositoryId {
+    if repos[0].Id.String() != dummyUUID.String() {
         t.Errorf("bad repository id, got: %v want: %v",
-            dummyRepository.RepositoryId, repos[0].Id)
+            dummyUUID.String(), repos[0].Id.String())
     }
 }
