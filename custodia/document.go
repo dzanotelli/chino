@@ -7,19 +7,19 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dzanotelli/chino/common"
+	"github.com/google/uuid"
 	"github.com/simplereach/timeutils"
 )
 
 
 type Document struct {
-	Id string `json:"document_id,omitempty"`
-	SchemaId string `json:"schema_id,omitempty"`
-	RepositoryId string `json:"repository_id,omitempty"`
+	Id uuid.UUID `json:"document_id,omitempty"`
+	SchemaId uuid.UUID `json:"schema_id,omitempty"`
+	RepositoryId uuid.UUID `json:"repository_id,omitempty"`
 	InsertDate timeutils.Time `json:"insert_date,omitempty"`
 	LastUpdate timeutils.Time `json:"last_update,omitempty"`
 	IsActive bool `json:"is_active"`
-	Content map[string]interface{} `json:"content,omitempty"`
+	Content map[string]any `json:"content,omitempty"`
 }
 
 type DocumentEnvelope struct {
@@ -32,14 +32,7 @@ type DocumentsEnvelope struct {
 
 // [C]reate a new document
 func (ca *CustodiaAPIv1) CreateDocument(schema *Schema, isActive bool,
-	content map[string]interface{}) (*Document, error) {
-	if schema.Id == "" {
-		return nil, fmt.Errorf("schema has no Id, does it exist?")
-	} else if !common.IsValidUUID(schema.Id) {
-		return nil, fmt.Errorf("schema.Id is not a valid UUID: %s (it " +
-			"should not be manually set)", schema.Id)
-	}
-
+	content map[string]any) (*Document, error) {
 	// validate document content
 	contentErrors := validateContent(content, schema.getStructureAsMap())
 	if len(contentErrors) > 0 {
@@ -49,7 +42,7 @@ func (ca *CustodiaAPIv1) CreateDocument(schema *Schema, isActive bool,
 
 	doc := Document{IsActive: isActive, Content: content}
 	url := fmt.Sprintf("/schemas/%s/documents", schema.Id)
-	params := map[string]interface{}{
+	params := map[string]any{
 		"_data": doc,
 	}
 	resp, err := ca.Call("POST", url, params)
@@ -62,21 +55,23 @@ func (ca *CustodiaAPIv1) CreateDocument(schema *Schema, isActive bool,
 		return nil, err
 	}
 
-	// if everything is ok, we can safely set the given content as the
-	// returned document content, since the API doesn't return it
-	docEnvelope.Document.Content = content
+	// convert values to concrete types
+	converted, ee := convertData(docEnvelope.Document.Content, schema)
+	if len(ee) > 0 {
+		err := fmt.Errorf("conversion errors: %w", errors.Join(ee...))
+		return docEnvelope.Document, err
+	}
+
+	// all good, assign the new content to doc and return it
+	docEnvelope.Document.Content = converted
 
 	return docEnvelope.Document, nil
 }
 
 // [R]ead an existent document
-func (ca *CustodiaAPIv1) ReadDocument(schema Schema, id string) (*Document,
-	 error) {
-	if !common.IsValidUUID(id) {
-		return nil, errors.New("id is not a valid UUID: " + id)
-	}
-
-	url := fmt.Sprintf("/documents/%s", id)
+func (ca *CustodiaAPIv1) ReadDocument(schema Schema, documentId uuid.UUID) (
+	*Document, error) {
+	url := fmt.Sprintf("/documents/%s", documentId)
 	resp, err := ca.Call("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -108,17 +103,13 @@ func (ca *CustodiaAPIv1) ReadDocument(schema Schema, id string) (*Document,
 }
 
 // [U]pdate an existent document
-func (ca *CustodiaAPIv1) UpdateDocument(id string , isActive bool,
-	content map[string]interface{}) (*Document, error) {
-		if !common.IsValidUUID(id) {
-			return nil, errors.New("id is not a valid UUID: " + id)
-		}
-
-	url := fmt.Sprintf("/documents/%s", id)
+func (ca *CustodiaAPIv1) UpdateDocument(schema Schema, documentId uuid.UUID,
+	isActive bool, content map[string]any) (*Document, error) {
+	url := fmt.Sprintf("/documents/%s", documentId)
 
 	// create a doc with just the values we can send, and marshal it
 	doc := Document{IsActive: isActive, Content: content}
-	params := map[string]interface{}{
+	params := map[string]any{
 		"_data": doc,
 	}
 	resp, err := ca.Call("PUT", url, params)
@@ -132,16 +123,24 @@ func (ca *CustodiaAPIv1) UpdateDocument(id string , isActive bool,
 		return nil, err
 	}
 
+	// convert values to concrete types
+	converted, ee := convertData(docEnvelope.Document.Content, &schema)
+	if len(ee) > 0 {
+		err := fmt.Errorf("conversion errors: %w", errors.Join(ee...))
+		return docEnvelope.Document, err
+	}
+
 	// PUT call returns the whole documents, along with its content
+	docEnvelope.Document.Content = converted
 	return docEnvelope.Document, nil
 }
 
 // [D]elete an existent document
 // if force=false document is just deactivated
 // if consisten=true the operation is done sync (server waits to respond)
-func (ca *CustodiaAPIv1) DeleteDocument(id string, force, consistent bool) (
-	error) {
-	url := fmt.Sprintf("/documents/%s", id)
+func (ca *CustodiaAPIv1) DeleteDocument(documentId uuid.UUID, force,
+	consistent bool) (error) {
+	url := fmt.Sprintf("/documents/%s", documentId)
 	url += fmt.Sprintf("?force=%v&consistent=%v", force, consistent)
 
 	_, err := ca.Call("DELETE", url, nil)
@@ -159,18 +158,14 @@ func (ca *CustodiaAPIv1) DeleteDocument(id string, force, consistent bool) (
 //   insert_date__lt: time.Time
 //   last_update__gt: time.Time
 //   last_update__lt: time.Time
-func (ca *CustodiaAPIv1) ListDocuments(schemaId string,
-	params map[string]interface{}) ([]*Document, error) {
-	if !common.IsValidUUID(schemaId) {
-		return nil, fmt.Errorf("schemaId is not a valid UUID: %s", schemaId)
-	}
-
-	url := fmt.Sprintf("/schemas/%s/documents", schemaId)
+func (ca *CustodiaAPIv1) ListDocuments(schema Schema,
+	params map[string]any) ([]*Document, error) {
+	url := fmt.Sprintf("/schemas/%s/documents", schema.Id)
 	if len(params) > 0 {
 		url += "?"
 	}
 
-	availableParams := map[string]interface{}{
+	availableParams := map[string]any{
 		"full_document": true,
 		"is_active": true,
 		"insert_date__gt": time.Time{},
@@ -224,6 +219,12 @@ func (ca *CustodiaAPIv1) ListDocuments(schemaId string,
 
 	result := []*Document{}
 	for _, doc := range docusEnvelope.Documents {
+		converted, ee := convertData(doc.Content, &schema)
+		if len(ee) > 0 {
+			err := fmt.Errorf("conversion errors: %w", errors.Join(ee...))
+			return nil, err
+		}
+		doc.Content = converted
 		result = append(result, &doc)
 	}
 

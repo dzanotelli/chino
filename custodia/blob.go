@@ -8,17 +8,22 @@ import (
 	"path/filepath"
 
 	"github.com/dzanotelli/chino/common"
+	"github.com/google/uuid"
 	"github.com/simplereach/timeutils"
 )
 
 
 type UploadBlob struct {
-	Id string `json:"upload_id"`
+	Id uuid.UUID `json:"upload_id"`
 	ExpireDate timeutils.Time `json:"expire_date"`
 }
 
+type UploadBlobEnvelope struct {
+	UploadBlob UploadBlob `json:"blob"`
+}
+
 type Blob struct {
-	Id string `json:"blob_id"`
+	Id uuid.UUID `json:"blob_id"`
 	DocumentId string `json:"document_id"`
 	Sha1 string `json:"sha1"`
 	Md5 string `json:"md5"`
@@ -31,20 +36,19 @@ type BlobToken struct {
 }
 
 type BlobEnvelope struct {
-	Blob map[string]interface{} `json:"blob"`
+	Blob Blob `json:"blob"`
 }
 
 // Upload a new blob
 // This is the starting point to begin to upload a new blob
 // It returns an UploadBlob object which is used later to upload
 // data to the server
-func (ca *CustodiaAPIv1) CreateBlob(documentId string, fieldName string,
+func (ca *CustodiaAPIv1) CreateBlob(documentId uuid.UUID, fieldName string,
 	fileName string) (*UploadBlob, error) {
-
-
-	data := map[string]interface{}{"document_id": documentId,
+	data := map[string]any{"document_id": documentId.String(),
 		"field": fieldName, "file_name": fileName}
-	resp, err := ca.Call("POST", "/blobs" , data)
+	params := map[string]any{"_data": data}
+	resp, err := ca.Call("POST", "/blobs" , params)
 	if err != nil {
 		return nil, err
 	}
@@ -53,20 +57,12 @@ func (ca *CustodiaAPIv1) CreateBlob(documentId string, fieldName string,
 		return nil, err
 	}
 
-	expireDateStr := blobEnvelope.Blob["expire_date"].(string)
-	expireDateJSON := fmt.Sprintf(`"%s"`, expireDateStr)
-	expireDate := timeutils.Time{}
-	err = json.Unmarshal([]byte(expireDateJSON), &expireDate)
-	if err != nil {
+	uploadBlobEnvelope := &UploadBlobEnvelope{}
+	if err := json.Unmarshal([]byte(resp), &uploadBlobEnvelope); err != nil {
 		return nil, err
 	}
 
-	ub := &UploadBlob{
-		Id: blobEnvelope.Blob["upload_id"].(string),
-		ExpireDate: expireDate,
-	}
-
-	return ub, nil
+	return &uploadBlobEnvelope.UploadBlob, nil
 }
 
 // Upload a chunk
@@ -75,10 +71,10 @@ func (ca *CustodiaAPIv1) CreateBlob(documentId string, fieldName string,
 // - data: the chunk of data to upload
 // - length: the total length of the file. Must be passed as header
 // - offset: the offset of this chunk in the file. Must be passed as header
-func (ca *CustodiaAPIv1) UploadChunk(uploadId string, data []byte,
+func (ca *CustodiaAPIv1) UploadChunk(uploadId uuid.UUID, data []byte,
 	length int, offset int) (*UploadBlob, error) {
 	url := fmt.Sprintf("/blobs/%s", uploadId)
-	params := map[string]interface{}{
+	params := map[string]any{
 		"Content-Type": "application/octet-stream",
 		"Length": fmt.Sprint(length),
 		"Offset": fmt.Sprint(offset),
@@ -95,27 +91,19 @@ func (ca *CustodiaAPIv1) UploadChunk(uploadId string, data []byte,
 		return nil, err
 	}
 
-	expireDateStr := blobEnvelope.Blob["expire_date"].(string)
-	expireDateJSON := fmt.Sprintf(`"%s"`, expireDateStr)
-	expireDate := timeutils.Time{}
-	err = json.Unmarshal([]byte(expireDateJSON), &expireDate)
-	if err != nil {
+	uploadBlobEnvelope := &UploadBlobEnvelope{}
+	if err := json.Unmarshal([]byte(resp), &uploadBlobEnvelope); err != nil {
 		return nil, err
 	}
 
-	ub := &UploadBlob{
-		Id: blobEnvelope.Blob["upload_id"].(string),
-		ExpireDate: expireDate,
-	}
-
-	return ub, nil
+	return &uploadBlobEnvelope.UploadBlob, nil
 }
 
 // Commit a blob
-func (ca *CustodiaAPIv1) CommitBlob(uploadId string) (*Blob, error) {
+func (ca *CustodiaAPIv1) CommitBlob(uploadId uuid.UUID) (*Blob, error) {
 	url := "/blobs/commit"
-	data := map[string]interface{}{"upload_id": uploadId}
-	params := map[string]interface{}{"_data": data}
+	data := map[string]any{"upload_id": uploadId.String()}
+	params := map[string]any{"_data": data}
 	resp, err := ca.Call("POST", url, params)
 	if err != nil {
 		return nil, err
@@ -124,19 +112,14 @@ func (ca *CustodiaAPIv1) CommitBlob(uploadId string) (*Blob, error) {
 	if err := json.Unmarshal([]byte(resp), &blobEnvelope); err != nil {
 		return nil, err
 	}
-	blob := &Blob{
-		Id: blobEnvelope.Blob["blob_id"].(string),
-		DocumentId: blobEnvelope.Blob["document_id"].(string),
-		Sha1: blobEnvelope.Blob["sha1"].(string),
-		Md5: blobEnvelope.Blob["md5"].(string),
-	}
-	return blob, nil
+
+	return &blobEnvelope.Blob, nil
 }
 
 // Download a blob
-func (ca *CustodiaAPIv1) GetBlobData(blobId string) (io.Reader, error) {
+func (ca *CustodiaAPIv1) GetBlobData(blobId uuid.UUID) (io.Reader, error) {
 	url := fmt.Sprintf("/blobs/%s", blobId)
-	params := map[string]interface{}{"_rawResponse": true}
+	params := map[string]any{"_rawResponse": true}
 	_, err := ca.Call("GET", url, params)
 	if err != nil {
 		return nil, err
@@ -146,17 +129,17 @@ func (ca *CustodiaAPIv1) GetBlobData(blobId string) (io.Reader, error) {
 }
 
 // Delete a blob
-func (ca *CustodiaAPIv1) DeleteBlob(blobId string) error {
+func (ca *CustodiaAPIv1) DeleteBlob(blobId uuid.UUID) error {
 	url := fmt.Sprintf("/blobs/%s", blobId)
 	_, err := ca.Call("DELETE", url, nil)
 	return err
 }
 
 // Generate a blob token used later to authenticate blob download
-func (ca *CustodiaAPIv1) GenerateBlobToken(blobId string, oneTime bool,
+func (ca *CustodiaAPIv1) GenerateBlobToken(blobId uuid.UUID, oneTime bool,
 	duration int) (*BlobToken, error) {
 	url := fmt.Sprintf("/blobs/%s/generate", blobId)
-	data := map[string]interface{}{"one_time": oneTime, "duration": duration}
+	data := map[string]any{"one_time": oneTime, "duration": duration}
 	resp, err := ca.Call("POST", url, data)
 	if err != nil {
 		return nil, err
@@ -174,10 +157,10 @@ func (ca *CustodiaAPIv1) GenerateBlobToken(blobId string, oneTime bool,
 }
 
 // download a blob with a token
-func (ca *CustodiaAPIv1) GetBlobDataWithToken(blobId string, token string) (
+func (ca *CustodiaAPIv1) GetBlobDataWithToken(blobId uuid.UUID, token string) (
 	io.Reader, error) {
 	url := fmt.Sprintf("/blobs/url/%s?token=%s", blobId, token)
-	params := map[string]interface{}{"_rawResponse": true}
+	params := map[string]any{"_rawResponse": true}
 
 	ca.client.GetAuth().SwitchTo(common.NoAuth)
 
@@ -200,8 +183,8 @@ func (ca *CustodiaAPIv1) GetBlobDataWithToken(blobId string, token string) (
 //
 // Returns:
 // - the created blob
-func (ca *CustodiaAPIv1) CreateBlobFromFile(filePath string, documentId string,
-	fieldName string, chunkSize int64) (*Blob, error) {
+func (ca *CustodiaAPIv1) CreateBlobFromFile(filePath string,
+	documentId uuid.UUID, fieldName string, chunkSize int64) (*Blob, error) {
 	if chunkSize == 0 {
 		chunkSize = 1024 * 1024 // 1MB
 	}
@@ -270,7 +253,8 @@ func (ca *CustodiaAPIv1) CreateBlobFromFile(filePath string, documentId string,
 //
 // Returns:
 // - nil if successful, error otherwise
-func (ca *CustodiaAPIv1) GetBlobToFile(blobId string, filePath string) error {
+func (ca *CustodiaAPIv1) GetBlobToFile(blobId uuid.UUID, filePath string) (
+	error) {
 	// Create a new file
 	file, err := os.Create(filePath)
 	if err != nil {

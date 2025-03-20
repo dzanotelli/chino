@@ -13,71 +13,60 @@ import (
 )
 
 func TestApplicationCRUDL(t *testing.T) {
-    // ResponseInnerApp will be included in responses
-    type ResponseInnerApp struct {
-        AppSecret string `json:"app_secret"`
-        ClientType string `json:"client_type"`
-        GrantType string `json:"grant_type"`
-        AppName string `json:"app_name"`
-        RedirectUrl string `json:"redirect_url"`
-        AppId string `json:"app_id"`
+    envelope := CustodiaEnvelope{
+        Result: "success",
+        ResultCode: 200,
+        Message: nil,
     }
-
-    type ApplicationResponse struct {
-        Application ResponseInnerApp `json:"application"`
-    }
-
-    type ApplicationsResponse struct {
-        Count int `json:"count"`
-        TotalCount int `json:"total_count"`
-        Limit int `json:"limit"`
-        Offset int `json:"offset"`
-        Applications []ResponseInnerApp `json:"applications"`
-    }
-
-    // init stuff
     aid := "MyAppId42"
-    dummyApp := ResponseInnerApp{
-        AppId: aid,
-        AppSecret: "123456",
-        ClientType: "public",
-        GrantType: "password",
-        AppName: "antani",
-        RedirectUrl: "",
-    }
-
-    writeAppResponse := func(w http.ResponseWriter) {
-        data, _ := json.Marshal(ApplicationResponse{dummyApp})
-        envelope := CustodiaEnvelope{
-            Result: "success",
-            ResultCode: 200,
-            Message: nil,
-            Data: data,
-        }
-        out, _ := json.Marshal(envelope)
-
-        w.WriteHeader(http.StatusOK)
-        w.Write(out)
+    dummyApp := map[string]any{
+        "app_id": aid,
+        "app_secret": "123456",
+        "client_type": "public",
+        "grant_type": "password",
+        "app_name": "antani",
+        "redirect_url": "",
     }
 
     // mock calls
     mockHandler := func(w http.ResponseWriter, r *http.Request) {
         if r.URL.Path == "/api/v1/auth/applications" && r.Method == "POST" {
             // mock CREATE response
-            writeAppResponse(w)
-        } else if r.URL.Path == fmt.Sprintf("/api/v1/auth/applications/%s",
-            aid) && r.Method == "GET" {
+            data, _ := json.Marshal(map[string]any{
+                "application": dummyApp,
+            })
+            envelope.Data = data
+            out, _ := json.Marshal(envelope)
+            w.WriteHeader(http.StatusCreated)
+            w.Write(out)
+        } else if r.URL.Path == fmt.Sprintf(
+            "/api/v1/auth/applications/%s", aid,
+        ) && r.Method == "GET" {
             // mock READ response
-            writeAppResponse(w)
-        } else if r.URL.Path == fmt.Sprintf("/api/v1/auth/applications/%s",
-            aid) && r.Method == "PUT" {
+            data, _ := json.Marshal(map[string]any{
+                "application": dummyApp,
+            })
+            envelope.Data = data
+            out, _ := json.Marshal(envelope)
+            w.WriteHeader(http.StatusOK)
+            w.Write(out)
+        } else if r.URL.Path == fmt.Sprintf(
+            "/api/v1/auth/applications/%s", aid,
+        ) && r.Method == "PUT" {
             // mock UPDATE response
-            dummyApp.GrantType = GrantAuthorizationCode.String()
-            dummyApp.ClientType = ClientConfidential.String()
-            dummyApp.RedirectUrl = "http://antani.org"
-            writeAppResponse(w)
-        } else if r.URL.Path == fmt.Sprintf("/api/v1/auth/applications/%s",
-            aid) && r.Method == "DELETE" {
+            dummyApp["grant_type"] = GrantAuthorizationCode.String()
+            dummyApp["client_type"] = ClientConfidential.String()
+            dummyApp["redirect_url"] = "http://antani.org"
+            data, _ := json.Marshal(map[string]any{
+                "application": dummyApp,
+            })
+            envelope.Data = data
+            out, _ := json.Marshal(envelope)
+            w.WriteHeader(http.StatusOK)
+            w.Write(out)
+        } else if r.URL.Path == fmt.Sprintf(
+            "/api/v1/auth/applications/%s", aid,
+        ) && r.Method == "DELETE" {
             // mock DELETE response
             envelope := CustodiaEnvelope{Result: "success", ResultCode: 200}
             out, _ := json.Marshal(envelope)
@@ -86,16 +75,14 @@ func TestApplicationCRUDL(t *testing.T) {
         } else if r.URL.Path == "/api/v1/auth/applications" &&
             r.Method == "GET" {
             // mock LIST response
-            appsResp := ApplicationsResponse{
-                Count: 1,
-                TotalCount: 1,
-                Limit: 100,
-                Offset: 0,
-                Applications: []ResponseInnerApp{dummyApp},
+            data := map[string]any{
+                "count": 1,
+                "total_count": 1,
+                "limit": 100,
+                "offset": 0,
+                "applications": []any{dummyApp},
             }
-            data, _ := json.Marshal(appsResp)
-            envelope := CustodiaEnvelope{Result: "success", ResultCode: 200}
-            envelope.Data = data
+            envelope.Data, _ = json.Marshal(data)
             out, _ := json.Marshal(envelope)
             w.WriteHeader(http.StatusOK)
             w.Write(out)
@@ -122,13 +109,13 @@ func TestApplicationCRUDL(t *testing.T) {
         t.Errorf("unexpected error: %v", err)
     } else if app != nil {
         var tests = []struct {
-            want interface{}
-            got interface{}
+            want any
+            got any
         }{
-            {dummyApp.AppId, app.Id},
+            {aid, app.Id},
             {GrantPassword, app.GrantType},
-            {dummyApp.AppName, app.Name},
-            {dummyApp.AppSecret, app.Secret},
+            {"antani", app.Name},
+            {"123456", app.Secret},
 
         }
         for _, test := range tests {
@@ -140,55 +127,55 @@ func TestApplicationCRUDL(t *testing.T) {
     }
 
     // test READ
-    app, err = custodia.ReadApplication(dummyApp.AppId)
+    app, err = custodia.ReadApplication(aid)
     if err != nil {
         t.Errorf("unexpected error: %v", err)
     } else if app != nil {
         var tests = []struct {
-            want interface{}
-            got interface{}
+            want any
+            got any
         }{
-            {dummyApp.AppId, app.Id},
+            {aid, app.Id},
             {GrantPassword, app.GrantType},
-            {dummyApp.AppName, app.Name},
-            {dummyApp.AppSecret, app.Secret},
+            {"antani", app.Name},
+            {"123456", app.Secret},
 
         }
         for _, test := range tests {
             if test.want != test.got {
-                t.Errorf("Application GET: bad value, got: %v want: %v",
+                t.Errorf("ReadApplication: bad value, got: %v want: %v",
                     test.got, test.want)
             }
         }
     }
 
     // test UPDATE
-    app, err = custodia.UpdateApplication(dummyApp.AppId, "antani",
+    app, err = custodia.UpdateApplication(aid, "antani",
         GrantAuthorizationCode, ClientConfidential, "http://antani.org")
     if err != nil {
         t.Errorf("unexpected error: %v", err)
     } else if app != nil {
         var tests = []struct {
-            want interface{}
-            got interface{}
+            want any
+            got any
         }{
-            {dummyApp.AppId, app.Id},
+            {aid, app.Id},
             {ClientConfidential, app.ClientType},
             {GrantAuthorizationCode, app.GrantType},
             {"antani", app.Name},
-            {dummyApp.AppSecret, app.Secret},
+            {"123456", app.Secret},
 
         }
         for _, test := range tests {
             if test.want != test.got {
-                t.Errorf("Application GET: bad value, got: %v want: %v",
+                t.Errorf("UpdateApplication: bad value, got: %v want: %v",
                     test.got, test.want)
             }
         }
     }
 
     // test DELETE
-    err = custodia.DeleteApplication(dummyApp.AppId)
+    err = custodia.DeleteApplication(aid)
     if err != nil {
         t.Errorf("error while deleting application. Details: %v", err)
     }
@@ -209,14 +196,14 @@ func TestOAuth(t *testing.T) {
         ResultCode: 200,
         Message: nil,
     }
-    responseLogin := map[string]interface{}{
+    responseLogin := map[string]any{
         "access_token": "ans2fN08sliGpIOLMGg3fv4BpPhWRq",
         "token_type": "Bearer",
         "expires_in": 36000,
         "refresh_token": "vL0durAhdhNNYFI27F3zGGHXeNLwcO",
         "scope": "read write",
     }
-    responseRefresh := map[string]interface{}{
+    responseRefresh := map[string]any{
         "access_token": "Qg3fv4BpPhWRqXeNLwcOa2fN08sliGpIOLMg3",
         "token_type": "Bearer",
         "expires_in": 36000,
@@ -265,8 +252,8 @@ func TestOAuth(t *testing.T) {
         t.Errorf("unexpected error: %v", err)
     } else {
         var tests = []struct {
-            want interface{}
-            got interface{}
+            want any
+            got any
         }{
             {common.UserAuth, auth.GetAuthType()},
             {"ans2fN08sliGpIOLMGg3fv4BpPhWRq", auth.GetAccessToken()},
@@ -289,8 +276,8 @@ func TestOAuth(t *testing.T) {
         t.Errorf("unexpected error: %v", err)
     } else if auth != nil {
         var tests = []struct {
-            want interface{}
-            got interface{}
+            want any
+            got any
         }{
             {"Qg3fv4BpPhWRqXeNLwcOa2fN08sliGpIOLMg3", auth.GetAccessToken()},
             {"vL0durAhdhNNYFI27F3zGGHXeNLwcO", auth.GetRefreshToken()},
@@ -306,4 +293,3 @@ func TestOAuth(t *testing.T) {
         }
     }
 }
-

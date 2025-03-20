@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/dzanotelli/chino/common"
+	"github.com/google/uuid"
 )
 
 type SearchResponse struct {
@@ -56,20 +56,16 @@ func (rt* ResultType) UnmarshalJSON(data []byte) error {
 }
 
 // Search documents
-func (ca *CustodiaAPIv1) SearchDocuments(schemaId string,
-	resultType ResultType, query map[string]interface{},
-	sort map[string]interface{}) (*SearchResponse, error) {
-	if !common.IsValidUUID(schemaId) {
-		return nil, fmt.Errorf("schemaId is not a valid UUID: %s", schemaId)
-	}
-
+func (ca *CustodiaAPIv1) SearchDocuments(schemaId uuid.UUID,
+	resultType ResultType, query map[string]any,
+	sort map[string]any) (*SearchResponse, error) {
 	url := fmt.Sprintf("/search/documents/%s", schemaId)
-	data := map[string]interface{}{"result_type": resultType.String(),
+	data := map[string]any{"result_type": resultType.String(),
 		"query": query}
 	if sort != nil {
 		data["sort"] = sort
 	}
-	params := map[string]interface{}{"_data": true}
+	params := map[string]any{"_data": true}
 	resp, err := ca.Call("POST", url, params)
 	if err != nil {
 		return nil, err
@@ -90,21 +86,16 @@ func (ca *CustodiaAPIv1) SearchDocuments(schemaId string,
 }
 
 // Search users
-func (ca *CustodiaAPIv1) SearchUsers(userSchemaId string,
-	resultType ResultType, query map[string]interface{},
-	sort map[string]interface{}) (*SearchResponse, error) {
-	if !common.IsValidUUID(userSchemaId) {
-		return nil, fmt.Errorf("userSchemaId is not a valid UUID: %s",
-			userSchemaId)
-	}
-
+func (ca *CustodiaAPIv1) SearchUsers(userSchemaId uuid.UUID,
+	resultType ResultType, query map[string]any,
+	sort map[string]any) (*SearchResponse, error) {
 	url := fmt.Sprintf("/search/users/%s", userSchemaId)
-	data := map[string]interface{}{"result_type": resultType.String(),
+	data := map[string]any{"result_type": resultType.String(),
 		"query": query}
 	if sort != nil {
 		data["sort"] = sort
 	}
-	params := map[string]interface{}{"_data": data}
+	params := map[string]any{"_data": data}
 	resp, err := ca.Call("POST", url, params)
 	if err != nil {
 		return nil, err
