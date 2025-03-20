@@ -33,7 +33,7 @@ func indexOf(word string, data []string) (int) {
     return -1
 }
 
-func validateContent(data map[string]interface{},
+func validateContent(data map[string]any,
 	structure map[string]SchemaField) []error {
 	var errors []error
 	var err error
@@ -47,7 +47,7 @@ func validateContent(data map[string]interface{},
 		}
 
 		// field exist, check that is of the right type
-		var val interface{}
+		var val any
 		switch field.Type {
 		case TypeInt:
 			val, ok = value.(int64)
@@ -151,9 +151,9 @@ func validateContent(data map[string]interface{},
 }
 
 // Manually parse a JSON array of int, floats or strings
-func parseJSONArray(strArray string, itemType string) ([]interface{},
+func parseJSONArray(strArray string, itemType string) ([]any,
 	error) {
-	var result []interface{}
+	var result []any
 	var ee []error
 	var err error
 
@@ -203,8 +203,8 @@ func parseJSONArray(strArray string, itemType string) ([]interface{},
 	return result, err
 }
 
-func convertField(value interface{}, field SchemaField) (interface{}, error) {
-	var converted interface{}
+func convertField(value any, field SchemaField) (any, error) {
+	var converted any
 	var e, err error
 	var ok bool
 
@@ -251,9 +251,9 @@ type StructureMapper interface {
 	getStructureAsMap() map[string]SchemaField
 }
 
-func convertData(data map[string]interface{}, schema StructureMapper) (
-	map[string]interface{}, []error) {
-	converted := map[string]interface{}{}
+func convertData(data map[string]any, schema StructureMapper) (
+	map[string]any, []error) {
+	converted := map[string]any{}
 	errors := []error{}
 	structure := schema.getStructureAsMap()
 

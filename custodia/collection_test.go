@@ -22,22 +22,22 @@ func TestCollectionCRUDL(t *testing.T) {
 
     dummyUUID := uuid.New()
 
-    createResponse := map[string]interface{}{
+    createResponse := map[string]any{
         "collection_id": dummyUUID.String(),
         "name": "unittest",
         "insert_date": "2015-04-14T05:09:54.915Z",
         "last_update": "2015-04-14T05:09:54.915Z",
         "is_active": true,
     }
-    updateResponse := map[string]interface{}{
+    updateResponse := map[string]any{
         "collection_id": dummyUUID.String(),
         "name": "changed",
         "insert_date": "2025-04-14T05:09:54.915Z",
         "last_update": "2025-04-14T05:09:54.915Z",
         "is_active": false,
     }
-    listResponse := map[string]interface{}{
-        "collections": []map[string]interface{}{
+    listResponse := map[string]any{
+        "collections": []map[string]any{
             createResponse,
             updateResponse,
         },
@@ -47,26 +47,29 @@ func TestCollectionCRUDL(t *testing.T) {
     mockHandler := func(w http.ResponseWriter, r *http.Request) {
         if r.URL.Path == "/api/v1/collections" && r.Method == "POST" {
             // mock CREATE
-            w.WriteHeader(http.StatusOK)
+            w.WriteHeader(http.StatusCreated)
             envelope.Data, _ = json.Marshal(createResponse)
             out, _ := json.Marshal(envelope)
             w.Write(out)
-        } else if r.URL.Path == fmt.Sprintf("/api/v1/collections/%s",
-            dummyUUID) && r.Method == "GET" {
+        } else if r.URL.Path == fmt.Sprintf(
+            "/api/v1/collections/%s", dummyUUID,
+        ) && r.Method == "GET" {
             // mock READ
             w.WriteHeader(http.StatusOK)
             envelope.Data, _ = json.Marshal(createResponse) // same as CREATE
             out, _ := json.Marshal(envelope)
             w.Write(out)
-        } else if r.URL.Path == fmt.Sprintf("/api/v1/collections/%s",
-            dummyUUID) && r.Method == "PUT" {
+        } else if r.URL.Path == fmt.Sprintf(
+            "/api/v1/collections/%s", dummyUUID,
+        ) && r.Method == "PUT" {
             // mock UPDATE
             w.WriteHeader(http.StatusOK)
             envelope.Data, _ = json.Marshal(updateResponse)
             out, _ := json.Marshal(envelope)
             w.Write(out)
-        } else if r.URL.Path == fmt.Sprintf("/api/v1/collections/%s",
-            dummyUUID) && r.Method == "DELETE" {
+        } else if r.URL.Path == fmt.Sprintf(
+        "/api/v1/collections/%s", dummyUUID,
+        ) && r.Method == "DELETE" {
             // mock DELETE
             w.WriteHeader(http.StatusOK)
             envelope.Data = nil
@@ -102,8 +105,8 @@ func TestCollectionCRUDL(t *testing.T) {
         return // stop execution here
     } else {
         var tests = []struct {
-            want interface{}
-            got  interface{}
+            want any
+            got  any
         }{
             {dummyUUID.String(), collection.Id.String()},
             {"unittest", collection.Name},
@@ -136,8 +139,8 @@ func TestCollectionCRUDL(t *testing.T) {
         t.Errorf("error while processing request: %s", err)
     } else {
         var tests = []struct {
-            want interface{}
-            got  interface{}
+            want any
+            got  any
         }{
             {dummyUUID.String(), collection.Id.String()},
             {"unittest", collection.Name},
@@ -170,8 +173,8 @@ func TestCollectionCRUDL(t *testing.T) {
         t.Errorf("error while processing request: %s", err)
     } else {
         var tests = []struct {
-            want interface{}
-            got  interface{}
+            want any
+            got  any
         }{
             {dummyUUID.String(), collection.Id.String()},
             {"changed", collection.Name},
@@ -215,8 +218,8 @@ func TestCollectionCRUDL(t *testing.T) {
         }
         // we don't check every field, just some here and there
         var tests = []struct {
-            want interface{}
-            got  interface{}
+            want any
+            got  any
         }{
             {dummyUUID.String(), collections[0].Id.String()},
             {"unittest", collections[0].Name},
@@ -244,7 +247,7 @@ func TestCollectionAndDocuments(t *testing.T) {
 
     dummyUUID := uuid.New()
 
-    collectionData := map[string]interface{}{
+    collectionData := map[string]any{
         "collection_id": dummyUUID.String(),
         "name": "unittest",
         "insert_date": "2015-04-14T05:09:54.915Z",
@@ -252,19 +255,19 @@ func TestCollectionAndDocuments(t *testing.T) {
         "is_active": true,
     }
 
-    documentResponse := map[string]interface{}{
+    documentResponse := map[string]any{
         "document_id": dummyUUID.String(),
         "repository_id": dummyUUID.String(),
         "schema_id": dummyUUID.String(),
         "insert_date": "2015-04-14T05:09:54.915Z",
         "last_update": "2015-04-14T05:09:54.915Z",
         "is_active": true,
-        "content": map[string]interface{}{
+        "content": map[string]any{
             "field": 42,
         },
     }
-    searchCollectionResponse := map[string]interface{}{
-        "collections": []map[string]interface{}{
+    searchCollectionResponse := map[string]any{
+        "collections": []map[string]any{
             {
                 "collection_id": dummyUUID.String(),
                 "name": "unittest1",
@@ -285,22 +288,24 @@ func TestCollectionAndDocuments(t *testing.T) {
 
     // mock calls
     mockHandler := func(w http.ResponseWriter, r *http.Request) {
-        if r.URL.Path == fmt.Sprintf("/api/v1/collections/documents/%s",
-            dummyUUID) && r.Method == "GET" {
+        if r.URL.Path == fmt.Sprintf(
+            "/api/v1/collections/documents/%s", dummyUUID,
+        ) && r.Method == "GET" {
             w.WriteHeader(http.StatusOK)
-            data := map[string]interface{}{
-                "collections": []map[string]interface{}{
+            data := map[string]any{
+                "collections": []map[string]any{
                     collectionData,
                 },
             }
             envelope.Data, _ = json.Marshal(data)
             out, _ := json.Marshal(envelope)
             w.Write(out)
-        } else if r.URL.Path == fmt.Sprintf("/api/v1/collections/%s/documents",
-            dummyUUID) && r.Method == "GET" {
+        } else if r.URL.Path == fmt.Sprintf(
+            "/api/v1/collections/%s/documents", dummyUUID,
+        ) && r.Method == "GET" {
             w.WriteHeader(http.StatusOK)
-            data := map[string]interface{}{
-                "documents": []map[string]interface{}{
+            data := map[string]any{
+                "documents": []map[string]any{
                     documentResponse,
                 },
             }
@@ -308,15 +313,15 @@ func TestCollectionAndDocuments(t *testing.T) {
             out, _ := json.Marshal(envelope)
             w.Write(out)
         } else if r.URL.Path == fmt.Sprintf(
-            "/api/v1/collections/%s/documents/%s", dummyUUID, dummyUUID) &&
-            r.Method == "POST" {
+            "/api/v1/collections/%s/documents/%s", dummyUUID, dummyUUID,
+        ) && r.Method == "POST" {
             w.WriteHeader(http.StatusOK)
             envelope.Data = nil
             out, _ := json.Marshal(envelope)
             w.Write(out)
         } else if r.URL.Path == fmt.Sprintf(
-            "/api/v1/collections/%s/documents/%s", dummyUUID, dummyUUID) &&
-            r.Method == "DELETE" {
+            "/api/v1/collections/%s/documents/%s", dummyUUID, dummyUUID,
+        ) && r.Method == "DELETE" {
             w.WriteHeader(http.StatusOK)
             envelope.Data = nil
             out, _ := json.Marshal(envelope)
@@ -353,8 +358,8 @@ func TestCollectionAndDocuments(t *testing.T) {
                 len(collections))
         }
         var tests = []struct {
-            want interface{}
-            got  interface{}
+            want any
+            got  any
         }{
             {dummyUUID.String(), collections[0].Id.String()},
             {"unittest", collections[0].Name},
@@ -379,8 +384,8 @@ func TestCollectionAndDocuments(t *testing.T) {
                 len(documents))
         }
         var tests = []struct {
-            want interface{}
-            got  interface{}
+            want any
+            got  any
         }{
             {dummyUUID.String(), documents[0].Id.String()},
             {dummyUUID.String(), documents[0].RepositoryId.String()},
@@ -423,8 +428,8 @@ func TestCollectionAndDocuments(t *testing.T) {
                 len(collections))
         }
         var tests = []struct {
-            want interface{}
-            got  interface{}
+            want any
+            got  any
         }{
             {dummyUUID.String(), collections[0].Id.String()},
             {"unittest1", collections[0].Name},

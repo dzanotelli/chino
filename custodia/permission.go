@@ -247,7 +247,7 @@ func (ca *CustodiaAPIv1) PermissionOnResources(action PermissionAction,
 	error) {
 	url := fmt.Sprintf("/perms/%s/%s/%s/%s", action, resourceType.UrlString(),
         subjectType.UrlString(), subjectId.String())
-	params := map[string]interface{}{"data": permissions}
+	params := map[string]any{"data": permissions}
 	_, err := ca.Call("POST", url, params)
     if err!= nil {
         return err
@@ -264,7 +264,7 @@ func (ca *CustodiaAPIv1) PermissionOnResource(action PermissionAction,
     url := fmt.Sprintf("/perms/%s/%s/%s/%s/%s", action,
         resourceType.UrlString(), resourceId.String(), subjectType.UrlString(),
         subjectId.String())
-    params := map[string]interface{}{"data": permissions}
+    params := map[string]any{"data": permissions}
     _, err := ca.Call("POST", url, params)
     if err!= nil {
         return err
@@ -283,7 +283,7 @@ func (ca *CustodiaAPIv1) PermissionOnResourceChildren(action PermissionAction,
         resourceType.UrlString(), resourceId.String(),
         resourceChildType.UrlString(), subjectType.UrlString(),
         subjectId.String())
-	params := map[string]interface{}{"data": permissions}
+	params := map[string]any{"data": permissions}
 	_, err := ca.Call("POST", url, params)
 	if err!= nil {
 		return err

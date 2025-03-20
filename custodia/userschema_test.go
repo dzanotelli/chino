@@ -20,7 +20,7 @@ func TestUserSchemaCRUDL(t *testing.T) {
     }
     dummyUUID := uuid.New()
 
-    createResp := map[string]interface{}{
+    createResp := map[string]any{
         "user_schema_id": dummyUUID.String(),
         "description": "unittest",
         "groups": []string{},
@@ -28,7 +28,7 @@ func TestUserSchemaCRUDL(t *testing.T) {
         "last_update": "2015-04-24T21:48:16.332Z",
         "is_active": false,
     }
-    updateResp := map[string]interface{}{
+    updateResp := map[string]any{
         "user_schema_id": dummyUUID.String(),
         "description": "changed",
         "groups": []string{},
@@ -37,41 +37,41 @@ func TestUserSchemaCRUDL(t *testing.T) {
         "is_active": true,
     }
 
-    structure := []interface{}{
-        map[string]interface{}{
+    structure := []any{
+        map[string]any{
             "name": "IntField",
             "type": "integer",
             "indexed": true,
             "default": 42,
         },
-        map[string]interface{}{
+        map[string]any{
             "name": "StrField",
             "type": "string",
             "indexed": true,
             "default": "asd",
         },
-        map[string]interface{}{
+        map[string]any{
             "name": "FloatField",
             "type": "number",
             "indexed": true,
             "default": 3.14,
         },
-        map[string]interface{}{
+        map[string]any{
             "name": "BoolField",
             "type": "boolean",
             "indexed": false,
         },
-        map[string]interface{}{
+        map[string]any{
             "name": "DateField",
             "type": "date",
             "default": "2023-03-15",
         },
-        map[string]interface{}{
+        map[string]any{
             "name": "TimeField",
             "type": "time",
             "default": "11:43:04.058",
         },
-        map[string]interface{}{
+        map[string]any{
             "name": "DatetimeField",
             "type": "datetime",
             "default": "2023-03-15T11:43:04.058",
@@ -117,12 +117,12 @@ func TestUserSchemaCRUDL(t *testing.T) {
             w.WriteHeader(http.StatusOK)
             w.Write(out)
         } else if r.URL.Path == "/api/v1/user_schemas" &&  r.Method == "GET" {
-            listResp := map[string]interface{}{
+            listResp := map[string]any{
                 "count": 1,
                 "total_count": 1,
                 "limit": 100,
                 "offset": 0,
-                "user_schemas": []interface{}{
+                "user_schemas": []any{
                     createResp,
                 },
             }
@@ -183,8 +183,8 @@ func TestUserSchemaCRUDL(t *testing.T) {
         t.Errorf("unexpected error: %v", err)
     } else if userSchema != nil {
         var tests = []struct {
-            want interface{}
-            got interface{}
+            want any
+            got any
         }{
             {dummyUUID.String(), userSchema.Id.String()},
             {"unittest", userSchema.Description},
@@ -210,8 +210,8 @@ func TestUserSchemaCRUDL(t *testing.T) {
         t.Errorf("unexpected error: %v", err)
     } else if userSchema != nil {
         var tests = []struct {
-            want interface{}
-            got interface{}
+            want any
+            got any
         }{
             {dummyUUID.String(), userSchema.Id.String()},
             {"changed", userSchema.Description},

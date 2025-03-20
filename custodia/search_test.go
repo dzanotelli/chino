@@ -20,16 +20,16 @@ func TestSearch(t *testing.T) {
 	}
 	dummyUUID := uuid.New()
 
-	docsResponse := map[string]interface{}{
-		"documents": []interface{}{
-			map[string]interface{}{
+	docsResponse := map[string]any{
+		"documents": []any{
+			map[string]any{
 				"document_id": dummyUUID.String(),
 				"schema_id": dummyUUID.String(),
 				"repository_id": dummyUUID.String(),
 				"insert_date": "2015-02-07T12:14:46.754",
 				"last_update": "2015-03-13T18:06:21.242",
 				"is_active": true,
-				"content": map[string]interface{}{
+				"content": map[string]any{
 					"antani": 42,
 				},
 			},
@@ -40,16 +40,16 @@ func TestSearch(t *testing.T) {
 		"offset": 0,
 	}
 
-	usersResponse := map[string]interface{}{
-		"users": []interface{}{
-			map[string]interface{}{
+	usersResponse := map[string]any{
+		"users": []any{
+			map[string]any{
 				"user_id": dummyUUID.String(),
 				"schema_id": dummyUUID.String(),
 				"username": "unittest",
 				"insert_date": "2015-02-07T12:14:46.754",
 				"last_update": "2015-03-13T18:06:21.242",
 				"is_active": true,
-				"attributes": map[string]interface{}{"antani": 3.14},
+				"attributes": map[string]any{"antani": 3.14},
 			},
 		},
 		"count": 1,
@@ -92,8 +92,8 @@ func TestSearch(t *testing.T) {
 	custodia := NewCustodiaAPIv1(client)
 
 	// Test search documents
-	query := map[string]interface{}{
-		"or": []map[string]interface{}{
+	query := map[string]any{
+		"or": []map[string]any{
 			{
 				"field": "antani",
 				"type": "eq",
@@ -114,8 +114,8 @@ func TestSearch(t *testing.T) {
 			t.Errorf("expected 1 document, got %d", len(resp.Documents))
 		}
 		var tests = []struct {
-			want interface{}
-			got interface{}
+			want any
+			got any
 		}{
 			{1, resp.Count},
 			{1, resp.TotalCount},
@@ -145,10 +145,10 @@ func TestSearch(t *testing.T) {
 	}
 
 	// test SearchUsers
-	query = map[string]interface{}{
+	query = map[string]any{
 		"field": "antani", "type": "gte", "value": 3.14,
 	}
-	sort := map[string]interface{}{
+	sort := map[string]any{
 		"field": "antani", "order": "asc",
 	}
 	resp, err = custodia.SearchUsers(dummyUUID, FullContent, query, sort)
@@ -159,8 +159,8 @@ func TestSearch(t *testing.T) {
 			t.Errorf("expected 1 user, got %d", len(resp.Users))
 		}
 		var tests = []struct {
-			want interface{}
-			got interface{}
+			want any
+			got any
 		}{
 			{1, resp.Count},
 			{1, resp.TotalCount},

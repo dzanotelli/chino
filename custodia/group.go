@@ -14,7 +14,7 @@ type Group struct {
 	InsertDate timeutils.Time `json:"insert_date,omitempty"`
 	LastUpdate timeutils.Time `json:"last_update,omitempty"`
 	IsActive bool `json:"is_active"`
-	Attributes map[string]interface{} `json:"attributes,omitempty"`
+	Attributes map[string]any `json:"attributes,omitempty"`
 }
 
 type GroupEnvelope struct {
@@ -27,10 +27,10 @@ type GroupsEnvelope struct {
 
 // [C]reate a new group
 func (ca *CustodiaAPIv1) CreateGroup(name string, isActive bool,
-	attributes map[string]interface{}) (*Group, error) {
+	attributes map[string]any) (*Group, error) {
 	group := Group{Name: name, IsActive: isActive, Attributes: attributes}
 	url := "/groups"
-	params := map[string]interface{}{"_data": group}
+	params := map[string]any{"_data": group}
 	resp, err := ca.Call("POST", url, params)
 	if err != nil {
 		return nil, err
@@ -60,10 +60,10 @@ func (ca *CustodiaAPIv1) ReadGroup(groupId uuid.UUID) (*Group, error) {
 
 // [U]pdate an existent group
 func (ca *CustodiaAPIv1) UpdateGroup(groupId uuid.UUID, name string,
-	isActive bool, attributes map[string]interface{}) (*Group, error) {
+	isActive bool, attributes map[string]any) (*Group, error) {
 	group := Group{Name: name, IsActive: isActive, Attributes: attributes}
 	url := fmt.Sprintf("/groups/%s", groupId)
-	params := map[string]interface{}{"_data": group}
+	params := map[string]any{"_data": group}
 	resp, err := ca.Call("PUT", url, params)
 	if err != nil {
 		return nil, err

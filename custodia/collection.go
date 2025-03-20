@@ -20,17 +20,15 @@ type CollectionEnvelope struct {
 	Collections []Collection `json:"collections"`
 }
 
-
 func (c Collection) String() string {
 	return fmt.Sprintf("<Collection %s %s>", c.Name, c.Id)
 }
 
-
 // [C]reate a new collection
 func (ca *CustodiaAPIv1) CreateCollection(name string) (*Collection, error) {
 	url := "/collections"
-	data := map[string]interface{}{"name": name}
-	params := map[string]interface{}{"_data": data}
+	data := map[string]any{"name": name}
+	params := map[string]any{"_data": data}
 	resp, err := ca.Call("POST", url, params)
 	if err != nil {
 		return nil, err
@@ -68,8 +66,8 @@ func (ca *CustodiaAPIv1) UpdateCollection(collectionId uuid.UUID,
 	name string) (
 	*Collection, error) {
 	url := fmt.Sprintf("/collections/%s", collectionId)
-	data := map[string]interface{}{"name": name}
-	params := map[string]interface{}{"_data": data}
+	data := map[string]any{"name": name}
+	params := map[string]any{"_data": data}
 	resp, err := ca.Call("PUT", url, params)
 	if err != nil {
 		return nil, err
@@ -199,8 +197,8 @@ func (ca *CustodiaAPIv1) RemoveDocumentFromCollection(documentId uuid.UUID,
 func (ca *CustodiaAPIv1) SearchCollection(name string, contains bool) (
 	[]*Collection, error) {
 	url := "/collections/search"
-	data := map[string]interface{}{"name": name, "contains": contains}
-	params := map[string]interface{}{"_data": data}
+	data := map[string]any{"name": name, "contains": contains}
+	params := map[string]any{"_data": data}
 
 	resp, err := ca.Call("POST", url, params)
 	if err != nil {

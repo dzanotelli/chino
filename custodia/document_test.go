@@ -21,7 +21,7 @@ func TestDocumentCRUDL(t *testing.T) {
     }
     dummyUUID := uuid.New()
 
-    docCreateResponse := map[string]interface{}{
+    docCreateResponse := map[string]any{
         "document_id": dummyUUID.String(),
         "schema_id": dummyUUID.String(),
         "repository_id": dummyUUID.String(),
@@ -29,7 +29,7 @@ func TestDocumentCRUDL(t *testing.T) {
         "last_update": "2015-04-14T05:09:54.915Z",
         "is_active": true,
     }
-    docUpdateResponse := map[string]interface{}{
+    docUpdateResponse := map[string]any{
         "document_id": dummyUUID.String(),
         "schema_id": dummyUUID.String(),
         "repository_id": dummyUUID.String(),
@@ -37,7 +37,7 @@ func TestDocumentCRUDL(t *testing.T) {
         "last_update": "2025-04-14T05:09:54.915Z",
         "is_active": false,
     }    // // ResponseInnerDocument will be included in responses
-    dummyContent := map[string]interface{}{
+    dummyContent := map[string]any{
         "integerField": 42,
         "flaotField": 3.14,
         "stringField": "antani",
@@ -58,54 +58,59 @@ func TestDocumentCRUDL(t *testing.T) {
 
     // mock calls
     mockHandler := func(w http.ResponseWriter, r *http.Request) {
-        if r.URL.Path == fmt.Sprintf("/api/v1/schemas/%s/documents",
-            dummyUUID) && r.Method == "POST" {
+        if r.URL.Path == fmt.Sprintf(
+            "/api/v1/schemas/%s/documents", dummyUUID,
+        ) && r.Method == "POST" {
             // mock CREATE response
-            w.WriteHeader(http.StatusOK)
-            data := map[string]interface{}{
+            w.WriteHeader(http.StatusCreated)
+            data := map[string]any{
                 "document": docCreateResponse,
             }
             envelope.Data, _ = json.Marshal(data)
 			out, _ := json.Marshal(envelope)
 			w.Write(out)
-        } else if r.URL.Path == fmt.Sprintf("/api/v1/documents/%s",
-            dummyUUID) && r.Method == "GET" {
+        } else if r.URL.Path == fmt.Sprintf(
+            "/api/v1/documents/%s", dummyUUID,
+        ) && r.Method == "GET" {
             // mock READ response
             w.WriteHeader(http.StatusOK)
-            data := map[string]interface{}{
+            data := map[string]any{
                 "document": docCreateResponse,
             }
             envelope.Data, _ = json.Marshal(data)
 			out, _ := json.Marshal(envelope)
 			w.Write(out)
-        } else if r.URL.Path == fmt.Sprintf("/api/v1/documents/%s",
-            dummyUUID) && r.Method == "PUT" {
+        } else if r.URL.Path == fmt.Sprintf(
+            "/api/v1/documents/%s", dummyUUID,
+        ) && r.Method == "PUT" {
             // mock UPDATE response
             w.WriteHeader(http.StatusOK)
             dummyContent["stringField"] = "brematurata"
-            data := map[string]interface{}{
+            data := map[string]any{
                 "document": docUpdateResponse,
             }
             envelope.Data, _ = json.Marshal(data)
 			out, _ := json.Marshal(envelope)
 			w.Write(out)
-        } else if r.URL.Path == fmt.Sprintf("/api/v1/documents/%s",
-            dummyUUID) && r.Method == "DELETE" {
+        } else if r.URL.Path == fmt.Sprintf(
+            "/api/v1/documents/%s", dummyUUID,
+        ) && r.Method == "DELETE" {
             // mock DELETE response
             envelope := CustodiaEnvelope{Result: "success", ResultCode: 200}
             envelope.Data = nil
             out, _ := json.Marshal(envelope)
             w.WriteHeader(http.StatusOK)
             w.Write(out)
-        } else if r.URL.Path == fmt.Sprintf("/api/v1/schemas/%s/documents",
-            dummyUUID) && r.Method == "GET" {
+        } else if r.URL.Path == fmt.Sprintf(
+            "/api/v1/schemas/%s/documents", dummyUUID,
+        ) && r.Method == "GET" {
             // mock LIST response
-            data := map[string]interface{}{
+            data := map[string]any{
                 "count": 1,
                 "total_count": 1,
                 "limit": 100,
                 "offset": 0,
-                "documents": []map[string]interface{}{
+                "documents": []map[string]any{
                     docCreateResponse,
                     docUpdateResponse,
                 },
@@ -152,15 +157,15 @@ func TestDocumentCRUDL(t *testing.T) {
             {Name: "arrayStringField", Type: "array[string]"},
         },
     }
-    content := map[string]interface{}{}
+    content := map[string]any{}
     document, err := custodia.CreateDocument(&schema, false, content)
 
     if err != nil {
         t.Errorf("unexpected error: %v", err)
     } else if document != nil {
         var tests = []struct {
-            want interface{}
-            got interface{}
+            want any
+            got any
         }{
             {dummyUUID.String(), document.RepositoryId.String()},
             {dummyUUID.String(), document.SchemaId.String()},
@@ -184,7 +189,8 @@ func TestDocumentCRUDL(t *testing.T) {
     if err != nil {
         t.Errorf("unexpected error: %v", err)
     } else if doc != nil {
-        fmt.Printf("-----> %v (%T)", doc.Content["arrayIntegerField"], doc.Content["arrayIntegerField"])
+        // debug
+        //fmt.Printf("-----> %v (%T)", doc.Content["arrayIntegerField"], doc.Content["arrayIntegerField"])
         // some values need type conversion
         convArrayString, _ := common.ConvertSliceItems[string](
             doc.Content["arrayStringField"],
@@ -198,8 +204,8 @@ func TestDocumentCRUDL(t *testing.T) {
 
         // setup tests now
         var tests = []struct {
-            want interface{}
-            got interface{}
+            want any
+            got any
         }{
             {dummyUUID.String(), document.RepositoryId.String()},
             {dummyUUID.String(), document.SchemaId.String()},
@@ -239,7 +245,7 @@ func TestDocumentCRUDL(t *testing.T) {
 
         for i, test := range tests {
             if !reflect.DeepEqual(test.want, test.got) {
-                t.Errorf("CreateDocument %d: bad value, got: %v (%T) want: " +
+                t.Errorf("ReadDocument %d: bad value, got: %v (%T) want: " +
                     "%v (%T)", i, test.got, test.got, test.want, test.want)
             }
         }
@@ -265,8 +271,8 @@ func TestDocumentCRUDL(t *testing.T) {
         )
 
         var tests = []struct {
-            want interface{}
-            got  interface{}
+            want any
+            got  any
         }{
             {dummyUUID.String(), document.RepositoryId.String()},
             {dummyUUID.String(), document.SchemaId.String()},
@@ -324,14 +330,14 @@ func TestDocumentCRUDL(t *testing.T) {
 
     // test LIST
     // test we gave a wrong argument
-    params := map[string]interface{}{"antani": 42}
+    params := map[string]any{"antani": 42}
     _, err = custodia.ListDocuments(schema, params)
     if err == nil {
         t.Errorf("ListDocuments is not giving error with wrong param %v",
             params)
     }
     // test that all the other params are accepted instead
-    goodParams := map[string]interface{}{
+    goodParams := map[string]any{
 		"full_document": true,
 		"is_active": true,
 		"insert_date__gt": time.Time{},
@@ -350,8 +356,8 @@ func TestDocumentCRUDL(t *testing.T) {
 
         // we don't check the content of every single doc, just some values
         var tests = []struct {
-            want interface{}
-            got interface{}
+            want any
+            got any
         }{
             {true, documents[0].IsActive},
             {dummyUUID.String(), documents[0].SchemaId.String()},

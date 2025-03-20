@@ -42,7 +42,7 @@ func (ca *CustodiaAPIv1) CreateUserSchema(descritpion string, isActive bool,
 	user_schema := UserSchema{Description: descritpion, Structure: fields,
 		 IsActive: isActive}
 	url := "/user_schemas"
-	params := map[string]interface{}{"_data": user_schema}
+	params := map[string]any{"_data": user_schema}
 	resp, err := ca.Call("POST", url, params)
 	if err != nil {
 		return nil, err
@@ -90,7 +90,7 @@ func (ca *CustodiaAPIv1) UpdateUserSchema(userSchemaId uuid.UUID,
 		IsActive: isActive,
 		Structure: structure,
 	}
-	params := map[string]interface{}{"_data": schema}
+	params := map[string]any{"_data": schema}
 	resp, err := ca.Call("PUT", url, params)
 	if err != nil {
 		return nil, err

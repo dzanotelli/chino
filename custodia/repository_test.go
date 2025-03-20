@@ -13,7 +13,6 @@ import (
 )
 
 
-
 func TestRepositoryCRUDL(t *testing.T) {
     envelope := CustodiaEnvelope{
         Result: "success",
@@ -22,103 +21,53 @@ func TestRepositoryCRUDL(t *testing.T) {
     }
     dummyUUID := uuid.New()
 
-    repoCreateResp := map[string]interface{}{
+    repoCreateResp := map[string]any{
         "repository_id": dummyUUID.String(),
         "description": "unittest",
         "insert_date": "2015-04-14T05:09:54.915Z",
         "last_update": "2015-04-14T05:09:54.915Z",
         "is_active": true,
     }
-    repoUpdateResp := map[string]interface{}{
+    repoUpdateResp := map[string]any{
         "repository_id": dummyUUID.String(),
         "description": "changed",
         "insert_date": "2025-04-14T05:09:54.915Z",
         "last_update": "2025-04-14T05:09:54.915Z",
         "is_active": false,
     }
-    // repoListResp := map[string]interface{}{
-    //     "repositories": []map[string]interface{}{
-    //         repoCreateResp,
-    //         repoUpdateResp,
-    //     },
-    // }
-
-    // // ResponseInnerRepository will be included in responses
-    // type ResponseInnerRepository struct {
-    //     RepositoryId string `json:"repository_id"`
-    //     Description string `json:"description"`
-    //     InsertDate string `json:"insert_date"`
-    //     LastUpdate string `json:"last_update"`
-    //     IsActive bool `json:"is_active"`
-    // }
-
-    // // RepoResponse will be marshalled to create an API-like reponse
-    // type RepoResponse struct {
-    //     Repository ResponseInnerRepository `json:"repository"`
-    // }
-
-    // // ReposResponse will be marshalled to create an API-like reponse
-    // type ReposResponse struct {
-    //     Count int `json:"count"`
-    //     TotalCount int `json:"total_count"`
-    //     Limit int `json:"limit"`
-    //     Offset int `json:"offset"`
-    //     Repositories []ResponseInnerRepository
-    // }
-
-    // // init stuff
-    // dummyRepository := ResponseInnerRepository{
-    //     RepositoryId: uuid.New().String(),
-    //     Description: "unittest",
-    //     InsertDate: "2015-02-24T21:48:16.332",
-    //     LastUpdate: "2015-02-24T21:48:16.332",
-    //     IsActive: false,
-    // }
-
-    // writeRepoResponse := func(w http.ResponseWriter) {
-    //     data, _ := json.Marshal(RepoResponse{dummyRepository})
-    //     envelope := CustodiaEnvelope{
-    //         Result: "success",
-    //         ResultCode: 200,
-    //         Message: nil,
-    //         Data: data,
-    //     }
-    //     out, _ := json.Marshal(envelope)
-
-    //     w.WriteHeader(http.StatusOK)
-    //     w.Write(out)
-    // }
 
     // mock calls
     mockHandler := func(w http.ResponseWriter, r *http.Request) {
         if r.URL.Path == "/api/v1/repositories" && r.Method == "POST" {
             // mock CREATE repository
-            w.WriteHeader(http.StatusOK)
-            data := map[string]interface{}{
+            data := map[string]any{
                 "repository": repoCreateResp,
             }
 			envelope.Data, _ = json.Marshal(data)
 			out, _ := json.Marshal(envelope)
+            w.WriteHeader(http.StatusCreated)
 			w.Write(out)
-        } else if r.URL.Path == fmt.Sprintf("/api/v1/repositories/%s",
-            dummyUUID) && r.Method == "GET" {
+        } else if r.URL.Path == fmt.Sprintf(
+            "/api/v1/repositories/%s", dummyUUID,
+        ) && r.Method == "GET" {
             // mock READ repository
-            w.WriteHeader(http.StatusOK)
-            data := map[string]interface{}{
+            data := map[string]any{
                 "repository": repoCreateResp,
             }
             envelope.Data, _ = json.Marshal(data)
             out, _ := json.Marshal(envelope)
-            w.Write(out)
-        } else if r.URL.Path == fmt.Sprintf("/api/v1/repositories/%s",
-            dummyUUID) && r.Method == "PUT" {
-            // mock UPDATE repository
             w.WriteHeader(http.StatusOK)
-            data := map[string]interface{}{
+            w.Write(out)
+        } else if r.URL.Path == fmt.Sprintf(
+            "/api/v1/repositories/%s", dummyUUID,
+        ) && r.Method == "PUT" {
+            // mock UPDATE repository
+            data := map[string]any{
                 "repository": repoUpdateResp,
             }
             envelope.Data, _ = json.Marshal(data)
             out, _ := json.Marshal(envelope)
+            w.WriteHeader(http.StatusOK)
             w.Write(out)
             } else if r.URL.Path == fmt.Sprintf("/api/v1/repositories/%s",
             dummyUUID) && r.Method == "DELETE" {
@@ -130,12 +79,12 @@ func TestRepositoryCRUDL(t *testing.T) {
             w.Write(out)
         } else if r.URL.Path == "/api/v1/repositories" && r.Method == "GET" {
             // mock LIST response
-            data := map[string]interface{}{
+            data := map[string]any{
                 "count": 1,
                 "total_count": 1,
                 "limit": 100,
                 "offset": 0,
-                "repositories": []map[string]interface{}{
+                "repositories": []map[string]any{
                     repoCreateResp,
                     repoUpdateResp,
                 },
@@ -164,8 +113,8 @@ func TestRepositoryCRUDL(t *testing.T) {
         t.Errorf("unexpected error: %v", err)
     } else if repo != nil {
         var tests = []struct {
-            want interface{}
-            got interface{}
+            want any
+            got any
         }{
             {repo.Id.String(), dummyUUID.String()},
             {repo.Description, "unittest"},
@@ -190,8 +139,8 @@ func TestRepositoryCRUDL(t *testing.T) {
         t.Errorf("unexpected error: %v", err)
     } else if repo != nil {
         var tests = []struct {
-            want interface{}
-            got interface{}
+            want any
+            got any
         }{
             {repo.Id.String(), dummyUUID.String()},
             {repo.Description, "unittest"},
@@ -216,8 +165,8 @@ func TestRepositoryCRUDL(t *testing.T) {
         t.Errorf("unexpected error: %v", err)
     } else if repo != nil {
         var tests = []struct {
-            want interface{}
-            got interface{}
+            want any
+            got any
         }{
             {repo.Id.String(), dummyUUID.String()},
             {repo.Description, "changed"},

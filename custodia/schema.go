@@ -13,7 +13,7 @@ type SchemaField struct {
 	Name string `json:"name"`
 	Type string `json:"type"`
 	Indexed bool `json:"indexed,omitempty"`
-	Default interface{} `json:"default,omitempty"`
+	Default any `json:"default,omitempty"`
 	Insensitive bool `json:"insensitive,omitempty"`
 }
 
@@ -66,7 +66,7 @@ func (ca *CustodiaAPIv1) CreateSchema(repoId uuid.UUID, descritpion string,
 	schema := Schema{RepositoryId: repoId, Description: descritpion,
 		Structure: fields, IsActive: isActive}
 	url := fmt.Sprintf("/repositories/%s/schemas", repoId)
-	params := map[string]interface{}{"_data": schema}
+	params := map[string]any{"_data": schema}
 	resp, err := ca.Call("POST", url, params)
 	if err != nil {
 		return nil, err
@@ -112,7 +112,7 @@ func (ca *CustodiaAPIv1) UpdateSchema(schemaId uuid.UUID, description string,
 			IsActive: isActive,
 			Structure: structure,
 		}
-		params := map[string]interface{}{"_data": schema}
+		params := map[string]any{"_data": schema}
 		resp, err := ca.Call("PUT", url, params)
 		if err != nil {
 			return nil, err

@@ -22,7 +22,7 @@ func TestPermission(t *testing.T) {
     dummyUUID := uuid.New()
 
     // dummy data to return from ReadAllPermissions
-    allPermissions := []map[string]interface{}{
+    allPermissions := []map[string]any{
         {
             "access": "Structure",
             "parent_id": nil,
@@ -53,7 +53,7 @@ func TestPermission(t *testing.T) {
             },
         },
     }
-    userPermissions := []map[string]interface{}{
+    userPermissions := []map[string]any{
         {
             "access": "Structure",
             "parent_id": nil,
@@ -67,7 +67,7 @@ func TestPermission(t *testing.T) {
             },
         },
     }
-    groupPermissions := []map[string]interface{}{
+    groupPermissions := []map[string]any{
         {
             "access": "Structure",
             "parent_id": nil,
@@ -84,49 +84,54 @@ func TestPermission(t *testing.T) {
 
     mockHandler := func(w http.ResponseWriter, r *http.Request) {
         if r.URL.Path == fmt.Sprintf(
-            "/api/v1/perms/grant/repositories/users/%s", dummyUUID) &&
-            r.Method == "POST" {
+            "/api/v1/perms/grant/repositories/users/%s", dummyUUID,
+        ) && r.Method == "POST" {
             out, _ := json.Marshal(envelope)
-            w.WriteHeader(http.StatusOK)
+            w.WriteHeader(http.StatusCreated)
             w.Write(out)
         } else if r.URL.Path == fmt.Sprintf(
             "/api/v1/perms/grant/repositories/%s/groups/%s", dummyUUID,
-            dummyUUID) && r.Method == "POST" {
+            dummyUUID,
+        ) && r.Method == "POST" {
             out, _ := json.Marshal(envelope)
             w.WriteHeader(http.StatusOK)
             w.Write(out)
         } else if r.URL.Path == fmt.Sprintf(
             "/api/v1/perms/revoke/repositories/%s/schemas/groups/%s",
-            dummyUUID, dummyUUID) && r.Method == "POST" {
+            dummyUUID, dummyUUID,
+        ) && r.Method == "POST" {
             out, _ := json.Marshal(envelope)
             w.WriteHeader(http.StatusOK)
             w.Write(out)
         } else if r.URL.Path == "/api/v1/perms" && r.Method == "GET" {
-            data := make(map[string]interface{})
+            data := make(map[string]any)
             data["permissions"] = allPermissions
             envelope.Data, _ = json.Marshal(data)
             out, _ := json.Marshal(envelope)
             w.WriteHeader(http.StatusOK)
             w.Write(out)
-        } else if r.URL.Path == fmt.Sprintf("/api/v1/perms/documents/%s",
-            dummyUUID) && r.Method == "GET" {
-            data := make(map[string]interface{})
+        } else if r.URL.Path == fmt.Sprintf(
+            "/api/v1/perms/documents/%s", dummyUUID,
+        ) && r.Method == "GET" {
+            data := make(map[string]any)
             data["permissions"] = allPermissions  // reusing allPermissions
             envelope.Data, _ = json.Marshal(data)
             out, _ := json.Marshal(envelope)
             w.WriteHeader(http.StatusOK)
             w.Write(out)
-        } else if r.URL.Path == fmt.Sprintf("/api/v1/perms/users/%s",
-            dummyUUID) && r.Method == "GET" {
-            data := make(map[string]interface{})
+        } else if r.URL.Path == fmt.Sprintf(
+            "/api/v1/perms/users/%s", dummyUUID,
+        ) && r.Method == "GET" {
+            data := make(map[string]any)
             data["permissions"] = userPermissions
             envelope.Data, _ = json.Marshal(data)
             out, _ := json.Marshal(envelope)
             w.WriteHeader(http.StatusOK)
             w.Write(out)
-        } else if r.URL.Path == fmt.Sprintf("/api/v1/perms/groups/%s",
-            dummyUUID) && r.Method == "GET" {
-            data := make(map[string]interface{})
+        } else if r.URL.Path == fmt.Sprintf(
+            "/api/v1/perms/groups/%s", dummyUUID,
+        ) && r.Method == "GET" {
+            data := make(map[string]any)
             data["permissions"] = groupPermissions
             envelope.Data, _ = json.Marshal(data)
             out, _ := json.Marshal(envelope)
@@ -181,8 +186,8 @@ func TestPermission(t *testing.T) {
         t.Errorf("unexpected error: %v", err)
     } else {
         var tests = []struct {
-            want interface{}
-            got interface{}
+            want any
+            got any
         }{
             {"Structure", allPerms[0].Access},
             {ResourceUser, allPerms[0].OwnerType},
@@ -219,8 +224,8 @@ func TestPermission(t *testing.T) {
         t.Errorf("unexpected error: %v", err)
     } else {
         var tests = []struct {
-            want interface{}
-            got interface{}
+            want any
+            got any
         }{
             {"Structure", resources[0].Access},
             {ResourceUser, resources[0].OwnerType},
@@ -257,8 +262,8 @@ func TestPermission(t *testing.T) {
         t.Errorf("unexpected error: %v", err)
     } else {
         var tests = []struct {
-            want interface{}
-            got interface{}
+            want any
+            got any
         }{
             {"Structure", resources[0].Access},
             {ResourceUser, resources[0].OwnerType},
@@ -284,8 +289,8 @@ func TestPermission(t *testing.T) {
         t.Errorf("unexpected error: %v", err)
     } else {
         var tests = []struct {
-            want interface{}
-            got interface{}
+            want any
+            got any
         }{
             {"Structure", resources[0].Access},
             {ResourceGroup, resources[0].OwnerType},

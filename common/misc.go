@@ -15,7 +15,7 @@ func IsValidUUID(u string) bool {
 
 
 func GetFakeAuth() *ClientAuth {
-	fakeAuth := NewClientAuth(map[string]interface{}{
+	fakeAuth := NewClientAuth(map[string]any{
 		"customerId": "00000000-0000-0000-0000-000000000000",
 		"customerKey": "00000000-0000-0000-0000-000000000000",
 	})
@@ -24,27 +24,8 @@ func GetFakeAuth() *ClientAuth {
 	return fakeAuth
 }
 
-
-func ConvertSliceItemsOLD[T any](inputList interface{}) ([]T, error) {
-	var output []T
-
-	// input is a slice
-	list, ok := inputList.([]interface{})
-	if !ok {
-		return nil, fmt.Errorf("failed to convert slice: %v", inputList)
-	}
-
-	for _, item := range list {
-		converted, ok := item.(T)
-		if !ok {
-			return nil, fmt.Errorf("failed to convert slice item: %v", item)
-		}
-		output = append(output, converted)
-	}
-	return output, nil
-}
-func ConvertSliceItems[T any](input interface{}) ([]T, error) {
-	list, ok := input.([]interface{})
+func ConvertSliceItems[T any](input any) ([]T, error) {
+	list, ok := input.([]any)
 	if !ok {
 		return nil, fmt.Errorf("expected []interface{}, got: %T", input)
 	}
@@ -62,13 +43,15 @@ func ConvertSliceItems[T any](input interface{}) ([]T, error) {
 			} else if _, isFloat := any(converted).(float64); isFloat {
 				converted = any(v).(T) // È già un float64, va bene
 			} else {
-				return nil, fmt.Errorf("unsupported number conversion for type %T", converted)
+				return nil, fmt.Errorf(
+					"unsupported number conversion for type %T", converted)
 			}
 		case string:
 			if _, isString := any(converted).(string); isString {
 				converted = any(v).(T)
 			} else {
-				return nil, fmt.Errorf("expected string but got different type")
+				return nil, fmt.Errorf(
+					"expected string but got different type")
 			}
 		default:
 			// Tentiamo il cast diretto

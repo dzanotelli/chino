@@ -20,7 +20,7 @@ type User struct {
 	InsertDate timeutils.Time `json:"insert_date,omitempty"`
 	LastUpdate timeutils.Time `json:"last_update,omitempty"`
 	IsActive bool `json:"is_active"`
-	Attributes map[string]interface{} `json:"attributes,omitempty"`
+	Attributes map[string]any `json:"attributes,omitempty"`
 	Groups []string `jsong:"groups,omitempty"`
 }
 
@@ -34,7 +34,7 @@ type UsersEnvelope struct {
 
 // [C]reate a new user
 func (ca *CustodiaAPIv1) CreateUser(userSchema *UserSchema, isActive bool,
-	attributes map[string]interface{}) (*User, error) {
+	attributes map[string]any) (*User, error) {
 	// validate user content
 	contentErrors := validateContent(attributes,
 		userSchema.getStructureAsMap())
@@ -45,7 +45,7 @@ func (ca *CustodiaAPIv1) CreateUser(userSchema *UserSchema, isActive bool,
 
 	doc := User{IsActive: isActive, Attributes: attributes}
 	url := fmt.Sprintf("/user_schemas/%s/users", userSchema.Id)
-	params := map[string]interface{}{"_data": doc}
+	params := map[string]any{"_data": doc}
 	resp, err := ca.Call("POST", url, params)
 	if err != nil {
 		return nil, err
@@ -92,12 +92,12 @@ func (ca *CustodiaAPIv1) ReadUser(userSchema UserSchema, userId uuid.UUID) (
 
 // [U]pdate an existent user
 func (ca *CustodiaAPIv1) UpdateUser(userId uuid.UUID , isActive bool,
-	content map[string]interface{}) (*User, error) {
+	content map[string]any) (*User, error) {
 	url := fmt.Sprintf("/users/%s", userId)
 
 	// create a user with just the values we can send, and marshal it
 	user := User{IsActive: isActive, Attributes: content}
-	params := map[string]interface{}{"_data": user}
+	params := map[string]any{"_data": user}
 	resp, err := ca.Call("PUT", url, params)
 	if err != nil {
 		return nil, err
@@ -137,13 +137,13 @@ func (ca *CustodiaAPIv1) DeleteUser(userId uuid.UUID, force, consistent bool) (
 //   last_update__gt: time.Time
 //   last_update__lt: time.Time
 func (ca *CustodiaAPIv1) ListUsers(userSchemaId uuid.UUID,
-	params map[string]interface{}) ([]*User, error) {
+	params map[string]any) ([]*User, error) {
 	url := fmt.Sprintf("/user_schemas/%s/users", userSchemaId)
 	if len(params) > 0 {
 		url += "?"
 	}
 
-	availableParams := map[string]interface{}{
+	availableParams := map[string]any{
 		"full_user": true,
 		"is_active": true,
 		"insert_date__gt": time.Time{},

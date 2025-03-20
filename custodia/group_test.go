@@ -20,10 +20,10 @@ func TestGroupCRUDL(t *testing.T) {
     }
 
     gid := uuid.New()
-    dummyGroup := map[string]interface{}{
+    dummyGroup := map[string]any{
         "group_id": gid.String(),
         "group_name": "unittest",
-        "attributes": map[string]interface{}{"antani": 3.14},
+        "attributes": map[string]any{"antani": 3.14},
         "is_active": true,
         "insert_date": "2015-02-07T12:14:46.754",
         "last_update": "2015-03-13T18:06:21.242",
@@ -31,18 +31,18 @@ func TestGroupCRUDL(t *testing.T) {
 
     userSchemaId := uuid.New()
     uid := uuid.New()
-    dummyUser := map[string]interface{}{
+    dummyUser := map[string]any{
         "username": "unittest",
         "schemas_id": userSchemaId.String(),
         "user_id": uid.String(),
         "insert_date": "2015-02-07T12:14:46.754",
         "last_update": "2015-03-13T18:06:21.242",
         "is_active": true,
-        "attributes": map[string]interface{}{"antani": 3.14},
+        "attributes": map[string]any{"antani": 3.14},
         "groups": []string{gid.String()},
     }
 
-    responseGroup := map[string]interface{}{
+    responseGroup := map[string]any{
         "group": dummyGroup,
     }
 
@@ -51,41 +51,44 @@ func TestGroupCRUDL(t *testing.T) {
             // mock CREATE response
             envelope.Data, _ = json.Marshal(responseGroup)
             out, _ := json.Marshal(envelope)
-            w.WriteHeader(http.StatusOK)
+            w.WriteHeader(http.StatusCreated)
             w.Write(out)
-        } else if r.URL.Path == fmt.Sprintf("/api/v1/groups/%s", gid) &&
+        } else if r.URL.Path == fmt.Sprintf(
+            "/api/v1/groups/%s", gid,
+        ) && r.Method == "GET" {
             // mock READ response
-            r.Method == "GET" {
             data, _ := json.Marshal(responseGroup)
             envelope.Data = data
             out, _ := json.Marshal(envelope)
             w.WriteHeader(http.StatusOK)
             w.Write(out)
-        } else if r.URL.Path == fmt.Sprintf("/api/v1/groups/%s", gid ) &&
-            r.Method == "PUT" {
+        } else if r.URL.Path == fmt.Sprintf(
+            "/api/v1/groups/%s", gid,
+        ) && r.Method == "PUT" {
             // mock UPDATE response
             dummyGroup["group_name"] = "changed"
             dummyGroup["is_active"] = false
-            dummyGroup["attributes"] = map[string]interface{}{
+            dummyGroup["attributes"] = map[string]any{
                 "antani": 3.14, "something": "else"}
             envelope.Data, _ = json.Marshal(responseGroup)
             out, _ := json.Marshal(envelope)
             w.WriteHeader(http.StatusOK)
             w.Write(out)
-        } else if r.URL.Path == fmt.Sprintf("/api/v1/groups/%s",
-            gid) && r.Method == "DELETE" {
+        } else if r.URL.Path == fmt.Sprintf(
+            "/api/v1/groups/%s", gid,
+        ) && r.Method == "DELETE" {
             // mock DELETE response
             data, _ := json.Marshal(envelope)
             w.WriteHeader(http.StatusOK)
             w.Write(data)
         } else if r.URL.Path == "/api/v1/groups" && r.Method == "GET" {
             // mock LIST response
-            groupsResp := map[string]interface{}{
+            groupsResp := map[string]any{
                 "count": 1,
                 "total_count": 1,
                 "limit": 1,
                 "offset": 0,
-                "groups": []interface{}{dummyGroup},
+                "groups": []any{dummyGroup},
             }
             data, _ := json.Marshal(groupsResp)
             envelope := CustodiaEnvelope{Result: "success", ResultCode: 200}
@@ -93,14 +96,15 @@ func TestGroupCRUDL(t *testing.T) {
             out, _ := json.Marshal(envelope)
             w.WriteHeader(http.StatusOK)
             w.Write(out)
-        } else if r.URL.Path == fmt.Sprintf("/api/v1/groups/%s/users", gid) &&
-            r.Method == "GET" {
-            listResp := map[string]interface{}{
+        } else if r.URL.Path == fmt.Sprintf(
+            "/api/v1/groups/%s/users", gid,
+        ) && r.Method == "GET" {
+            listResp := map[string]any{
                 "count": 1,
                 "total_count": 1,
                 "limit": 1,
                 "offset": 0,
-                "users": []map[string]interface{}{dummyUser},
+                "users": []map[string]any{dummyUser},
             }
             data, _ := json.Marshal(listResp)
             envelope := CustodiaEnvelope{Result: "success", ResultCode: 200}
@@ -108,15 +112,17 @@ func TestGroupCRUDL(t *testing.T) {
             out, _ := json.Marshal(envelope)
             w.WriteHeader(http.StatusOK)
             w.Write(out)
-        } else if r.URL.Path == fmt.Sprintf("/api/v1/groups/%s/users/%s", gid,
-            uid) {
+        } else if r.URL.Path == fmt.Sprintf(
+            "/api/v1/groups/%s/users/%s", gid, uid,
+        ) {
             // we don't care the method. GET, POST or DELETE, they always
             // return just 200 success with empty message
             data, _ := json.Marshal(envelope)
             w.WriteHeader(http.StatusOK)
             w.Write(data)
         } else if r.URL.Path == fmt.Sprintf(
-            "/api/v1/groups/%s/user_schemas/%s", gid, userSchemaId) {
+            "/api/v1/groups/%s/user_schemas/%s", gid, userSchemaId,
+        ) {
             // we don't care the method. GET, POST or DELETE, they always
             // return just 200 success with empty message
             data, _ := json.Marshal(envelope)
@@ -141,17 +147,17 @@ func TestGroupCRUDL(t *testing.T) {
 
     // test CREATE
     group, err := custodia.CreateGroup("unittest", true,
-        map[string]interface{}{})
+        map[string]any{})
     if err != nil {
         t.Errorf("unexpected error: %v", err)
     } else {
         var tests = []struct {
-            want interface{}
-            got interface{}
+            want any
+            got any
         }{
             {gid, group.Id},
             {"unittest", group.Name},
-            {map[string]interface{}{"antani": 3.14}, group.Attributes},
+            {map[string]any{"antani": 3.14}, group.Attributes},
             {true, group.IsActive},
             {2015, group.InsertDate.Year()},
             {2, int(group.InsertDate.Month())},
@@ -178,18 +184,18 @@ func TestGroupCRUDL(t *testing.T) {
     // test UPDATE
     // response is mocked, so we don't need to pass the right data
     group, err = custodia.UpdateGroup(gid, "changed", false,
-        map[string]interface{}{})
+        map[string]any{})
     if err != nil {
         t.Errorf("unexpected error: %v", err)
     } else {
         var tests = []struct {
-            want interface{}
-            got interface{}
+            want any
+            got any
         }{
             {gid, group.Id},
             {"changed", group.Name},
             {false, group.IsActive},
-            {map[string]interface{}{"antani": 3.14, "something": "else"},
+            {map[string]any{"antani": 3.14, "something": "else"},
                 group.Attributes},
             {2015, group.InsertDate.Year()},
             {2, int(group.InsertDate.Month())},
@@ -238,8 +244,8 @@ func TestGroupCRUDL(t *testing.T) {
         t.Errorf("error while listing users in group: %v", err)
     } else {
         var tests = []struct {
-            want interface{}
-            got interface{}
+            want any
+            got any
         }{
             {uid, users[0].Id},
             {"unittest", users[0].Username},
@@ -256,7 +262,7 @@ func TestGroupCRUDL(t *testing.T) {
 
         for _, test := range tests {
             if !reflect.DeepEqual(test.want, test.got) {
-                t.Errorf("Group Create: bad value, got: %v want: %v",
+                t.Errorf("ListGroupUsers: bad value, got: %v want: %v",
                     test.got, test.want)
             }
         }

@@ -45,9 +45,9 @@ type BlobEnvelope struct {
 // data to the server
 func (ca *CustodiaAPIv1) CreateBlob(documentId uuid.UUID, fieldName string,
 	fileName string) (*UploadBlob, error) {
-	data := map[string]interface{}{"document_id": documentId.String(),
+	data := map[string]any{"document_id": documentId.String(),
 		"field": fieldName, "file_name": fileName}
-	params := map[string]interface{}{"_data": data}
+	params := map[string]any{"_data": data}
 	resp, err := ca.Call("POST", "/blobs" , params)
 	if err != nil {
 		return nil, err
@@ -74,7 +74,7 @@ func (ca *CustodiaAPIv1) CreateBlob(documentId uuid.UUID, fieldName string,
 func (ca *CustodiaAPIv1) UploadChunk(uploadId uuid.UUID, data []byte,
 	length int, offset int) (*UploadBlob, error) {
 	url := fmt.Sprintf("/blobs/%s", uploadId)
-	params := map[string]interface{}{
+	params := map[string]any{
 		"Content-Type": "application/octet-stream",
 		"Length": fmt.Sprint(length),
 		"Offset": fmt.Sprint(offset),
@@ -102,8 +102,8 @@ func (ca *CustodiaAPIv1) UploadChunk(uploadId uuid.UUID, data []byte,
 // Commit a blob
 func (ca *CustodiaAPIv1) CommitBlob(uploadId uuid.UUID) (*Blob, error) {
 	url := "/blobs/commit"
-	data := map[string]interface{}{"upload_id": uploadId.String()}
-	params := map[string]interface{}{"_data": data}
+	data := map[string]any{"upload_id": uploadId.String()}
+	params := map[string]any{"_data": data}
 	resp, err := ca.Call("POST", url, params)
 	if err != nil {
 		return nil, err
@@ -119,7 +119,7 @@ func (ca *CustodiaAPIv1) CommitBlob(uploadId uuid.UUID) (*Blob, error) {
 // Download a blob
 func (ca *CustodiaAPIv1) GetBlobData(blobId uuid.UUID) (io.Reader, error) {
 	url := fmt.Sprintf("/blobs/%s", blobId)
-	params := map[string]interface{}{"_rawResponse": true}
+	params := map[string]any{"_rawResponse": true}
 	_, err := ca.Call("GET", url, params)
 	if err != nil {
 		return nil, err
@@ -139,7 +139,7 @@ func (ca *CustodiaAPIv1) DeleteBlob(blobId uuid.UUID) error {
 func (ca *CustodiaAPIv1) GenerateBlobToken(blobId uuid.UUID, oneTime bool,
 	duration int) (*BlobToken, error) {
 	url := fmt.Sprintf("/blobs/%s/generate", blobId)
-	data := map[string]interface{}{"one_time": oneTime, "duration": duration}
+	data := map[string]any{"one_time": oneTime, "duration": duration}
 	resp, err := ca.Call("POST", url, data)
 	if err != nil {
 		return nil, err
@@ -160,7 +160,7 @@ func (ca *CustodiaAPIv1) GenerateBlobToken(blobId uuid.UUID, oneTime bool,
 func (ca *CustodiaAPIv1) GetBlobDataWithToken(blobId uuid.UUID, token string) (
 	io.Reader, error) {
 	url := fmt.Sprintf("/blobs/url/%s?token=%s", blobId, token)
-	params := map[string]interface{}{"_rawResponse": true}
+	params := map[string]any{"_rawResponse": true}
 
 	ca.client.GetAuth().SwitchTo(common.NoAuth)
 

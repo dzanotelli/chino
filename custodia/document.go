@@ -19,7 +19,7 @@ type Document struct {
 	InsertDate timeutils.Time `json:"insert_date,omitempty"`
 	LastUpdate timeutils.Time `json:"last_update,omitempty"`
 	IsActive bool `json:"is_active"`
-	Content map[string]interface{} `json:"content,omitempty"`
+	Content map[string]any `json:"content,omitempty"`
 }
 
 type DocumentEnvelope struct {
@@ -32,7 +32,7 @@ type DocumentsEnvelope struct {
 
 // [C]reate a new document
 func (ca *CustodiaAPIv1) CreateDocument(schema *Schema, isActive bool,
-	content map[string]interface{}) (*Document, error) {
+	content map[string]any) (*Document, error) {
 	// validate document content
 	contentErrors := validateContent(content, schema.getStructureAsMap())
 	if len(contentErrors) > 0 {
@@ -42,7 +42,7 @@ func (ca *CustodiaAPIv1) CreateDocument(schema *Schema, isActive bool,
 
 	doc := Document{IsActive: isActive, Content: content}
 	url := fmt.Sprintf("/schemas/%s/documents", schema.Id)
-	params := map[string]interface{}{
+	params := map[string]any{
 		"_data": doc,
 	}
 	resp, err := ca.Call("POST", url, params)
@@ -104,12 +104,12 @@ func (ca *CustodiaAPIv1) ReadDocument(schema Schema, documentId uuid.UUID) (
 
 // [U]pdate an existent document
 func (ca *CustodiaAPIv1) UpdateDocument(schema Schema, documentId uuid.UUID,
-	isActive bool, content map[string]interface{}) (*Document, error) {
+	isActive bool, content map[string]any) (*Document, error) {
 	url := fmt.Sprintf("/documents/%s", documentId)
 
 	// create a doc with just the values we can send, and marshal it
 	doc := Document{IsActive: isActive, Content: content}
-	params := map[string]interface{}{
+	params := map[string]any{
 		"_data": doc,
 	}
 	resp, err := ca.Call("PUT", url, params)
@@ -159,13 +159,13 @@ func (ca *CustodiaAPIv1) DeleteDocument(documentId uuid.UUID, force,
 //   last_update__gt: time.Time
 //   last_update__lt: time.Time
 func (ca *CustodiaAPIv1) ListDocuments(schema Schema,
-	params map[string]interface{}) ([]*Document, error) {
+	params map[string]any) ([]*Document, error) {
 	url := fmt.Sprintf("/schemas/%s/documents", schema.Id)
 	if len(params) > 0 {
 		url += "?"
 	}
 
-	availableParams := map[string]interface{}{
+	availableParams := map[string]any{
 		"full_document": true,
 		"is_active": true,
 		"insert_date__gt": time.Time{},

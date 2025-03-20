@@ -20,14 +20,14 @@ func TestSchemaCRUDL(t *testing.T) {
     }
     dummyUUID := uuid.New()
 
-    createResp := map[string]interface{}{
+    createResp := map[string]any{
         "schema_id": dummyUUID.String(),
         "repository_id": dummyUUID.String(),
         "description": "unittest",
         "insert_date": "2015-04-14T05:09:54.915Z",
         "last_update": "2015-04-14T05:09:54.915Z",
         "is_active": true,
-        "structure": []map[string]interface{}{
+        "structure": []map[string]any{
             {
                 "name": "IntField",
                 "type": "integer",
@@ -66,7 +66,7 @@ func TestSchemaCRUDL(t *testing.T) {
             },
         },
     }
-    updateResp := map[string]interface{}{
+    updateResp := map[string]any{
         "schema_id": dummyUUID.String(),
         "repository_id": dummyUUID.String(),
         "description": "changed",
@@ -76,72 +76,6 @@ func TestSchemaCRUDL(t *testing.T) {
         "structure": createResp["structure"],
     }
 
-
-
-
-    // // ResponseInnerSchema will be included in responses
-    // type ResponseInnerSchema struct {
-    //     SchemaId string `json:"schema_id"`
-    //     RepositoryId string `json:"repository_id"`
-    //     Description string `json:"description"`
-    //     InsertDate string `json:"insert_date"`
-    //     LastUpdate string `json:"last_update"`
-    //     IsActive bool `json:"is_active"`
-    //     Structure []SchemaField `json:"structure"`
-    // }
-
-    // // SchemaResponse will be marshalled to create an API-like response
-    // type SchemaResponse struct {
-    //     Schema ResponseInnerSchema `json:"schema"`
-    // }
-
-    // // SchemasResponse will be marshalled to create an API-like response
-    // type SchemasResponse struct {
-    //     Count int `json:"count"`
-    //     TotalCount int `json:"total_count"`
-    //     Limit int `json:"limit"`
-    //     Offset int `json:"offset"`
-    //     Schemas []ResponseInnerSchema `json:"schemas"`
-    // }
-
-    // init stuff
-    // dummySchema := ResponseInnerSchema{
-    //     SchemaId: uuid.New().String(),
-    //     RepositoryId: uuid.New().String(),
-    //     Description: "unittest",
-    //     InsertDate: "2015-02-24T21:48:16.332",
-    //     LastUpdate: "2015-02-24T21:48:16.332",
-    //     IsActive: false,
-    //     // Structure: json.RawMessage{},
-    //     Structure: []SchemaField{
-    //         {Name: "IntField", Type: "integer", Indexed: true, Default: 42},
-    //         {Name: "StrField", Type: "string", Indexed: true, Default: "asd"},
-    //         {Name: "FloatField", Type: "float", Indexed: false, Default: 3.14},
-    //         {Name: "BoolField", Type: "bool", Indexed: false},
-    //         {Name: "DateField", Type: "date", Default: "2023-03-15"},
-    //         {Name: "TimeField", Type: "time", Default: "11:43:04.058"},
-    //         {Name: "DateTimeField", Type: "datetime",
-    //             Default: "2023-03-15T11:43:04.058"},
-    //     },
-    // }
-
-    // shortcut
-    // repoId := dummyUUID.String()
-
-    // writeSchemaResponse := func(w http.ResponseWriter) {
-    //     data, _ := json.Marshal(SchemaResponse{dummySchema})
-    //     envelope := CustodiaEnvelope{
-    //         Result: "success",
-    //         ResultCode: 200,
-    //         Message: nil,
-    //         Data: data,
-    //     }
-    //     out, _ := json.Marshal(envelope)
-
-    //     w.WriteHeader(http.StatusOK)
-    //     w.Write(out)
-    // }
-
     // mock calls
     mockHandler := func(w http.ResponseWriter, r *http.Request) {
         if r.URL.Path == fmt.Sprintf(
@@ -149,7 +83,7 @@ func TestSchemaCRUDL(t *testing.T) {
         ) && r.Method == "POST" {
             // mock CREATE response
             w.WriteHeader(http.StatusCreated)
-            data := map[string]interface{}{
+            data := map[string]any{
                 "schema": createResp,
             }
             envelope.Data, _ = json.Marshal(data)
@@ -160,7 +94,7 @@ func TestSchemaCRUDL(t *testing.T) {
         ) && r.Method == "GET" {
             // mock READ response
             w.WriteHeader(http.StatusOK)
-            data := map[string]interface{}{
+            data := map[string]any{
                 "schema": createResp,
             }
             envelope.Data, _ = json.Marshal(data)
@@ -172,7 +106,7 @@ func TestSchemaCRUDL(t *testing.T) {
         ) && r.Method == "PUT" {
             // mock UPDATE response
             w.WriteHeader(http.StatusOK)
-            data := map[string]interface{}{
+            data := map[string]any{
                 "schema": updateResp,
             }
             envelope.Data, _ = json.Marshal(data)
@@ -191,12 +125,12 @@ func TestSchemaCRUDL(t *testing.T) {
         ) &&  r.Method == "GET" {
             // mock LIST response
             w.WriteHeader(http.StatusOK)
-            data := map[string]interface{}{
+            data := map[string]any{
                 "count": 1,
                 "total_count": 1,
                 "limit": 100,
                 "offset": 0,
-                "schemas": []map[string]interface{}{
+                "schemas": []map[string]any{
                     createResp,
                     updateResp,
                 },
@@ -231,8 +165,8 @@ func TestSchemaCRUDL(t *testing.T) {
         t.Errorf("unexpected error: %v", err)
     } else if schema != nil {
         var tests = []struct {
-            want interface{}
-            got interface{}
+            want any
+            got any
         }{
             {dummyUUID.String(), schema.RepositoryId.String()},
             {dummyUUID.String(), schema.Id.String()},
@@ -280,8 +214,8 @@ func TestSchemaCRUDL(t *testing.T) {
         t.Errorf("unexpected error: %v", err)
     } else if schema != nil {
         var tests = []struct {
-            want interface{}
-            got interface{}
+            want any
+            got any
         }{
             {dummyUUID.String(), schema.RepositoryId.String()},
             {dummyUUID.String(), schema.Id.String()},
@@ -331,8 +265,8 @@ func TestSchemaCRUDL(t *testing.T) {
         t.Errorf("unexpected error: %v", err)
     } else if schema != nil {
         var tests = []struct {
-            want interface{}
-            got interface{}
+            want any
+            got any
         }{
             {dummyUUID.String(), schema.RepositoryId.String()},
             {dummyUUID.String(), schema.Id.String()},
@@ -386,8 +320,8 @@ func TestSchemaCRUDL(t *testing.T) {
         t.Errorf("error while listing schemas. Details: %v", err)
     }
     var tests = []struct {
-        want interface{}
-        got interface{}
+        want any
+        got any
     }{
         {2, len(schemas)},
         {dummyUUID.String(), schemas[0].RepositoryId.String()},
