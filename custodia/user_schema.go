@@ -3,6 +3,7 @@ package custodia
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 
 	"github.com/google/uuid"
 	"github.com/simplereach/timeutils"
@@ -122,10 +123,26 @@ func (ca *CustodiaAPIv1) DeleteUserSchema(userSchemaId uuid.UUID, force bool) (
 	return nil
 }
 
-// [L]ist all the user schemas
-func (ca *CustodiaAPIv1) ListUserSchemas() ([]*UserSchema, error) {
-	url := "/user_schemas"
-	resp, err := ca.Call("GET", url, nil)
+// [L]ist all the schemas in a UserSchema
+// queryParams (optional):
+//   offset: int: number of items to skip from the beginning of the list
+//   limit: int : maximum number of items to return in a single page
+func (ca *CustodiaAPIv1) ListUserSchemas(queryParams map[string]string) (
+	[]*UserSchema, error,
+) {
+	u, err := url.Parse("/user_schemas")
+	if err != nil {
+		return nil, fmt.Errorf("error parsing url: %v", err)
+	}
+
+	// Adding query params
+	q := u.Query()
+	for k, v := range queryParams {
+		q.Set(k, v)
+	}
+	u.RawQuery = q.Encode()
+
+	resp, err := ca.Call("GET", u.String(), nil)
 	if err != nil {
 		return nil, err
 	}

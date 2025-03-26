@@ -315,7 +315,11 @@ func TestSchemaCRUDL(t *testing.T) {
     }
 
     // test LIST
-    schemas, err := custodia.ListSchemas(dummyUUID)
+    queryParams := map[string]string{
+        "offset": "0",
+        "limit": "100",
+    }
+    schemas, err := custodia.ListSchemas(dummyUUID, queryParams)
     if err != nil {
         t.Errorf("error while listing schemas. Details: %v", err)
     }

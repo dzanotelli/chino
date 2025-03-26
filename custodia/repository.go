@@ -3,6 +3,7 @@ package custodia
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 
 	"github.com/google/uuid"
 	"github.com/simplereach/timeutils"
@@ -99,9 +100,25 @@ func (ca *CustodiaAPIv1) DeleteRepository(repoId uuid.UUID, force bool) (
 	return nil
 }
 
-// [L]ist all the repositories
-func (ca *CustodiaAPIv1) ListRepositories() ([]*Repository, error) {
-	resp, err := ca.Call("GET", "/repositories", nil)
+// [L]ist all the repositories, with pagination
+// queryParams (optional):
+//   offset: int: number of items to skip from the beginning of the list
+//   limit: int : maximum number of items to return in a single page
+func (ca *CustodiaAPIv1) ListRepositories(queryParams map[string]string) (
+	[]*Repository, error) {
+	u, err := url.Parse("/repositories")
+	if err != nil {
+		return nil, fmt.Errorf("error parsing url: %v", err)
+	}
+
+	// Adding query params
+	q := u.Query()
+	for k, v := range queryParams {
+		q.Set(k, v)
+	}
+	u.RawQuery = q.Encode()
+
+	resp, err := ca.Call("GET", u.String(), nil)
 	if err != nil {
 		return nil, err
 	}

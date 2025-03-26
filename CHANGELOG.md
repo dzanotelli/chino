@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [next] - unreleased
+
+## Added
+- support for pagination in LIST calls (#14)
+
 ## [0.2.0] - 2025-03-20
 
 ## Added
