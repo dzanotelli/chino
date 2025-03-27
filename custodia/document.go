@@ -153,12 +153,12 @@ func (ca *CustodiaAPIv1) DeleteDocument(documentId uuid.UUID, force,
 // url queryParams:
 //   offset: int: number of items to skip from the beginning of the list
 //   limit: int : maximum number of items to return in a single page
-//   full_document: bool
-//   is_active: bool
-//   insert_date__gt: time string (RFC3339, YYYY-MM-DDTHH:MM:SS)
-//   insert_date__lt: time string (RFC3339)
-//   last_update__gt: time string (RFC3339)
-//   last_update__lt: time string (RFC3339)
+//   full_document: bool: return the full document
+//   is_active: bool: filter by
+//   insert_date__gt: time string (RFC3339, YYYY-MM-DDTHH:MM:SS): filter by
+//   insert_date__lt: time string (RFC3339): filter by
+//   last_update__gt: time string (RFC3339): filter by
+//   last_update__lt: time string (RFC3339): filter by
 func (ca *CustodiaAPIv1) ListDocuments(schema Schema,
 	queryParams map[string]string) ([]*Document, error) {
 	u, err := url.Parse(fmt.Sprintf("/schemas/%s/documents", schema.Id))

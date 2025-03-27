@@ -3,6 +3,7 @@ package custodia
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 
 	"github.com/google/uuid"
 )
@@ -56,17 +57,34 @@ func (rt* ResultType) UnmarshalJSON(data []byte) error {
 }
 
 // Search documents
+// queryParams (optional):
+//   offset: int: number of items to skip from the beginning of the list
+//   limit: int : maximum number of items to return in a single page
 func (ca *CustodiaAPIv1) SearchDocuments(schemaId uuid.UUID,
 	resultType ResultType, query map[string]any,
-	sort map[string]any) (*SearchResponse, error) {
-	url := fmt.Sprintf("/search/documents/%s", schemaId)
+	sort map[string]any, queryParams map[string]string) (
+		*SearchResponse, error,
+) {
+	u, err := url.Parse(fmt.Sprintf("/search/documents/%s", schemaId))
+	if err != nil {
+		return nil, fmt.Errorf("error parsing url: %v", err)
+	}
+
+	// Adding query params
+	q := u.Query()
+	for k, v := range queryParams {
+		q.Set(k, v)
+	}
+	u.RawQuery = q.Encode()
+
+	// Handling POST data
 	data := map[string]any{"result_type": resultType.String(),
 		"query": query}
 	if sort != nil {
 		data["sort"] = sort
 	}
 	params := map[string]any{"_data": true}
-	resp, err := ca.Call("POST", url, params)
+	resp, err := ca.Call("POST", u.String(), params)
 	if err != nil {
 		return nil, err
 	}

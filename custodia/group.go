@@ -85,6 +85,9 @@ func (ca *CustodiaAPIv1) DeleteGroup(groupId uuid.UUID, force bool) error {
 }
 
 // [L]ist all groups
+// queryParams (optional):
+//   offset: int: number of items to skip from the beginning of the list
+//   limit: int : maximum number of items to return in a single page
 func (ca *CustodiaAPIv1) ListGroups(queryParams map[string]string) (
 	[]Group, error,
 ) {
@@ -115,6 +118,9 @@ func (ca *CustodiaAPIv1) ListGroups(queryParams map[string]string) (
 // Group Members
 
 // [L]ist group's users
+// queryParams (optional):
+//   offset: int: number of items to skip from the beginning of the list
+//   limit: int : maximum number of items to return in a single page
 func (ca *CustodiaAPIv1) ListGroupUsers(groupId uuid.UUID,
 	queryParams map[string]string) ([]User, error,
 ) {

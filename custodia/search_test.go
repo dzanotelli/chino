@@ -106,7 +106,8 @@ func TestSearch(t *testing.T) {
 			},
 		},
 	}
-	resp, err := custodia.SearchDocuments(dummyUUID, FullContent, query, nil)
+	resp, err := custodia.SearchDocuments(dummyUUID, FullContent, query, nil,
+		nil)
 	if err != nil {
 		t.Errorf("unexpected error: %s", err)
 	} else {

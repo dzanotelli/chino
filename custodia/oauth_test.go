@@ -181,7 +181,8 @@ func TestApplicationCRUDL(t *testing.T) {
     }
 
     // test LIST
-    apps, err := custodia.ListApplications()
+    queryParams := map[string]string{"offset": "0", "limit": "100"}
+    apps, err := custodia.ListApplications(queryParams)
     if err != nil {
         t.Errorf("error while listing applications. Details: %v", err)
     } else if reflect.TypeOf(apps) != reflect.TypeOf([]*Application{}) {
