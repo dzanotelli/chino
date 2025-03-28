@@ -230,7 +230,11 @@ func TestGroupCRUDL(t *testing.T) {
     }
 
     // test LIST
-    groups, err := custodia.ListGroups()
+    queryParams := map[string]string{
+        "offset": "0",
+        "limit":  "1",
+    }
+    groups, err := custodia.ListGroups(queryParams)
     if err != nil {
         t.Errorf("error while listing groups: %v", err)
     } else if reflect.TypeOf(groups) != reflect.TypeOf([]Group{}) {
@@ -239,7 +243,7 @@ func TestGroupCRUDL(t *testing.T) {
     }
 
     // Group members tests
-    users, err := custodia.ListGroupUsers(gid)
+    users, err := custodia.ListGroupUsers(gid, queryParams)
     if err!= nil {
         t.Errorf("error while listing users in group: %v", err)
     } else {

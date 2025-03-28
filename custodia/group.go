@@ -3,6 +3,7 @@ package custodia
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 
 	"github.com/google/uuid"
 	"github.com/simplereach/timeutils"
@@ -84,9 +85,25 @@ func (ca *CustodiaAPIv1) DeleteGroup(groupId uuid.UUID, force bool) error {
 }
 
 // [L]ist all groups
-func (ca *CustodiaAPIv1) ListGroups() ([]Group, error) {
-	url := "/groups"
-	resp, err := ca.Call("GET", url, nil)
+// queryParams (optional):
+//   offset: int: number of items to skip from the beginning of the list
+//   limit: int : maximum number of items to return in a single page
+func (ca *CustodiaAPIv1) ListGroups(queryParams map[string]string) (
+	[]Group, error,
+) {
+	u, err := url.Parse("/groups")
+	if err != nil {
+		return nil, fmt.Errorf("error parsing url: %v", err)
+	}
+
+	// Adding query params
+	q := u.Query()
+	for k, v := range queryParams {
+		q.Set(k, v)
+	}
+	u.RawQuery = q.Encode()
+
+	resp, err := ca.Call("GET", u.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -101,9 +118,25 @@ func (ca *CustodiaAPIv1) ListGroups() ([]Group, error) {
 // Group Members
 
 // [L]ist group's users
-func (ca *CustodiaAPIv1) ListGroupUsers(groupId uuid.UUID) ([]User, error) {
-	url := fmt.Sprintf("/groups/%s/users", groupId)
-	resp, err := ca.Call("GET", url, nil)
+// queryParams (optional):
+//   offset: int: number of items to skip from the beginning of the list
+//   limit: int : maximum number of items to return in a single page
+func (ca *CustodiaAPIv1) ListGroupUsers(groupId uuid.UUID,
+	queryParams map[string]string) ([]User, error,
+) {
+	u, err := url.Parse(fmt.Sprintf("/groups/%s/users", groupId))
+	if err != nil {
+		return nil, fmt.Errorf("error parsing url: %v", err)
+	}
+
+	// Adding query params
+	q := u.Query()
+	for k, v := range queryParams {
+		q.Set(k, v)
+	}
+	u.RawQuery = q.Encode()
+
+	resp, err := ca.Call("GET", u.String(), nil)
 	if err != nil {
 		return nil, err
 	}

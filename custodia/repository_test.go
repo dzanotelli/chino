@@ -191,7 +191,11 @@ func TestRepositoryCRUDL(t *testing.T) {
     }
 
     // test LIST
-    repos, err := custodia.ListRepositories()
+    queryParams := map[string]string{
+        "offset": "0",
+        "limit": "100",
+    }
+    repos, err := custodia.ListRepositories(queryParams)
     if err != nil {
         t.Errorf("error while listing repositories. Details: %v", err)
     }
