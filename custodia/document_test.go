@@ -329,23 +329,15 @@ func TestDocumentCRUDL(t *testing.T) {
     }
 
     // test LIST
-    // test we gave a wrong argument
-    params := map[string]any{"antani": 42}
-    _, err = custodia.ListDocuments(schema, params)
-    if err == nil {
-        t.Errorf("ListDocuments is not giving error with wrong param %v",
-            params)
-    }
-    // test that all the other params are accepted instead
-    goodParams := map[string]any{
-		"full_document": true,
-		"is_active": true,
-		"insert_date__gt": time.Time{},
-		"insert_date__lt": time.Time{},
-		"last_update__gt": time.Time{},
-		"last_update__lt": time.Time{},
+    queryParams := map[string]string{
+		"full_document": "true",
+		"is_active": "true",
+		"insert_date__gt": time.Time{}.String(),
+		"insert_date__lt": time.Time{}.String(),
+		"last_update__gt": time.Time{}.String(),
+		"last_update__lt": time.Time{}.String(),
 	}
-    documents, err := custodia.ListDocuments(schema, goodParams)
+    documents, err := custodia.ListDocuments(schema, queryParams)
     if err != nil {
         t.Errorf("error while listing documents. Details: %v", err)
     } else {

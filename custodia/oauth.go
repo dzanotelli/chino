@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/dzanotelli/chino/common"
@@ -217,9 +218,25 @@ func (ca *CustodiaAPIv1) DeleteApplication(id string) (error) {
 }
 
 // [L]ist all the applications
-func (ca *CustodiaAPIv1) ListApplications() ([]*Application, error) {
-	url := "/auth/applications"
-	resp, err := ca.Call("GET", url, nil)
+// queryParams (optional):
+//   offset: int: number of items to skip from the beginning of the list
+//   limit: int : maximum number of items to return in a single page
+func (ca *CustodiaAPIv1) ListApplications(queryParams map[string]string) (
+	[]*Application, error,
+) {
+	u, err := url.Parse("/auth/applications")
+	if err != nil {
+		return nil, fmt.Errorf("error parsing url: %v", err)
+	}
+
+	// Adding query params
+	q := u.Query()
+	for k, v := range queryParams {
+		q.Set(k, v)
+	}
+	u.RawQuery = q.Encode()
+
+	resp, err := ca.Call("GET", u.String(), nil)
 	if err != nil {
 		return nil, err
 	}

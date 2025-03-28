@@ -3,6 +3,7 @@ package custodia
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 
 	"github.com/google/uuid"
 	"github.com/simplereach/timeutils"
@@ -97,9 +98,25 @@ func (ca *CustodiaAPIv1) DeleteCollection(collectionId uuid.UUID, force bool) (
 }
 
 // [L]ist collections
-func (ca *CustodiaAPIv1) ListCollections() ([]*Collection, error) {
-	url := "/collections"
-	resp, err := ca.Call("GET", url, nil)
+// queryParams (optional):
+//   offset: int: number of items to skip from the beginning of the list
+//   limit: int : maximum number of items to return in a single page
+func (ca *CustodiaAPIv1) ListCollections(queryParams map[string]string) (
+	[]*Collection, error,
+) {
+	u, err := url.Parse("/collections")
+	if err != nil {
+		return nil, fmt.Errorf("error parsing url: %v", err)
+	}
+
+	// Adding query params
+	q := u.Query()
+	for k, v := range queryParams {
+		q.Set(k, v)
+	}
+	u.RawQuery = q.Encode()
+
+	resp, err := ca.Call("GET", u.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -119,10 +136,25 @@ func (ca *CustodiaAPIv1) ListCollections() ([]*Collection, error) {
 }
 
 // List the collections of a document
-func (ca *CustodiaAPIv1) ListDocumentCollections(documentId uuid.UUID) (
-	[]*Collection, error) {
-	url := fmt.Sprintf("/collections/documents/%s", documentId)
-	resp, err := ca.Call("GET", url, nil)
+// queryParams (optional):
+//   offset: int: number of items to skip from the beginning of the list
+//   limit: int : maximum number of items to return in a single page
+func (ca *CustodiaAPIv1) ListDocumentCollections(documentId uuid.UUID,
+	queryParams map[string]string) ([]*Collection, error,
+) {
+	u, err := url.Parse(fmt.Sprintf("/collections/documents/%s", documentId))
+	if err != nil {
+		return nil, fmt.Errorf("error parsing url: %v", err)
+	}
+
+	// Adding query params
+	q := u.Query()
+	for k, v := range queryParams {
+		q.Set(k, v)
+	}
+	u.RawQuery = q.Encode()
+
+	resp, err := ca.Call("GET", u.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -141,14 +173,26 @@ func (ca *CustodiaAPIv1) ListDocumentCollections(documentId uuid.UUID) (
 }
 
 // List the documents of a collection
+// queryParams (optional):
+//   full_document: bool: return the full document
+//   offset: int: number of items to skip from the beginning of the list
+//   limit: int : maximum number of items to return in a single page
 func (ca *CustodiaAPIv1) ListCollectionDocuments(collectionId uuid.UUID,
-	fullDocument bool) ([]*Document, error) {
-	url := fmt.Sprintf("/collections/%s/documents", collectionId)
-	if fullDocument {
-		url += "?full_document=true"
+	queryParams map[string]string) ([]*Document, error,
+) {
+	u, err := url.Parse(fmt.Sprintf("/collections/%s/documents", collectionId))
+	if err != nil {
+		return nil, fmt.Errorf("error parsing url: %v", err)
 	}
 
-	resp, err := ca.Call("GET", url, nil)
+	// Adding query params
+	q := u.Query()
+	for k, v := range queryParams {
+		q.Set(k, v)
+	}
+	u.RawQuery = q.Encode()
+
+	resp, err := ca.Call("GET", u.String(), nil)
 	if err != nil {
 		return nil, err
 	}

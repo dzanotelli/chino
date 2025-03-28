@@ -208,7 +208,8 @@ func TestCollectionCRUDL(t *testing.T) {
     }
 
     // test List
-    collections, err := custodia.ListCollections()
+    queryParams := map[string]string{"offset": "0", "limit": "2"}
+    collections, err := custodia.ListCollections(queryParams)
     if err != nil {
         t.Errorf("error while processing request: %s", err)
     } else {
@@ -349,7 +350,9 @@ func TestCollectionAndDocuments(t *testing.T) {
     custodia := NewCustodiaAPIv1(client)
 
     // test ListDocumentCollections
-    collections, err := custodia.ListDocumentCollections(dummyUUID)
+    queryParams := map[string]string{"offset": "0"}
+    collections, err := custodia.ListDocumentCollections(dummyUUID,
+        queryParams)
     if err != nil {
         t.Errorf("error while processing request: %s", err)
     } else {
@@ -375,7 +378,8 @@ func TestCollectionAndDocuments(t *testing.T) {
     }
 
     // test ListCollectionDocuments
-    documents, err := custodia.ListCollectionDocuments(dummyUUID, true)
+    queryParams = map[string]string{"is_active": "true"}
+    documents, err := custodia.ListCollectionDocuments(dummyUUID, queryParams)
     if err != nil {
         t.Errorf("error while processing request: %s", err)
     } else {

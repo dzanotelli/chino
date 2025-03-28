@@ -237,7 +237,11 @@ func TestUserSchemaCRUDL(t *testing.T) {
     }
 
     // test LIST
-    uss, err := custodia.ListUserSchemas()
+    queryParams := map[string]string{
+        "offset": "0",
+        "limit": "100",
+    }
+    uss, err := custodia.ListUserSchemas(queryParams)
     if err != nil {
         t.Errorf("error while listing user schemas. Details: %v", err)
     } else if reflect.TypeOf(uss) != reflect.TypeOf([]*UserSchema{}) {
