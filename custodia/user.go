@@ -4,8 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
-	"time"
+	"net/url"
 
 	"github.com/google/uuid"
 	"github.com/simplereach/timeutils"
@@ -129,62 +128,31 @@ func (ca *CustodiaAPIv1) DeleteUser(userId uuid.UUID, force, consistent bool) (
 }
 
 // [L]ist all the users in a Schema
-// url params:
-//   full_user: bool
-//   is_active: bool
-//   insert_date__gt: time.Time
-//   insert_date__lt: time.Time
-//   last_update__gt: time.Time
-//   last_update__lt: time.Time
+// url queryParams:
+//   offset: int: number of items to skip from the beginning of the list
+//   limit: int : maximum number of items to return in a single page
+//   full_user: bool: return the full document
+//   is_active: bool: filter by
+//   insert_date__gt: time string (RFC3339, YYYY-MM-DDTHH:MM:SS): filter by
+//   insert_date__lt: time string (RFC3339): filter by
+//   last_update__gt: time string (RFC3339): filter by
+//   last_update__lt: time string (RFC3339): filter by
 func (ca *CustodiaAPIv1) ListUsers(userSchemaId uuid.UUID,
-	params map[string]any) ([]*User, error) {
-	url := fmt.Sprintf("/user_schemas/%s/users", userSchemaId)
-	if len(params) > 0 {
-		url += "?"
+	queryParams map[string]string) ([]*User, error,
+) {
+	u, err := url.Parse(fmt.Sprintf("/user_schemas/%s/users", userSchemaId))
+	if err != nil {
+		return nil, fmt.Errorf("error parsing url: %v", err)
 	}
 
-	availableParams := map[string]any{
-		"full_user": true,
-		"is_active": true,
-		"insert_date__gt": time.Time{},
-		"insert_date__lt": time.Time{},
-		"last_update__gt": time.Time{},
-		"last_update__lt": time.Time{},
+	// Adding query params
+	q := u.Query()
+	for k, v := range(queryParams) {
+		q.Set(k, v)
 	}
-	for param := range params {
-		// check that param is legit
-		_, ok := availableParams[param]
-		if !ok {
-			return nil, fmt.Errorf("got unexpected param '%s'", param)
-		}
-		value := params[param]
+	u.RawQuery = q.Encode()
 
-		switch param {
-		case "full_user", "is_active":
-			_, ok := value.(bool)
-			if !ok {
-				err := fmt.Errorf("param '%s': bad type: '%T', must be bool",
-					param, value)
-				return nil, err
-			}
-		case "insert_date__gt", "insert_date__lt", "last_update__gt",
-			"last_update__lt":
-			time_value, ok := value.(time.Time)
-			if !ok {
-				err := fmt.Errorf("param '%s': bad type: '%T', must be Time",
-					param, value)
-				return nil, err
-			}
-			value = time_value.Format(time.RFC3339)
-		default:
-			return nil, fmt.Errorf("got unexpected param '%s'", param)
-		}
-
-		url += fmt.Sprintf("%s=%v&", param, value)
-	}
-
-	url = strings.TrimRight(url, "&")
-	resp, err := ca.Call("GET", url, nil)
+	resp, err := ca.Call("GET", u.String(), nil)
 	if err != nil {
 		return nil, err
 	}

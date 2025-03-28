@@ -160,7 +160,8 @@ func (ca *CustodiaAPIv1) DeleteDocument(documentId uuid.UUID, force,
 //   last_update__gt: time string (RFC3339): filter by
 //   last_update__lt: time string (RFC3339): filter by
 func (ca *CustodiaAPIv1) ListDocuments(schema Schema,
-	queryParams map[string]string) ([]*Document, error) {
+	queryParams map[string]string) ([]*Document, error,
+) {
 	u, err := url.Parse(fmt.Sprintf("/schemas/%s/documents", schema.Id))
 	if err != nil {
 		return nil, fmt.Errorf("error parsing url: %v", err)
