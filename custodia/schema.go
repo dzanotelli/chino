@@ -7,12 +7,76 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/simplereach/timeutils"
+	"golang.org/x/exp/slices"
 )
+
+// Define `type` enum
+type FieldType int
+
+const (
+	TypeInteger FieldType = iota + 1
+	TypeArryInteger
+	TypeFloat
+	TypeArrayFloat
+	TypeString
+	TypeArrayString
+	TypeText FieldType
+	TypeBoolean FieldType
+	TypeDate FieldType
+	TypeTime FieldType
+	TypeDateTime FieldType
+	TypeBase64 FieldType
+	TypeJson FieldType
+	TypeBlob FieldType
+)
+
+func (ft FieldType) Choices() []string {
+	return []string{
+		"integer",
+		"array[integer]",
+		"float",
+		"array[float]",
+		"string",
+		"array[string]",
+		"text",
+		"boolean",
+		"date",
+		"time",
+		"datetime",
+		"base64",
+		"json",
+		"blob",
+	}
+}
+
+func (ft FieldType) String() string {
+	return ft.Choices()[ft-1]
+}
+
+func (ft FieldType) MarshalJSON() ([]byte, error) {
+	return json.Marshal(ft.String())
+}
+
+func (ft *FieldType) UnmarshalJSON(data []byte) (err error) {
+	var str string
+	if err = json.Unmarshal(data, &str); err != nil {
+		return err
+	}
+
+	intValue := slices.Index(ft.Choices(), str) + 1   // enum starts from 1
+	if intValue < 1 {
+		return fmt.Errorf("FieldType: received unknown value '%v'", str)
+	}
+
+	*ft = FieldType(intValue)
+	return nil
+}
+
 
 // SchemaField is used by both Schema and UserSchema
 type SchemaField struct {
 	Name string `json:"name"`
-	Type string `json:"type"`
+	Type FieldType `json:"type"`
 	Indexed bool `json:"indexed,omitempty"`
 	Default any `json:"default,omitempty"`
 	Insensitive bool `json:"insensitive,omitempty"`
@@ -45,7 +109,7 @@ func (f *SchemaField) adjustDefaultType() {
 	}
 
 	switch f.Type {
-	case "integer":
+	case TypeInteger:
 		floatVal, _ := f.Default.(float64)
 		f.Default = int(floatVal)
 	}
