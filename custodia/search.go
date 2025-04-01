@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"slices"
 
 	"github.com/google/uuid"
 )
@@ -47,7 +48,7 @@ func (rt* ResultType) UnmarshalJSON(data []byte) error {
 	if err!= nil {
 		return err
 	}
-	intValue := indexOf(value, rt.Choices()) + 1  // enum starts from 1
+	intValue := slices.Index(rt.Choices(), value) + 1   // enum starts from 1
 	if intValue < 1 {
 		return fmt.Errorf("ResultType: received unknown value '%v'", value)
 	}

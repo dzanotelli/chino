@@ -15,23 +15,6 @@ import (
 	"github.com/simplereach/timeutils"
 )
 
-const TypeInt, TypeArrayInt = "integer", "array[integer]"
-const TypeFloat, TypeArrayFloat = "float", "array[float]"
-const TypeStr, TypeText, TypeArrayStr = "string", "text", "array[string]"
-const TypeBool = "boolean"
-const TypeDate, TypeTime, TypeDateTime = "date", "time", "datetime"
-const TypeBase64, TypeJson, TypeBlob = "base64", "json", "blob"
-
-// Return the index of the first found occurence of word in data
-// or -1 if not found
-func indexOf(word string, data []string) (int) {
-    for k, v := range data {
-        if word == v {
-            return k
-        }
-    }
-    return -1
-}
 
 func validateContent(data map[string]any,
 	structure map[string]SchemaField) []error {
@@ -49,7 +32,7 @@ func validateContent(data map[string]any,
 		// field exist, check that is of the right type
 		var val any
 		switch field.Type {
-		case TypeInt:
+		case TypeInteger:
 			val, ok = value.(int64)
 			if !ok {
 				err = fmt.Errorf("field '%s' expected to be int64", key)
@@ -59,19 +42,19 @@ func validateContent(data map[string]any,
 			if !ok {
 				err = fmt.Errorf("field '%s' expected to be float64", key)
 			}
-		case TypeStr, TypeText:
+		case TypeString, TypeText:
 			val, ok = value.(string)
 			if !ok {
 				err = fmt.Errorf("field '%s' expected to be string", key)
 				break
 			}
 			converted := fmt.Sprintf("%v", val)
-			if field.Type == "string" && len(converted) > 255 {
+			if field.Type == TypeString && len(converted) > 255 {
 				ok = false
 				err = fmt.Errorf("field '%s' exceeded max lenght of 255 chars",
 					key)
 			}
-		case TypeBool:
+		case TypeBoolean:
 			val, ok = value.(bool)
 			if !ok {
 				err = fmt.Errorf("field '%s' expected to be bool", key)
@@ -106,7 +89,7 @@ func validateContent(data map[string]any,
 				err = fmt.Errorf("field '%s' expected to be a valid json " +
 					"string", key)
 			}
-		case TypeArrayInt:
+		case TypeArrayInteger:
 			val, ok = value.([]int64)
 			if !ok {
 				err = fmt.Errorf("field '%s' expected to be a slice of int64",
@@ -118,7 +101,7 @@ func validateContent(data map[string]any,
 				err = fmt.Errorf("field '%s' expected to be a slice of " +
 				"float64", key)
 			}
-		case TypeArrayStr:
+		case TypeArrayString:
 			val, ok = value.([]string)
 			if !ok {
 				err = fmt.Errorf("field '%s' expected to be a slice of " +
@@ -151,8 +134,7 @@ func validateContent(data map[string]any,
 }
 
 // Manually parse a JSON array of int, floats or strings
-func parseJSONArray(strArray string, itemType string) ([]any,
-	error) {
+func parseJSONArray(strArray string, itemType FieldType) ([]any, error) {
 	var result []any
 	var ee []error
 	var err error
@@ -167,7 +149,7 @@ func parseJSONArray(strArray string, itemType string) ([]any,
 	}
 
 	switch itemType {
-	case TypeArrayInt:
+	case TypeArrayInteger:
 		for i, v := range splitted {
 			converted, e := strconv.ParseInt(v, 10, 64)
 			if e != nil {
@@ -187,7 +169,7 @@ func parseJSONArray(strArray string, itemType string) ([]any,
 				result = append(result, converted)
 			}
 		}
-	case TypeArrayStr:
+	case TypeArrayString:
 		// since we are manually parsing the JSON array of values, we need to
 		// remove the double quotes around each value
 		for _, v := range splitted {
@@ -209,7 +191,7 @@ func convertField(value any, field SchemaField) (any, error) {
 	var ok bool
 
 	switch field.Type {
-	case TypeInt:
+	case TypeInteger:
 		// json.Unmarshall always returns float64 for numbers
 		c, ok := value.(float64)
 		if !ok {
@@ -221,9 +203,9 @@ func convertField(value any, field SchemaField) (any, error) {
 		if !ok {
 			e = fmt.Errorf("field '%s': cannot convert to float64", field.Name)
 		}
-	case TypeStr, TypeText, TypeBase64, TypeJson, TypeBlob:
+	case TypeString, TypeText, TypeBase64, TypeJson, TypeBlob:
 		converted = fmt.Sprintf("%v", value)
-	case TypeBool:
+	case TypeBoolean:
 		converted, ok = value.(bool)
 		if !ok {
 			e = fmt.Errorf("field '%s': cannot convert to bool", field.Name)
@@ -235,7 +217,7 @@ func convertField(value any, field SchemaField) (any, error) {
 			e = fmt.Errorf("field '%s': error while converting to " +
 				"time.Time, %w", field.Name, err)
 		}
-	case TypeArrayInt, TypeArrayFloat, TypeArrayStr:
+	case TypeArrayInteger, TypeArrayFloat, TypeArrayString:
 		arrayStr := fmt.Sprintf("%v", value)
 		converted, e = parseJSONArray(arrayStr, field.Type)
 	default:

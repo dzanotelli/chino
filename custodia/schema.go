@@ -15,19 +15,19 @@ type FieldType int
 
 const (
 	TypeInteger FieldType = iota + 1
-	TypeArryInteger
+	TypeArrayInteger
 	TypeFloat
 	TypeArrayFloat
 	TypeString
 	TypeArrayString
-	TypeText FieldType
-	TypeBoolean FieldType
-	TypeDate FieldType
-	TypeTime FieldType
-	TypeDateTime FieldType
-	TypeBase64 FieldType
-	TypeJson FieldType
-	TypeBlob FieldType
+	TypeText
+	TypeBoolean
+	TypeDate
+	TypeTime
+	TypeDateTime
+	TypeBase64
+	TypeJson
+	TypeBlob
 )
 
 func (ft FieldType) Choices() []string {

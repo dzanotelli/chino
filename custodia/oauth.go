@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/dzanotelli/chino/common"
+	"golang.org/x/exp/slices"
 )
 
 // Define `grant_type` enum
@@ -41,7 +42,7 @@ func (gt *GrantType) UnmarshalJSON(data []byte) (err error) {
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	intValue := indexOf(value, gt.Choices()) + 1   // enum starts from 1
+	intValue := slices.Index(gt.Choices(), value) + 1   // enum starts from 1
 	if intValue < 1 {
 		return fmt.Errorf("GrantType: received unknown value '%v'", value)
 	}
@@ -79,7 +80,7 @@ func (ct *ClientType) UnmarshalJSON(data []byte) (err error) {
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	intValue := indexOf(value, ct.Choices()) + 1   // enum starts from 1
+	intValue := slices.Index(ct.Choices(), value) + 1   // enum starts from 1
 	if intValue < 1 {
 		return fmt.Errorf("ClientType: received unknown value '%v'", value)
 	}

@@ -52,7 +52,7 @@ func TestUserSchemaCRUDL(t *testing.T) {
         },
         map[string]any{
             "name": "FloatField",
-            "type": "number",
+            "type": "float",
             "indexed": true,
             "default": 3.14,
         },

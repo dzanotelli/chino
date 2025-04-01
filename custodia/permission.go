@@ -42,7 +42,7 @@ func (ps* PermissionScope) UnmarshalJSON(data []byte) error {
     if err!= nil {
         return err
     }
-    intValue := indexOf(value, ps.Choices()) + 1  // enum starts from 1
+    intValue := slices.Index(ps.Choices(), value) + 1   // enum starts from 1
     if intValue < 1 {
         return fmt.Errorf("PermissionScope: received unknown value '%v'",
             value)
@@ -83,7 +83,7 @@ func (pt* PermissionType) UnmarshalJSON(data []byte) error {
     if err!= nil {
         return err
     }
-	intValue := indexOf(value, pt.Choices()) + 1  // enum starts from 1
+    intValue := slices.Index(pt.Choices(), value) + 1   // enum starts from 1
 	if intValue < 1 {
         return fmt.Errorf("PermissionType: received unknown value '%v'", value)
     }
@@ -117,7 +117,7 @@ func (pa* PermissionAction) UnmarshalJSON(data []byte) error {
     if err!= nil {
         return err
     }
-    intValue := indexOf(value, pa.Choices()) + 1  // enum starts from 1
+    intValue := slices.Index(pa.Choices(), value) + 1   // enum starts from 1
     if intValue < 1 {
         return fmt.Errorf("PermissionAction: received unknown value '%v'", value)
     }
@@ -232,7 +232,8 @@ func (r* Resource) UnmarshalJSON(data []byte) error {
 
     r.Permission = make(map[PermissionScope][]PermissionType)
     for scope, types := range aux.Permission {
-        found := indexOf(strings.ToLower(scope), PermissionScope(1).Choices())
+        found := slices.Index(PermissionScope(1).Choices(),
+            strings.ToLower(scope))
         ps := PermissionScope(found + 1)
         r.Permission[ps] = types
     }
