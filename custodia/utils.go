@@ -203,8 +203,13 @@ func convertField(value any, field SchemaField) (any, error) {
 		if !ok {
 			e = fmt.Errorf("field '%s': cannot convert to float64", field.Name)
 		}
-	case TypeString, TypeText, TypeBase64, TypeJson, TypeBlob:
+	case TypeString, TypeText, TypeBase64, TypeJson:
 		converted = fmt.Sprintf("%v", value)
+	case TypeBlob:
+		converted, err = uuid.Parse(fmt.Sprintf("%v", value))
+		if err != nil {
+			e = fmt.Errorf("field '%s': cannot convert to UUID", field.Name)
+		}
 	case TypeBoolean:
 		converted, ok = value.(bool)
 		if !ok {
